@@ -14,6 +14,8 @@ import json
 import logging
 import os
 import sqlite3
+import subprocess
+import sys
 import time
 import urllib.parse
 import urllib.request
@@ -37,6 +39,9 @@ ENV_FILE = OPENCHIKEN_HOME / ".env"
 CREDENTIALS_DST = OPENCHIKEN_HOME / "credentials.json"
 
 app = FastAPI(title="OpenChiken Web Server", docs_url=None, redoc_url=None)
+
+# main.py 서브프로세스 핸들 (단일 인스턴스 관리)
+_main_proc: subprocess.Popen | None = None
 
 
 # ── Pydantic 모델 ──────────────────────────────────────────────
@@ -204,6 +209,48 @@ def open_privacy_prefs():
         return {"ok": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/system/start")
+def start_main():
+    """setup 완료 후 main.py를 백그라운드 서브프로세스로 실행합니다."""
+    global _main_proc
+
+    # 이미 실행 중이면 재시작하지 않음
+    if _main_proc is not None and _main_proc.poll() is None:
+        return {"ok": True, "status": "already_running", "pid": _main_proc.pid}
+
+    try:
+        uv = "uv"
+        _main_proc = subprocess.Popen(
+            [uv, "run", "python", "main.py"],
+            cwd=str(ROOT),
+            stdout=open(ROOT / "openchiken.log", "a", encoding="utf-8"),
+            stderr=subprocess.STDOUT,
+        )
+        return {"ok": True, "status": "started", "pid": _main_proc.pid}
+    except FileNotFoundError:
+        # uv 없으면 python 직접 실행 시도
+        _main_proc = subprocess.Popen(
+            [sys.executable, "main.py"],
+            cwd=str(ROOT),
+            stdout=open(ROOT / "openchiken.log", "a", encoding="utf-8"),
+            stderr=subprocess.STDOUT,
+        )
+        return {"ok": True, "status": "started", "pid": _main_proc.pid}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/system/status")
+def system_status():
+    """main.py 실행 상태를 반환합니다."""
+    global _main_proc
+    if _main_proc is None:
+        return {"running": False, "pid": None}
+    if _main_proc.poll() is None:
+        return {"running": True, "pid": _main_proc.pid}
+    return {"running": False, "pid": None, "exit_code": _main_proc.returncode}
 
 
 @app.get("/api/setup/credentials/status")
