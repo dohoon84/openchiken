@@ -1,6 +1,4 @@
-# OpenChiken — 자율 AI 비서 에이전트
-
-Telegram · Slack · Discord를 통해 명령을 받고, OpenAI GPT-4o로 추론하며, Gmail · Google Calendar · 웹 검색 · 날씨 · 메모를 통합 관리하는 개인 AI 비서입니다.
+Telegram · Slack · Discord · iMessage를 통해 명령을 받고, OpenAI / Anthropic / Gemini LLM으로 추론하며, Gmail · Google Calendar · Drive · Docs · Sheets · 웹 검색 · 날씨 · 메모를 통합 관리하는 개인 AI 비서입니다.
 복잡한 다단계 작업은 Plan-and-Execute 엔진이 스스로 계획하고 실행하며, 스케줄러를 통해 능동적으로 알림을 보냅니다.
 
 ---
@@ -11,43 +9,42 @@ Telegram · Slack · Discord를 통해 명령을 받고, OpenAI GPT-4o로 추론
 |----------|------|
 | **이메일** | Gmail 검색 · 읽기 · 전송 |
 | **캘린더** | 오늘/향후 일정 조회 · 생성 · 삭제 |
+| **Drive** | Google Drive 파일 조회 · 검색 · 업로드 · 폴더 관리 |
+| **Docs** | Google Docs 읽기 · 생성 · 내용 추가 |
+| **Sheets** | Google Sheets 읽기 · 쓰기 · 행 추가 · 생성 |
+| **Workflow** | 스탠드업 보고 · 주간 요약 · 미팅 준비 등 복합 업무 자동화 |
 | **웹 검색** | DuckDuckGo 실시간 검색 (API 키 불필요) |
 | **날씨** | 현재 날씨 · N일 예보 (Open-Meteo, 무료) |
 | **메모** | SQLite 기반 메모 저장 · 조회 · 삭제 |
 | **작업 큐** | 복잡한 작업 진행 상황 추적 |
+| **Finance** | 주식 · 암호화폐 시세 및 기술적 분석 |
 | **스케줄러** | 아침 브리핑 · 일정 리마인더 · 주간 브리핑 자동 전송 |
 | **Plan-and-Execute** | 복잡한 요청을 단계별로 분해 · 자동 실행 |
 | **대화 기억** | SQLite 기반 세션 간 대화 기록 유지 |
 | **스킬 시스템** | SKILL.md 기반 동적 스킬 로딩 · 사용자 커스텀 스킬 추가 가능 |
-| **Slack 연동** | Slack DM · 채널 멘션으로 AI 비서 사용 (Socket Mode) |
-| **Discord 연동** | Discord DM · 서버 채널 멘션으로 AI 비서 사용 |
-| **스킬 선택** | 위저드에서 사용할 스킬 선택 가능 (기본: 전체 활성화) |
+| **다중 LLM** | OpenAI · Anthropic(Claude) · Gemini 중 선택 |
 | **보안** | 허용된 사용자 ID만 접근 가능 |
 
 ---
 
-## 저장소 구성 (역할)
+## 저장소 구성
 
 | 경로 | 용도 |
 |------|------|
-| **`landing/`** | 공개 **랜딩 페이지**만 (별도 도메인에 정적 배포). 온보딩·대시보드 없음. |
-| **`local-ui/`** | PC에서 `server.py`로 띄울 때 제공하는 **로컬 온보딩 + 관리 화면** (setup, dashboard 등). |
-| **`static/`** | 랜딩과 로컬 UI가 공유하는 **CSS · JS · 로고** (`/static/...` 로 서빙). |
-| **`docs/quickstart.md`** | 처음 쓰는 사람·기여자용 **설치 → 실행 → 로컬 웹** 단계 요약. |
-
-브라우저로 **공개 사이트**만 볼 때는 `landing/`만 호스팅하면 되고, **`uv run python server.py`**(또는 `openchiken-web`)로 뜨는 주소는 `local-ui/` + `static/`만 사용합니다.
+| **`landing/`** | 공개 **랜딩 페이지** (별도 도메인에 정적 배포) |
+| **`local-ui/`** | PC에서 `server.py`로 띄우는 **로컬 온보딩 + 관리 화면** |
+| **`static/`** | 랜딩과 로컬 UI가 공유하는 CSS · JS · 로고 |
+| **`docs/quickstart.md`** | 설치 → 실행 단계 요약 |
 
 ---
 
 ## Quick Start
 
-1. [설치 (uv tool install)](#설치-권장-uv-tool-install) — 아래 절차대로 `openchiken` 설치  
-2. **`openchiken-setup`** (CLI) 또는 로컬 웹 위저드 — [`docs/quickstart.md`](docs/quickstart.md) 참고  
-3. **`uv run python server.py`** — 브라우저에서 `http://localhost:8000` → 온보딩(`setup.html`)으로 연결  
-4. 설정 완료 후 같은 주소에서 대시보드 등 **로컬 관리 UI** 사용  
-5. **`openchiken`** 실행 후 Telegram · Slack · Discord 등에서 대화  
+1. [설치 (uv tool install)](#설치-권장-uv-tool-install)
+2. **`openchiken-setup`** — 초기 설정 위저드 실행
+3. **`openchiken`** — 봇 실행 후 Telegram · Slack · Discord 등에서 대화
 
-자세한 단계와 폴더 역할은 **[docs/quickstart.md](docs/quickstart.md)** 를 봅니다.
+자세한 단계는 **[docs/quickstart.md](docs/quickstart.md)** 를 참고하세요.
 
 ---
 
@@ -66,12 +63,11 @@ uv tool install git+https://github.com/YOUR_USERNAME/openchiken.git
 openchiken --help
 ```
 
-설치 후 두 개의 명령어가 전역으로 사용 가능해집니다:
-
 | 명령어 | 설명 |
 |--------|------|
 | `openchiken-setup` | 초기 설정 위저드 실행 |
 | `openchiken` | AI 비서 봇 실행 |
+| `openchiken-web` | 로컬 관리 웹 서버 실행 |
 
 ---
 
@@ -81,60 +77,130 @@ openchiken --help
 openchiken-setup
 ```
 
-위저드가 다음 9단계를 안내합니다:
+위저드는 **5단계**로 진행됩니다:
 
-1. **AI 비서 페르소나** — 이름 · 말투 · 성격 설정
-2. **OpenAI API Key** — [platform.openai.com/api-keys](https://platform.openai.com/api-keys)에서 발급
-3. **Telegram Bot Token** — [@BotFather](https://t.me/BotFather)에서 `/newbot`으로 생성
-4. **Google API 설정** — Gmail · Calendar 연동 (아래 상세 안내 참고)
-5. **데이터베이스** — SQLite 저장 경로 설정
-6. **스케줄러** — 아침 브리핑 시각, 리마인더 타이밍 설정
-7. **스킬 선택** — 사용할 스킬 선택 (기본: 전체 활성화)
-8. **Slack 연동** — Slack Bot Token · App-Level Token 입력 (선택)
-9. **Discord 연동** — Discord Bot Token 입력 (선택)
-10. **추가 채널** — 설정 완료 안내
+1. **페르소나 설정** — 비서 이름 · 말투 · 성격 설정
+2. **LLM 설정** — OpenAI / Anthropic / Gemini 선택 및 API Key 입력
+3. **채널 설정** — Telegram · Slack · Discord · iMessage 활성화 및 각 토큰 입력
+   - Telegram: [@BotFather](https://t.me/BotFather)에서 `/newbot`으로 생성한 Bot Token
+   - Slack: Bot Token (`xoxb-...`) + App-Level Token (`xapp-...`) 입력 (선택)
+   - Discord: Bot Token 입력 (선택)
+   - iMessage: macOS 전용, 별도 API 키 불필요 (선택)
+4. **메모리 설정** — SQLite 저장 경로 설정
+5. **앱 설정** — Google 연동 (Gmail · Calendar · Drive · Docs · Sheets) · 스케줄러 타이밍 · 스킬 선택
+   - Google 연동은 이 단계에서 `credentials.json` 배치 + OAuth 인증까지 완료 가능
+   - 아침 브리핑 시각 · 일정 리마인더 발송 시점 설정
+   - 활성화할 스킬 선택 (기본: 전체 활성화)
 
 설정 파일은 `~/.openchiken/.env`에 저장됩니다.
 
 ---
 
-## Google API 설정 (Gmail + Calendar)
+## LLM 공급자 설정
 
-> Gmail과 Google Calendar 기능을 사용하려면 본인의 GCP 계정에서 OAuth 클라이언트를 발급해야 합니다.
-> **이 과정은 1회만 하면 됩니다.** `openchiken-setup` 위저드가 단계별로 안내합니다.
+`.env`에서 LLM 공급자를 선택할 수 있습니다:
 
-### 설정 개요
+```env
+# OpenAI (기본값)
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4o
 
-1. [Google Cloud Console](https://console.cloud.google.com/projectcreate)에서 프로젝트 생성
-2. Gmail API + Google Calendar API 활성화
-3. OAuth 동의 화면 구성 → **테스트 사용자에 본인(및 사용하게 할 사람) Gmail 추가**
-4. OAuth 2.0 클라이언트 ID (데스크톱 앱) 생성 → `credentials.json` 다운로드
-5. 파일을 `~/.openchiken/credentials.json`에 배치
-6. 첫 `openchiken` 실행 시 브라우저가 열려 Google 계정 로그인 → 자동으로 `token.json` 저장
+# Anthropic (Claude)
+LLM_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_MODEL=claude-3-5-sonnet-latest
 
-### 테스트 사용자 제한
+# Google Gemini
+LLM_PROVIDER=gemini
+GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-2.0-flash
+```
 
-Google OAuth 동의 화면이 **테스트 모드**인 경우, 등록된 테스트 사용자만 Gmail/Calendar 기능을 사용할 수 있습니다.
+---
 
-- 본인 계정은 반드시 테스트 사용자로 추가해야 합니다.
-- 다른 사람에게 공유하려면 GCP Console → OAuth 동의 화면 → 테스트 사용자에 이메일 추가
-- 최대 100개 계정까지 무료로 추가 가능
-- 불특정 다수에게 공개하려면 [Google 앱 검증](https://support.google.com/cloud/answer/9110914) 필요
+## Google API 설정 (Gmail + Calendar + Drive + Docs + Sheets)
 
-> 위저드 실행 중 GCP 링크를 하나씩 열어 따라 하면 됩니다.
+> Gmail, Google Calendar, Drive, Docs, Sheets 기능을 사용하려면 GCP 계정에서 OAuth 클라이언트를 발급해야 합니다.
+> **이 과정은 1회만 하면 됩니다.** `openchiken-setup` 위저드 Step 5에서 단계별로 안내합니다.
+>
+> `gcloud` CLI가 설치되어 있으면 프로젝트 생성과 API 활성화를 **자동**으로 진행합니다.
+
+### G-1. Google Cloud 프로젝트 생성
+
+[Google Cloud Console](https://console.cloud.google.com/projectcreate)에서 프로젝트 생성
+(또는 `gcloud` CLI 설치 시 위저드가 자동으로 생성)
+
+### G-2. API 5종 활성화
+
+아래 API를 모두 활성화합니다 (`gcloud` 사용 시 자동 처리):
+
+- [Gmail API](https://console.cloud.google.com/apis/library/gmail.googleapis.com)
+- [Google Calendar API](https://console.cloud.google.com/apis/library/calendar-json.googleapis.com)
+- [Google Drive API](https://console.cloud.google.com/apis/library/drive.googleapis.com)
+- [Google Sheets API](https://console.cloud.google.com/apis/library/sheets.googleapis.com)
+- [Google Docs API](https://console.cloud.google.com/apis/library/docs.googleapis.com)
+
+### G-3. OAuth 동의 화면 구성 (수동 필수)
+
+**OAuth & Permissions → 동의 화면** 에서:
+1. User Type: **외부** → 만들기
+2. 앱 이름: `OpenChiken`, 이메일: 본인 Gmail 입력 후 저장
+3. **테스트 사용자 → + 사용자 추가 → 본인 Gmail 입력** (필수)
+
+> **테스트 사용자 등록은 반드시 필요합니다.** 등록되지 않은 계정은 'Access blocked' 오류가 발생합니다.
+> Google 앱 검증 전까지 최대 100개 계정까지 무료로 등록 가능합니다.
+
+### G-4. OAuth 2.0 클라이언트 ID 생성 및 credentials.json 배치
+
+1. **사용자 인증 정보 → + 사용자 인증 정보 만들기 → OAuth 클라이언트 ID**
+2. 애플리케이션 유형: **데스크톱 앱**, 이름: `openchiken-desktop`
+3. **JSON 다운로드** 클릭 → `~/Downloads`에 저장
+
+> 위저드가 `~/Downloads` 폴더를 자동 감지하여 `~/.openchiken/credentials.json`으로 복사합니다.
+> 자동 감지가 되지 않으면 직접 `~/.openchiken/credentials.json`에 파일을 배치하세요.
+
+### G-5. Google 계정 인증 (token.json 저장)
+
+위저드 Step 5에서 즉시 브라우저 로그인을 진행하거나, 나중에 첫 `openchiken` 실행 시 자동으로 브라우저가 열립니다.
+
+> **"Google이 이 앱을 확인하지 않았습니다" 화면이 나오면:**
+> **고급** 클릭 → **OpenChiken으로 이동(안전하지 않음)** 클릭
+>
+> 개인용 OAuth 앱의 정상적인 동작입니다. 테스트 사용자로 등록된 계정만 진행할 수 있습니다.
+
+인증 완료 후 `~/.openchiken/token.json`이 자동 저장되며, 이후 재인증 없이 Google 스킬을 사용할 수 있습니다.
+
+---
+
+## 채널 설정 (ENABLED_CHANNELS)
+
+`.env`에서 활성화할 채널을 선택합니다:
+
+```env
+# 기본값 (Telegram만 활성화)
+ENABLED_CHANNELS=telegram
+
+# 복수 채널 활성화
+ENABLED_CHANNELS=telegram,slack,discord,imessage
+```
+
+| 채널 | 설명 |
+|------|------|
+| `telegram` | Telegram 봇 (기본) |
+| `slack` | Slack DM · 채널 멘션 (Socket Mode) |
+| `discord` | Discord DM · 서버 채널 멘션 |
+| `imessage` | macOS iMessage (macOS 전용) |
 
 ---
 
 ## Slack 연동 설정
 
-> Slack DM 또는 채널 멘션으로 AI 비서를 사용할 수 있습니다. **Socket Mode** 방식이므로 서버 공개 IP 없이도 동작합니다.
+> **Socket Mode** 방식이므로 서버 공개 IP 없이도 동작합니다.
 
 ### 1. Slack App 생성
 
 [https://api.slack.com/apps](https://api.slack.com/apps) → **"Create New App"** → **"From scratch"**
-
-- App Name: `OpenChiken` (원하는 이름)
-- Workspace: 연동할 워크스페이스 선택
 
 ### 2. Bot Token Scopes 추가
 
@@ -156,111 +222,68 @@ Google OAuth 동의 화면이 **테스트 모드**인 경우, 등록된 테스�
 ### 4. Event Subscriptions 설정
 
 **Event Subscriptions** → **"Enable Events"** ON  
-→ **"Subscribe to bot events"** 에 아래 두 개 추가:
+→ **"Subscribe to bot events"** 에 추가: `message.im`, `app_mention`
 
-- `message.im` — DM 메시지 수신
-- `app_mention` — 채널 멘션 수신
+### 5. 워크스페이스에 앱 설치
 
-### 5. App Home 설정
+**OAuth & Permissions → "Install to Workspace"** → **Bot User OAuth Token** (`xoxb-...`) 복사
 
-**App Home → Messages Tab** → **"Allow users to send Slash commands and messages from the messages tab"** 체크
-
-### 6. 워크스페이스에 앱 설치
-
-**OAuth & Permissions → "Install to Workspace"**  
-→ 설치 완료 후 **Bot User OAuth Token** (`xoxb-...`) 복사
-
-### 7. .env 설정
+### 6. .env 설정
 
 ```env
 SLACK_BOT_TOKEN=xoxb-...
 SLACK_APP_TOKEN=xapp-...
 ```
 
-또는 `openchiken-setup` 위저드 **STEP 8**에서 입력하면 자동 저장됩니다.
-
-### Slack 사용법
-
-**DM**: 왼쪽 사이드바 **"Direct messages → +"** → 봇 이름 검색 → 메시지 전송
-
-**채널**: `/invite @봇이름` 으로 초대 후 `@봇이름 안녕` 형식으로 멘션
-
-| 입력 | 동작 |
-|---|---|
-| 일반 메시지 | AI 비서 응답 |
-| `plan <요청>` | Plan-and-Execute 다단계 실행 |
-| `clear` / `대화 초기화` | 대화 기록 초기화 |
-
 ---
 
 ## Discord 연동 설정
-
-> Discord DM 또는 서버 채널 멘션으로 AI 비서를 사용할 수 있습니다.
 
 ### 1. Discord Application 생성
 
 [https://discord.com/developers/applications](https://discord.com/developers/applications) → **"New Application"**
 
-- Application Name: `OpenChiken` (원하는 이름)
-
-### 2. Bot 생성 및 Token 복사
+### 2. Bot 생성 및 설정
 
 **Bot** 탭 → **"Add Bot"** → **"Reset Token"** → 토큰 복사
 
-> Token은 한 번만 표시됩니다. 반드시 복사해 두세요.
+**Privileged Gateway Intents** → `Message Content Intent` 활성화
 
-### 3. Privileged Gateway Intents 설정
+### 3. 서버 초대
 
-**Bot** 탭 → **"Privileged Gateway Intents"** 에서 아래 항목 활성화:
+**OAuth2 → URL Generator** → Scopes: `bot` → Bot Permissions: `Send Messages`, `Read Message History` → 생성된 URL로 서버 초대
 
-| Intent | 용도 |
-|---|---|
-| `Message Content Intent` | 메시지 본문 읽기 (필수) |
-
-### 4. OAuth2 초대 URL 생성 및 서버 초대
-
-**OAuth2 → URL Generator** 에서:
-
-1. **Scopes**: `bot` 선택
-2. **Bot Permissions** 에서 아래 권한 선택:
-
-| 권한 | 용도 |
-|---|---|
-| `Send Messages` | 메시지 전송 |
-| `Read Message History` | 메시지 읽기 |
-
-3. 생성된 URL로 접속 → 봇을 원하는 서버에 초대
-
-### 5. .env 설정
+### 4. .env 설정
 
 ```env
 DISCORD_BOT_TOKEN=your-discord-bot-token
-ALLOWED_USER_IDS=123456789,987654321   # Discord User ID 추가 (기존 Telegram ID와 동일 필드)
+ALLOWED_USER_IDS=123456789,987654321
 ```
 
-또는 `openchiken-setup` 위저드 **STEP 9**에서 입력하면 자동 저장됩니다.
+> **Discord User ID 확인**: 설정 → 고급 → 개발자 모드 활성화 후 프로필 우클릭 → **"ID 복사"**
 
-> **Discord User ID 확인 방법**: Discord 설정 → **고급** → **개발자 모드** 활성화 후, 자신의 프로필 우클릭 → **"ID 복사"**
+---
 
-### Discord 사용법
+## iMessage 연동 설정 (macOS 전용)
 
-**DM**: 봇의 프로필 → **메시지 보내기** → 메시지 전송
+> macOS Messages.app + AppleScript 기반으로 iMessage를 통해 AI 비서를 사용할 수 있습니다.
 
-**서버 채널**: `/invite @봇이름` 으로 초대 후 `@봇이름 안녕` 형식으로 멘션
+**사전 조건:**
+- macOS 12 Monterey 이상
+- 시스템 설정 → 개인정보 보호 및 보안 → **전체 디스크 접근**에 Python(또는 터미널) 권한 부여
+- Messages.app 로그인 상태 유지
 
-| 입력 | 동작 |
-|---|---|
-| 일반 메시지 | AI 비서 응답 |
-| `plan <요청>` | Plan-and-Execute 다단계 실행 |
-| `clear` / `대화 초기화` | 대화 기록 초기화 |
+```env
+ENABLED_CHANNELS=telegram,imessage
+IMESSAGE_ALLOWED_HANDLES=+821012345678,user@example.com  # 허용 핸들 (미설정 시 전체 허용)
+IMESSAGE_POLL_INTERVAL=3                                 # 폴링 간격(초)
+```
 
 ---
 
 ## 스킬 선택 (ENABLED_SKILLS)
 
-위저드 STEP 7에서 사용할 스킬을 선택할 수 있습니다. 기본값은 **전체 활성화**(`all`)입니다.
-
-`.env`에서 직접 설정할 수도 있습니다:
+`.env`에서 직접 설정할 수 있습니다:
 
 ```env
 # 전체 활성화 (기본값)
@@ -274,6 +297,10 @@ ENABLED_SKILLS=gmail,calendar,weather
 |---|---|
 | `gmail` | Gmail 검색 · 읽기 · 전송 |
 | `calendar` | Google Calendar 조회 · 생성 · 삭제 |
+| `drive` | Google Drive 파일 조회 · 검색 · 업로드 · 폴더 관리 |
+| `docs` | Google Docs 읽기 · 생성 · 내용 추가 |
+| `sheets` | Google Sheets 읽기 · 쓰기 · 행 추가 · 생성 |
+| `workflow` | 스탠드업 보고 · 주간 요약 · 미팅 준비 등 복합 업무 자동화 |
 | `weather` | 현재 날씨 · N일 예보 |
 | `web_search` | DuckDuckGo 실시간 검색 |
 | `memo` | SQLite 메모 저장 · 조회 · 삭제 |
@@ -292,13 +319,12 @@ openchiken
 
 ```
 === OpenChiken AI 비서 시작 ===
-Model : gpt-4o
+LLM provider : openai / model : gpt-4o
 Enabled skills: all
+Enabled channels: ['telegram', 'slack']
 스케줄: 아침브리핑 08:00 / 리마인더 15분 전 / 주간브리핑 월 08:05
-Slack bot (Socket Mode) starting in background thread...   ← Slack 설정 시
-⚡️ Bolt app is running!                                    ← Slack 연결 완료
-Discord bot starting...                                    ← Discord 설정 시
-Discord bot online: OpenChiken#1234 (id=...)               ← Discord 연결 완료
+Slack bot (Socket Mode) starting in background thread...
+⚡️ Bolt app is running!
 Telegram bot polling started – press Ctrl+C to stop
 ```
 
@@ -306,7 +332,7 @@ Telegram bot polling started – press Ctrl+C to stop
 
 ## 스킬 시스템
 
-OpenChiken은 **SKILL.md 기반 스킬 시스템**을 사용합니다 (OpenClaw/AgentSkills 호환).
+OpenChiken은 **SKILL.md 기반 스킬 시스템**을 사용합니다.
 
 ### 스킬 구조
 
@@ -316,10 +342,15 @@ skills/
 │   ├── SKILL.md    ← AI 지시 + 메타데이터
 │   └── tool.py     ← LangChain 도구 구현
 ├── calendar/
+├── drive/
+├── docs/
+├── sheets/
+├── workflow/
 ├── weather/
 ├── web_search/
 ├── memo/
-└── task/
+├── task/
+└── finance/
 ```
 
 ### 사용자 커스텀 스킬 추가
@@ -329,7 +360,6 @@ skills/
 ```bash
 mkdir -p ~/.openchiken/skills/my_skill
 
-# SKILL.md 작성
 cat > ~/.openchiken/skills/my_skill/SKILL.md << 'EOF'
 ---
 name: my_skill
@@ -342,7 +372,6 @@ enabled: true
 사용 가능한 도구 및 사용법 설명...
 EOF
 
-# tool.py 작성 (선택사항 - LangChain 도구가 필요한 경우)
 cat > ~/.openchiken/skills/my_skill/tool.py << 'EOF'
 from langchain_core.tools import tool
 
@@ -355,8 +384,6 @@ def get_tools():
     return [my_custom_tool]
 EOF
 ```
-
-다음 번 `openchiken` 실행 시 자동으로 스킬이 로드됩니다.
 
 ---
 
@@ -378,14 +405,12 @@ EOF
 | 입력 | 동작 |
 |------|------|
 | `오늘 일정 알려줘` | Google Calendar에서 오늘 일정 조회 |
-| `이번 주 일정 보여줘` | 향후 7일 일정 조회 |
-| `내일 오후 2시에 팀 회의 잡아줘` | 새 일정 생성 |
 | `안 읽은 이메일 확인해줘` | Gmail 미읽은 이메일 검색 |
 | `홍길동에게 회의록 보내줘` | Gmail 이메일 전송 |
 | `서울 지금 날씨 어때?` | 현재 날씨 조회 |
-| `이번 주 제주도 날씨 알려줘` | 5일 예보 조회 |
 | `GPT-5 관련 최신 뉴스 알려줘` | 웹 검색 후 답변 |
-| `내 이메일 서명 기억해줘` | 메모로 저장 |
+| `내 Drive에서 기획서 찾아줘` | Google Drive 파일 검색 |
+| `스탠드업 보고 준비해줘` | workflow_standup_report 실행 |
 | `/plan 미팅 관련 이메일 찾아서 요약하고 각각 답장 초안 작성해줘` | Plan-and-Execute 다단계 실행 |
 
 ---
@@ -396,37 +421,44 @@ EOF
 openchiken/
 ├── main.py                   # 진입점 (봇 + 스케줄러 시작)
 ├── server.py                 # 로컬 웹 서버 (local-ui + /static + 온보딩 API)
-├── landing/                  # 공개 랜딩 (정적 배포 전용, 이 레포에서 소스 관리)
-├── local-ui/                 # 로컬 온보딩·대시보드 HTML (FastAPI가 서빙)
+├── landing/                  # 공개 랜딩 (정적 배포 전용)
+├── local-ui/                 # 로컬 온보딩·대시보드 HTML
 ├── static/                   # 공유 자산 (CSS, JS, assets/logo 등)
 ├── docs/
-│   └── quickstart.md         # Quick Start 단계별 안내
+│   └── quickstart.md
 ├── config/
-│   └── settings.py           # 환경변수 및 설정 (~/.openchiken 지원)
+│   └── settings.py           # 환경변수 및 설정
 ├── core/
 │   ├── agent.py              # ReAct 에이전트 + SkillLoader 연동
 │   ├── planner.py            # Plan-and-Execute LangGraph 그래프
 │   ├── memory.py             # SQLite 대화 기록
+│   ├── provider.py           # LLM 공급자 추상화 (OpenAI/Anthropic/Gemini)
 │   └── google_auth.py        # Google OAuth2 인증
 ├── skills/                   # 스킬 시스템
 │   ├── __init__.py           # SkillLoader (동적 스킬 로딩)
 │   ├── gmail/
-│   │   ├── SKILL.md          # AI 지시 + 메타데이터
-│   │   └── tool.py           # LangChain 도구
 │   ├── calendar/
+│   ├── drive/
+│   ├── docs/
+│   ├── sheets/
+│   ├── workflow/
 │   ├── weather/
 │   ├── web_search/
 │   ├── memo/
-│   └── task/
+│   ├── task/
+│   └── finance/
 ├── scheduler/
 │   ├── jobs.py               # 스케줄 잡 (브리핑, 리마인더, 주간)
 │   └── scheduler.py          # APScheduler 설정
 ├── channels/
-│   ├── telegram_bot.py       # Telegram 봇 핸들러
-│   ├── slack_bot.py          # Slack 봇 핸들러 (Socket Mode)
-│   └── discord_bot.py        # Discord 봇 핸들러
-├── setup.py                  # 설치 위저드 (openchiken-setup)
-└── pyproject.toml            # 프로젝트 설정 (uv)
+│   ├── base.py               # 채널 어댑터 기반 클래스
+│   ├── router.py             # 채널 동적 로딩
+│   ├── telegram_bot.py
+│   ├── slack_bot.py          # Socket Mode
+│   ├── discord_bot.py
+│   └── imessage_bot.py       # macOS 전용
+├── setup.py                  # 설정 위저드 (openchiken-setup)
+└── pyproject.toml
 ```
 
 사용자 설정 파일 (`~/.openchiken/`):
@@ -444,16 +476,12 @@ openchiken/
 ## 아키텍처
 
 ```
-Telegram 메시지        Slack DM / 멘션           Discord DM / 멘션
-      ↓                      ↓                         ↓
-channels/telegram_bot  channels/slack_bot        channels/discord_bot
-                       (Socket Mode, 백그라운드)   (비동기 클라이언트)
-      ↓                      ↓                         ↓
-  ┌─────────────────────────────────────────────┐
-  │  일반 메시지 → core/agent.py (ReAct + SkillLoader) → 도구 호출 → 응답  │
-  │  plan 명령   → core/planner.py (Plan-and-Execute)                    │
-  │                   Planner → Executor → Replanner → 최종 응답          │
-  └─────────────────────────────────────────────┘
+Telegram  Slack(Socket)  Discord  iMessage(macOS)
+    ↓           ↓           ↓           ↓
+channels/router.py  (채널 동적 로딩 · 어댑터 패턴)
+    ↓
+  일반 메시지 → core/agent.py (ReAct + SkillLoader)  → 도구 호출 → 응답
+  plan 명령   → core/planner.py (Plan-and-Execute LangGraph)
 
 스킬 시스템 (SkillLoader)
   ENABLED_SKILLS=all           → 모든 스킬 로드 (기본값)
@@ -461,6 +489,11 @@ channels/telegram_bot  channels/slack_bot        channels/discord_bot
   skills/{name}/SKILL.md       → AI 시스템 프롬프트에 지시 텍스트 주입
   skills/{name}/tool.py        → LangChain @tool 함수 동적 로딩
   ~/.openchiken/skills/        → 사용자 설치 외부 스킬
+
+LLM 공급자 (core/provider.py)
+  LLM_PROVIDER=openai      → ChatOpenAI (gpt-4o 기본)
+  LLM_PROVIDER=anthropic   → ChatAnthropic (claude-3-5-sonnet 기본)
+  LLM_PROVIDER=gemini      → ChatGoogleGenerativeAI (gemini-2.0-flash 기본)
 
 자율 알림 (스케줄러)
   매일 08:00      → 아침 브리핑 (일정 + 이메일)
@@ -472,8 +505,7 @@ channels/telegram_bot  channels/slack_bot        channels/discord_bot
 
 ## 향후 확장 계획
 
-- 스킬 허브(ClawHub 유사) — 커뮤니티 스킬 등록 및 다운로드
-- OpenClaw 스킬 호환 레이어 — 기존 OpenClaw SKILL.md 바로 사용
+- 스킬 허브 — 커뮤니티 스킬 등록 및 다운로드
 - Notion 연동 (회의록 자동 작성)
 - Slack 스케줄러 브리핑 — 아침·주간 브리핑을 Slack 채널에도 자동 전송
 - KakaoTalk · WhatsApp 채널 연동
