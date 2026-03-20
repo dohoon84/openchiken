@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html class="dark" lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>OpenChiken — 초기 설정</title>
+  <link rel="icon" type="image/png" href="/static/assets/logo.png"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link href="/static/shared.css" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-container-low": "#1c1b1b",
+            "on-surface-variant": "#c6c5d4",
+            "surface-container-lowest": "#0e0e0e",
+            "secondary": "#bbc3ff",
+            "on-primary-container": "#00a7ba",
+            "surface-container-highest": "#353534",
+            "on-primary": "#00363d",
+            "error": "#ffb4ab",
+            "on-surface": "#e5e2e1",
+            "outline-variant": "#454652",
+            "primary-fixed-dim": "#00daf3",
+            "background": "#131313",
+            "surface": "#131313",
+            "primary": "#00daf3",
+            "primary-container": "#00363d",
+            "outline": "#908f9d",
+            "surface-container-high": "#2a2a2a",
+            "surface-container": "#201f1f",
+            "tertiary": "#49d7f4",
+            "tertiary-container": "#00353f",
+            "error-container": "#93000a",
+          },
+          fontFamily: {
+            "headline": ["Space Grotesk"],
+            "body": ["Inter"],
+            "label": ["Manrope"],
+          },
+          borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+        },
+      },
+    }
+  </script>
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
+
+    .wizard-bg {
+      background: radial-gradient(ellipse 800px 500px at 50% 20%, rgba(0,218,243,0.06) 0%, transparent 70%),
+                  radial-gradient(ellipse 400px 400px at 80% 80%, rgba(187,195,255,0.04) 0%, transparent 70%);
+    }
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(69,70,82,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(69,70,82,0.05) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .text-gradient {
+      background: linear-gradient(135deg, #00daf3 0%, #bbc3ff 60%, #49d7f4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .progress-fill {
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .choice-btn {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .choice-btn:hover {
+      background: rgba(0,218,243,0.08);
+      border-color: rgba(0,218,243,0.4);
+    }
+    .choice-btn.selected {
+      background: rgba(0,218,243,0.12);
+      border-color: #00daf3;
+    }
+    .choice-btn.selected .choice-check {
+      opacity: 1;
+      color: #00daf3;
+    }
+    .choice-check { opacity: 0; transition: opacity 0.15s; }
+
+    .channel-chip {
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .channel-chip:hover { border-color: rgba(0,218,243,0.4); }
+    .channel-chip.selected {
+      background: rgba(0,218,243,0.12);
+      border-color: #00daf3;
+      color: #00daf3;
+    }
+
+    .drop-zone {
+      transition: all 0.2s ease;
+    }
+    .drop-zone.dragover {
+      background: rgba(0,218,243,0.08);
+      border-color: #00daf3;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    textarea {
+      background: #0e0e0e;
+      border: 1px solid rgba(69,70,82,0.4);
+      border-radius: 0.5rem;
+      color: #e5e2e1;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus,
+    input[type="password"]:focus,
+    input[type="number"]:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #00daf3;
+      box-shadow: 0 0 0 2px rgba(0,218,243,0.1);
+    }
+    input[type="range"] { accent-color: #00daf3; }
+
+    .step-indicator.done .step-dot {
+      background: #00daf3;
+      border-color: #00daf3;
+    }
+    .step-indicator.done .step-dot-inner { background: #00363d; }
+    .step-indicator.active .step-dot {
+      border-color: #00daf3;
+      box-shadow: 0 0 12px rgba(0,218,243,0.4);
+    }
+    .step-indicator.active .step-dot-inner { background: #00daf3; }
+
+    @keyframes slide-in-right {
+      from { opacity: 0; transform: translateX(24px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slide-in-left {
+      from { opacity: 0; transform: translateX(-24px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .step-panel.active { animation: slide-in-right 0.3s ease forwards; }
+    .step-panel.going-back { animation: slide-in-left 0.3s ease forwards; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #00daf3 0%, #00a7ba 100%);
+      color: #00363d;
+      font-weight: 700;
+      transition: all 0.2s;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,218,243,0.25); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .summary-row { border-bottom: 1px solid rgba(69,70,82,0.15); }
+    .summary-row:last-child { border-bottom: none; }
+
+    .toast {
+      position: fixed; bottom: 2rem; right: 2rem; z-index: 100;
+      padding: 0.75rem 1.25rem;
+      border-radius: 0.5rem;
+      font-family: 'Manrope', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: rgba(0,218,243,0.15); border: 1px solid rgba(0,218,243,0.3); color: #00daf3; }
+    .toast.error { background: rgba(255,180,171,0.15); border: 1px solid rgba(255,180,171,0.3); color: #ffb4ab; }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-body min-h-screen wizard-bg grid-bg">
+
+<!-- ── Toast 알림 ── -->
+<div id="toast" class="toast"></div>
+
+<!-- ── 상단 바 ── -->
+<header class="fixed top-0 w-full z-50 bg-[#131313]/80 backdrop-blur-xl border-b border-outline-variant/10 flex items-center justify-between px-6 h-14">
+  <div class="flex items-center gap-2.5">
+    <img src="/static/assets/logo.png" alt="OpenChiken" class="w-7 h-7 rounded-lg object-cover"/>
+    <span class="text-xl font-bold tracking-tighter text-primary font-headline">OpenChiken</span>
+  </div>
+  <span class="font-label text-xs text-outline uppercase tracking-widest">Setup Wizard</span>
+</header>
+
+<!-- ── 메인 레이아웃 ── -->
+<main class="pt-14 min-h-screen flex flex-col">
+  <div class="flex-1 flex flex-col items-center justify-center px-4 py-12">
+
+    <!-- ── 진행률 + 단계 표시기 ── -->
+    <div class="w-full max-w-2xl mb-10">
+      <!-- 진행 바 -->
+      <div class="flex items-center justify-between mb-3">
+        <span id="step-label" class="font-label text-xs font-bold text-primary uppercase tracking-widest">STEP 1 / 5</span>
+        <span id="step-title-top" class="font-label text-xs text-outline">AI 비서 페르소나 설정</span>
+      </div>
+      <div class="h-1 bg-surface-container-highest rounded-full overflow-hidden">
+        <div id="progress-bar" class="progress-fill h-full bg-primary rounded-full" style="width: 20%"></div>
+      </div>
+      <!-- 단계 점 -->
+      <div class="flex items-center justify-between mt-4 px-1">
+        <div id="dots-container" class="flex items-center gap-0 w-full">
+          <!-- JS로 생성 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 위저드 카드 ── -->
+    <div class="w-full max-w-2xl">
+      <div class="bg-surface-container-low rounded-2xl border border-outline-variant/10 shadow-2xl shadow-black/40 overflow-hidden">
+
+        <!-- ─────────────── STEP 1: 페르소나 ─────────────── -->
+        <div id="step-1" class="step-panel active p-8">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="material-symbols-outlined text-primary text-3xl">face</span>
+            <h2 class="font-headline text-2xl font-bold">AI 비서 페르소나 설정</h2>
+          </div>
+          <p class="font-body text-sm text-on-surface-variant mb-8">당신만의 AI 비서 캐릭터를 설정합니다. 이름, 말투, 성격을 지정하면 대화 중 자연스럽게 그 캐릭터로 응답합니다.</p>
+
+          <!-- 비서 이름 -->
+          <div class="mb-6">
+            <label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-widest">비서 이름</label>
+            <input id="assistant-name" type="text" value="치킨" placeholder="예) 민지, 알파, 아리아, 치킨"
+              class="w-full px-4 py-3 font-body text-sm"/>
+            <p class="mt-1.5 font-label text-[11px] text-outline">대화 중 이 이름으로 불립니다.</p>
+          </div>
+
+          <!-- 말투 선택 -->
+          <div class="mb-6">
+            <label class="block font-label text-xs font-bold text-on-surface-variant mb-3 uppercase tracking-widest">말투</label>
+            <div class="space-y-2" id="tone-choices">
+              <div class="choice-btn selected border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between"
+                data-value="캐주얼하고 친근한 존댓말로 대화합니다. '~요', '~해요' 형태로 답변하세요.">
+                <div>
+                  <p class="font-label text-sm font-semibold">캐주얼 존댓말</p>
+                  <p class="font-body text-xs text-outline mt-0.5">~요, ~해요, ~할게요</p>
+                </div>
+                <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+              </div>
+              <div class="choice-btn border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between"
+                data-value="정중한 존댓말로 대화합니다. '~합니다', '~해드릴게요' 형태로 답변하세요.">
+                <div>
+                  <p class="font-label text-sm font-semibold">정중한 존댓말</p>
+                  <p class="font-body text-xs text-outline mt-0.5">~합니다, ~해드릴게요</p>
+                </div>
+                <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+              </div>
+              <div class="choice-btn border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between"
+                data-value="친근하고 편안한 반말로 대화합니다. '~해', '~할게', '~야' 형태로 답변하세요.">
+                <div>
+                  <p class="font-label text-sm font-semibold">친근한 반말</p>
+                  <p class="font-body text-xs text-outline mt-0.5">~해, ~할게, ~야</p>
+                </div>
+                <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+              </div>
+              <div class="choice-btn border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between"
+                data-value="__custom__">
+                <div>
+                  <p class="font-label text-sm font-semibold">직접 입력</p>
+                  <p class="font-body text-xs text-outline mt-0.5">나만의 말투 지침 작성</p>
+                </div>
+                <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+              </div>
+            </div>
+            <div id="tone-custom-wrap" class="mt-3 hidden">
+              <input id="tone-custom" type="text" placeholder="예) 영어와 한국어를 섞어서 답변합니다"
+                class="w-full px-4 py-3 font-body text-sm"/>
+            </div>
+          </div>
+
+          <!-- 성격 선택 -->
+          <div class="mb-6">
+            <label class="block font-label text-xs font-bold text-on-surface-variant mb-3 uppercase tracking-widest">성격 / 페르소나</label>
+            <div class="space-y-2" id="persona-choices">
+              <div class="choice-btn selected border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between"
+                data-value="친근하고 유머러스한 성격입니다. 가끔 가벼운 농담을 섞고 사용자와 편하게 대화합니다.">
+                <div>
+                  <p class="font-label text-sm font-semibold">🤝 친근하고 유머러스</p>
+                  <p class="font-body text-xs text-outline mt-0.5">가볍게 농담도 하고 편하게 대화</p>
+                </div>
+                <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+              </div>
+              <div class="choice-btn border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between"
+                data-value="전문적이고 효율적인 성격입니다. 불필요한 말은 줄이고 핵심 정보를 빠르게 전달합니다.">
+                <div>
+                  <p class="font-label text-sm font-semibold">💼 전문적이고 효율적</p>
+                  <p class="font-body text-xs text-outline mt-0.5">군더더기 없이 핵심만 빠르게</p>
+                </div>
+                <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+              </div>
+              <div class="choice-btn border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between"
+                data-value="차분하고 꼼꼼한 성격입니다. 세심하게 확인하며 안정감 있게 대화합니다.">
+                <div>
+                  <p class="font-label text-sm font-semibold">🧘 차분하고 꼼꼼</p>
+                  <p class="font-body text-xs text-outline mt-0.5">세심하게 확인하며 안정감 있게</p>
+                </div>
+                <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+              </div>
+              <div class="choice-btn border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between"
+                data-value="활발하고 긍정적인 성격입니다. 에너지 넘치게 사용자를 응원하고 격려합니다.">
+                <div>
+                  <p class="font-label text-sm font-semibold">🎉 활발하고 긍정적</p>
+                  <p class="font-body text-xs text-outline mt-0.5">에너지 넘치게 응원하고 격려</p>
+                </div>
+                <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+              </div>
+              <div class="choice-btn border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between"
+                data-value="__custom__">
+                <div>
+                  <p class="font-label text-sm font-semibold">✍️ 직접 입력</p>
+                  <p class="font-body text-xs text-outline mt-0.5">나만의 페르소나 설명 작성</p>
+                </div>
+                <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+              </div>
+            </div>
+            <div id="persona-custom-wrap" class="mt-3 hidden">
+              <input id="persona-custom" type="text" placeholder="예) 냉소적이고 솔직한 성격으로 직설적으로 말합니다"
+                class="w-full px-4 py-3 font-body text-sm"/>
+            </div>
+          </div>
+
+          <!-- 추가 지침 -->
+          <div class="mb-2">
+            <label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-widest">추가 지침 <span class="text-outline normal-case font-normal">(선택)</span></label>
+            <textarea id="assistant-extra" rows="3" placeholder="예) 답변 끝에 항상 이모지를 붙입니다 / 영어로도 함께 답변합니다"
+              class="w-full px-4 py-3 font-body text-sm resize-none"></textarea>
+          </div>
+        </div>
+
+        <!-- ─────────────── STEP 2: LLM 설정 ─────────────── -->
+        <div id="step-2" class="step-panel p-8">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="material-symbols-outlined text-primary text-3xl">psychology</span>
+            <h2 class="font-headline text-2xl font-bold">LLM 설정</h2>
+          </div>
+          <p class="font-body text-sm text-on-surface-variant mb-6">사용할 AI 공급자와 모델을 선택합니다.</p>
+
+          <!-- 공급자 선택 -->
+          <div class="mb-6">
+            <label class="block font-label text-xs font-bold text-on-surface-variant mb-3 uppercase tracking-widest">AI 공급자</label>
+            <div class="grid grid-cols-3 gap-2" id="provider-choices">
+              <div class="choice-btn selected border border-outline-variant/30 rounded-xl p-3 text-center cursor-pointer" data-value="openai">
+                <p class="font-label text-sm font-bold mb-0.5">OpenAI</p>
+                <p class="font-body text-[11px] text-outline">GPT-4o 계열</p>
+                <span class="material-symbols-outlined choice-check text-base mt-1">check_circle</span>
+              </div>
+              <div class="choice-btn border border-outline-variant/30 rounded-xl p-3 text-center cursor-pointer" data-value="anthropic">
+                <p class="font-label text-sm font-bold mb-0.5">Anthropic</p>
+                <p class="font-body text-[11px] text-outline">Claude 계열</p>
+                <span class="material-symbols-outlined choice-check text-base mt-1">check_circle</span>
+              </div>
+              <div class="choice-btn border border-outline-variant/30 rounded-xl p-3 text-center cursor-pointer" data-value="gemini">
+                <p class="font-label text-sm font-bold mb-0.5">Google</p>
+                <p class="font-body text-[11px] text-outline">Gemini 계열</p>
+                <span class="material-symbols-outlined choice-check text-base mt-1">check_circle</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── OpenAI 섹션 ── -->
+          <div id="llm-section-openai">
+            <div class="mb-5">
+              <label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-widest">OpenAI API Key</label>
+              <div class="relative">
+                <input id="openai-key" type="password" placeholder="sk-..."
+                  class="w-full px-4 py-3 pr-12 font-mono text-sm"/>
+                <button id="toggle-key-vis-openai" type="button"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors">
+                  <span class="material-symbols-outlined text-xl">visibility_off</span>
+                </button>
+              </div>
+              <p class="mt-1.5 font-label text-[11px] text-outline">
+                <a href="https://platform.openai.com/api-keys" target="_blank" class="text-primary underline underline-offset-2">platform.openai.com/api-keys</a>에서 발급
+              </p>
+            </div>
+            <div class="mb-2">
+              <label class="block font-label text-xs font-bold text-on-surface-variant mb-3 uppercase tracking-widest">모델 선택</label>
+              <div class="space-y-2" id="model-choices-openai">
+                <div class="choice-btn selected border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between" data-value="gpt-4o">
+                  <div><p class="font-label text-sm font-semibold">gpt-4o <span class="text-primary text-xs ml-1">추천</span></p><p class="font-body text-xs text-outline mt-0.5">최고 성능 — 멀티모달, 최신 지식</p></div>
+                  <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+                </div>
+                <div class="choice-btn border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between" data-value="gpt-4o-mini">
+                  <div><p class="font-label text-sm font-semibold">gpt-4o-mini</p><p class="font-body text-xs text-outline mt-0.5">빠르고 저렴 — 일상 작업에 적합</p></div>
+                  <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+                </div>
+                <div class="choice-btn border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between" data-value="gpt-4-turbo">
+                  <div><p class="font-label text-sm font-semibold">gpt-4-turbo</p><p class="font-body text-xs text-outline mt-0.5">gpt-4 계열, 높은 컨텍스트 창</p></div>
+                  <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+                </div>
+                <div class="choice-btn border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between" data-value="__custom__">
+                  <div><p class="font-label text-sm font-semibold">직접 입력</p><p class="font-body text-xs text-outline mt-0.5">모델 이름 직접 지정</p></div>
+                  <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+                </div>
+              </div>
+              <div id="model-custom-wrap-openai" class="mt-3 hidden">
+                <input id="model-custom-openai" type="text" placeholder="예) o1-preview, gpt-4-0125-preview" class="w-full px-4 py-3 font-mono text-sm"/>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Anthropic 섹션 ── -->
+          <div id="llm-section-anthropic" class="hidden">
+            <div class="mb-5">
+              <label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-widest">Anthropic API Key</label>
+              <div class="relative">
+                <input id="anthropic-key" type="password" placeholder="sk-ant-..."
+                  class="w-full px-4 py-3 pr-12 font-mono text-sm"/>
+                <button id="toggle-key-vis-anthropic" type="button"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors">
+                  <span class="material-symbols-outlined text-xl">visibility_off</span>
+                </button>
+              </div>
+              <p class="mt-1.5 font-label text-[11px] text-outline">
+                <a href="https://console.anthropic.com/settings/keys" target="_blank" class="text-primary underline underline-offset-2">console.anthropic.com</a>에서 발급
+              </p>
+            </div>
+            <div class="mb-2">
+              <label class="block font-label text-xs font-bold text-on-surface-variant mb-3 uppercase tracking-widest">모델 선택</label>
+              <div class="space-y-2" id="model-choices-anthropic">
+                <div class="choice-btn selected border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between" data-value="claude-3-5-sonnet-latest">
+                  <div><p class="font-label text-sm font-semibold">claude-3-5-sonnet-latest <span class="text-primary text-xs ml-1">추천</span></p><p class="font-body text-xs text-outline mt-0.5">최고 성능 — 빠르고 지능적</p></div>
+                  <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+                </div>
+                <div class="choice-btn border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between" data-value="claude-3-5-haiku-latest">
+                  <div><p class="font-label text-sm font-semibold">claude-3-5-haiku-latest</p><p class="font-body text-xs text-outline mt-0.5">빠르고 저렴 — 일상 작업에 최적</p></div>
+                  <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+                </div>
+                <div class="choice-btn border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between" data-value="claude-3-opus-latest">
+                  <div><p class="font-label text-sm font-semibold">claude-3-opus-latest</p><p class="font-body text-xs text-outline mt-0.5">최대 지능 — 복잡한 추론에 강점</p></div>
+                  <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+                </div>
+                <div class="choice-btn border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between" data-value="__custom__">
+                  <div><p class="font-label text-sm font-semibold">직접 입력</p><p class="font-body text-xs text-outline mt-0.5">모델 이름 직접 지정</p></div>
+                  <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+                </div>
+              </div>
+              <div id="model-custom-wrap-anthropic" class="mt-3 hidden">
+                <input id="model-custom-anthropic" type="text" placeholder="예) claude-3-5-haiku-20241022" class="w-full px-4 py-3 font-mono text-sm"/>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Gemini 섹션 ── -->
+          <div id="llm-section-gemini" class="hidden">
+            <div class="mb-5">
+              <label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-widest">Google AI API Key</label>
+              <div class="relative">
+                <input id="gemini-key" type="password" placeholder="AIza..."
+                  class="w-full px-4 py-3 pr-12 font-mono text-sm"/>
+                <button id="toggle-key-vis-gemini" type="button"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors">
+                  <span class="material-symbols-outlined text-xl">visibility_off</span>
+                </button>
+              </div>
+              <p class="mt-1.5 font-label text-[11px] text-outline">
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-primary underline underline-offset-2">aistudio.google.com</a>에서 발급
+              </p>
+            </div>
+            <div class="mb-2">
+              <label class="block font-label text-xs font-bold text-on-surface-variant mb-3 uppercase tracking-widest">모델 선택</label>
+              <div class="space-y-2" id="model-choices-gemini">
+                <div class="choice-btn selected border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between" data-value="gemini-2.0-flash">
+                  <div><p class="font-label text-sm font-semibold">gemini-2.0-flash <span class="text-primary text-xs ml-1">추천</span></p><p class="font-body text-xs text-outline mt-0.5">빠르고 강력 — 멀티모달 지원</p></div>
+                  <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+                </div>
+                <div class="choice-btn border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between" data-value="gemini-1.5-pro">
+                  <div><p class="font-label text-sm font-semibold">gemini-1.5-pro</p><p class="font-body text-xs text-outline mt-0.5">긴 컨텍스트 (1M 토큰)</p></div>
+                  <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+                </div>
+                <div class="choice-btn border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between" data-value="gemini-1.5-flash">
+                  <div><p class="font-label text-sm font-semibold">gemini-1.5-flash</p><p class="font-body text-xs text-outline mt-0.5">경량 — 빠른 응답 필요 시</p></div>
+                  <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+                </div>
+                <div class="choice-btn border border-outline-variant/30 rounded-xl px-4 py-3 flex items-center justify-between" data-value="__custom__">
+                  <div><p class="font-label text-sm font-semibold">직접 입력</p><p class="font-body text-xs text-outline mt-0.5">모델 이름 직접 지정</p></div>
+                  <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+                </div>
+              </div>
+              <div id="model-custom-wrap-gemini" class="mt-3 hidden">
+                <input id="model-custom-gemini" type="text" placeholder="예) gemini-2.0-flash-exp" class="w-full px-4 py-3 font-mono text-sm"/>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─────────────── STEP 3: 채널 설정 ─────────────── -->
+        <div id="step-3" class="step-panel p-8">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="material-symbols-outlined text-primary text-3xl">hub</span>
+            <h2 class="font-headline text-2xl font-bold">채널 설정</h2>
+          </div>
+          <p class="font-body text-sm text-on-surface-variant mb-6">AI 비서와 대화할 채널을 선택하세요. 여러 채널을 동시에 활성화할 수 있습니다.</p>
+
+          <!-- 채널 선택 그리드 -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
+            <div id="chip-telegram" class="channel-chip selected border border-outline-variant/30 rounded-xl p-3 cursor-pointer select-none text-center" data-channel="telegram">
+              <div class="flex justify-center mb-1">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:#26A5E4"><img src="https://cdn.simpleicons.org/telegram/ffffff" width="20" height="20" alt="Telegram" loading="lazy"></div>
+              </div>
+              <p class="font-label text-xs font-bold">Telegram</p>
+              <span class="chip-check material-symbols-outlined text-primary text-sm mt-0.5 block" style="opacity:1">check_circle</span>
+            </div>
+            <div id="chip-slack" class="channel-chip border border-outline-variant/30 rounded-xl p-3 cursor-pointer select-none text-center" data-channel="slack">
+              <div class="flex justify-center mb-1">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:#ffffff"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313z" fill="#E01E5A"/><path d="M8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312z" fill="#36C5F0"/><path d="M18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.271 0a2.528 2.528 0 0 1-2.52 2.521 2.528 2.528 0 0 1-2.521-2.521V2.522A2.528 2.528 0 0 1 15.165 0a2.528 2.528 0 0 1 2.52 2.522v6.312z" fill="#2EB67D"/><path d="M15.165 18.956a2.528 2.528 0 0 1 2.52 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.521-2.522v-2.522h2.521zm0-1.271a2.527 2.527 0 0 1-2.521-2.52 2.528 2.528 0 0 1 2.521-2.521h6.313A2.528 2.528 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.52h-6.313z" fill="#ECB22E"/></svg></div>
+              </div>
+              <p class="font-label text-xs font-bold">Slack</p>
+              <span class="chip-check material-symbols-outlined text-primary text-sm mt-0.5 block" style="opacity:0">check_circle</span>
+            </div>
+            <div id="chip-discord" class="channel-chip border border-outline-variant/30 rounded-xl p-3 cursor-pointer select-none text-center" data-channel="discord">
+              <div class="flex justify-center mb-1">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:#5865F2"><img src="https://cdn.simpleicons.org/discord/ffffff" width="20" height="20" alt="Discord" loading="lazy"></div>
+              </div>
+              <p class="font-label text-xs font-bold">Discord</p>
+              <span class="chip-check material-symbols-outlined text-primary text-sm mt-0.5 block" style="opacity:0">check_circle</span>
+            </div>
+            <!-- iMessage: macOS 에서만 표시 -->
+            <div id="chip-imessage" class="channel-chip border border-outline-variant/30 rounded-xl p-3 cursor-pointer select-none text-center hidden" data-channel="imessage">
+              <div class="flex justify-center mb-1">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:#34C759"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="1" y="2" width="22" height="16" rx="5" fill="white" opacity="0.95"/><circle cx="8.5" cy="10" r="1.5" fill="#34C759"/><circle cx="12" cy="10" r="1.5" fill="#34C759"/><circle cx="15.5" cy="10" r="1.5" fill="#34C759"/><path d="M5 18l2.5-3" stroke="white" stroke-width="2.8" stroke-linecap="round"/></svg></div>
+              </div>
+              <p class="font-label text-xs font-bold">iMessage</p>
+              <span class="font-label text-[9px] text-outline block -mt-0.5">macOS</span>
+              <span class="chip-check material-symbols-outlined text-primary text-sm mt-0.5 block" style="opacity:0">check_circle</span>
+            </div>
+          </div>
+
+          <!-- ── Telegram 토큰 입력 (기본 표시) ── -->
+          <div id="telegram-token-wrap" class="mb-4 p-5 bg-surface-container-lowest rounded-xl border border-[#29B6F6]/20">
+            <p class="font-label text-xs font-bold mb-4 uppercase tracking-widest" style="color:#29B6F6">Telegram 봇 설정</p>
+            <div class="mb-4">
+              <label class="block font-label text-xs text-on-surface-variant mb-2">Bot Token</label>
+              <input id="telegram-token" type="text" placeholder="예) 123456789:AAH8_vXj..." class="w-full px-4 py-3 font-mono text-sm"/>
+              <p class="mt-1.5 font-label text-[11px] text-outline">
+                <span class="text-primary">@BotFather</span> → <span class="font-mono">/newbot</span> → 토큰 발급
+              </p>
+            </div>
+            <div>
+              <label class="block font-label text-xs text-on-surface-variant mb-2">허용 User ID <span class="text-outline">(비워두면 전체 허용 · 전 채널 공통)</span></label>
+              <input id="allowed-ids" type="text" placeholder="예) 123456789,987654321" class="w-full px-4 py-3 font-mono text-sm"/>
+              <p class="mt-1.5 font-label text-[11px] text-outline"><span class="text-primary">@userinfobot</span>에 메시지를 보내면 내 Telegram ID를 알 수 있습니다. Telegram · Discord · Slack 모두 이 목록을 공유합니다.</p>
+            </div>
+          </div>
+
+          <!-- ── Slack 토큰 입력 ── -->
+          <div id="slack-token-wrap" class="hidden mb-4 p-5 bg-surface-container-lowest rounded-xl border border-[#E01E5A]/20">
+            <p class="font-label text-xs font-bold mb-4 uppercase tracking-widest" style="color:#E01E5A">Slack 봇 설정</p>
+            <div class="mb-4">
+              <label class="block font-label text-xs text-on-surface-variant mb-2">Bot Token <span class="text-outline">(xoxb-...)</span></label>
+              <input id="slack-bot-token" type="text" placeholder="xoxb-..." class="w-full px-4 py-3 font-mono text-sm"/>
+              <p class="mt-1.5 font-label text-[11px] text-outline">Slack App → OAuth &amp; Permissions → Bot User OAuth Token</p>
+            </div>
+            <div>
+              <label class="block font-label text-xs text-on-surface-variant mb-2">App-Level Token <span class="text-outline">(xapp-...)</span></label>
+              <input id="slack-app-token" type="text" placeholder="xapp-..." class="w-full px-4 py-3 font-mono text-sm"/>
+              <p class="mt-1.5 font-label text-[11px] text-outline">Slack App → Settings → Socket Mode → App-Level Token 발급</p>
+            </div>
+          </div>
+
+          <!-- ── Discord 토큰 입력 ── -->
+          <div id="discord-token-wrap" class="hidden mb-4 p-5 bg-surface-container-lowest rounded-xl border border-[#7289DA]/20">
+            <p class="font-label text-xs font-bold mb-4 uppercase tracking-widest" style="color:#7289DA">Discord 봇 설정</p>
+            <div class="mb-4">
+              <label class="block font-label text-xs text-on-surface-variant mb-2">Bot Token</label>
+              <input id="discord-bot-token" type="text" placeholder="MTAw..." class="w-full px-4 py-3 font-mono text-sm"/>
+              <p class="mt-1.5 font-label text-[11px] text-outline">
+                <a href="https://discord.com/developers/applications" target="_blank" class="text-primary underline">discord.com/developers</a>
+                → Bot 탭 → Reset Token → 복사
+              </p>
+            </div>
+            <div class="mb-4">
+              <label class="block font-label text-xs text-on-surface-variant mb-2">허용 User ID <span class="text-outline">(비워두면 전체 허용)</span></label>
+              <input id="discord-allowed-ids" type="text" placeholder="예) 123456789012345678" class="w-full px-4 py-3 font-mono text-sm"/>
+              <p class="mt-1.5 font-label text-[11px] text-outline">Discord 설정 → 고급 → <strong class="text-on-surface-variant">개발자 모드 ON</strong> → 본인 이름 우클릭 → <strong class="text-on-surface-variant">사용자 ID 복사</strong><br/>
+              ⚠️ Application(Client) ID가 아닌 <strong class="text-primary">본인 계정의 User ID</strong>를 입력하세요.</p>
+            </div>
+            <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3">
+              <div class="flex items-start gap-2">
+                <span class="material-symbols-outlined text-yellow-400 text-base mt-0.5">warning</span>
+                <p class="font-body text-xs text-yellow-200">Bot 탭 → Privileged Gateway Intents → <strong>Message Content Intent</strong>를 반드시 ON으로 설정하세요.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── iMessage 설정 (macOS 전용) ── -->
+          <div id="imessage-token-wrap" class="hidden mb-4 p-5 bg-surface-container-lowest rounded-xl border border-[#34C759]/20">
+            <p class="font-label text-xs font-bold mb-4 uppercase tracking-widest" style="color:#34C759">iMessage 설정 (macOS 전용)</p>
+
+            <!-- 권한 안내 -->
+            <div class="mb-5 bg-[#34C759]/5 border border-[#34C759]/20 rounded-xl p-4">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="material-symbols-outlined text-[#34C759] text-base">lock_open</span>
+                <p class="font-label text-xs font-bold text-on-surface">전체 디스크 접근 권한 필요</p>
+              </div>
+              <p class="font-body text-xs text-on-surface-variant mb-3">iMessage 수신을 위해 <strong class="text-on-surface">~/Library/Messages/chat.db</strong> 읽기 권한이 필요합니다. macOS 보안 정책상 이 권한은 반드시 <strong class="text-on-surface">사용자가 직접</strong> 부여해야 합니다.</p>
+              <ol class="space-y-1.5 font-body text-xs text-on-surface-variant mb-4">
+                <li class="flex items-start gap-2"><span class="text-[#34C759] font-bold shrink-0">1</span>아래 버튼을 눌러 시스템 설정을 엽니다</li>
+                <li class="flex items-start gap-2"><span class="text-[#34C759] font-bold shrink-0">2</span><strong class="text-on-surface">개인정보 보호 및 보안 → 전체 디스크 접근</strong>으로 이동합니다</li>
+                <li class="flex items-start gap-2"><span class="text-[#34C759] font-bold shrink-0">3</span><strong class="text-on-surface">+</strong> 버튼 → Terminal.app (또는 Python 실행 앱) 추가 후 잠금 해제</li>
+              </ol>
+              <button id="btn-open-privacy" type="button"
+                class="flex items-center gap-2 px-4 py-2.5 rounded-xl font-label text-xs font-bold uppercase tracking-widest transition-all"
+                style="background:rgba(52,199,89,0.15);color:#34C759;border:1px solid rgba(52,199,89,0.3)">
+                <span class="material-symbols-outlined text-sm">settings</span>
+                시스템 설정 열기
+              </button>
+              <p id="prefs-open-status" class="mt-2 font-label text-[11px] text-[#34C759] hidden">✓ 시스템 설정이 열렸습니다. 수동으로 권한을 추가하세요.</p>
+            </div>
+
+            <!-- 허용 핸들 -->
+            <div class="mb-4">
+              <label class="block font-label text-xs text-on-surface-variant mb-2">
+                허용 핸들 <span class="text-outline">(비워두면 전체 연락처 허용)</span>
+              </label>
+              <input id="imessage-allowed-handles" type="text"
+                placeholder="예) +821012345678,you@apple.com"
+                class="w-full px-4 py-3 font-mono text-sm"/>
+              <p class="mt-1.5 font-label text-[11px] text-outline">전화번호(+82 국가코드 포함) 또는 Apple ID 이메일. 여러 개면 쉼표로 구분합니다.</p>
+            </div>
+
+            <!-- 폴링 간격 -->
+            <div>
+              <label class="block font-label text-xs text-on-surface-variant mb-2">
+                메시지 확인 간격 <span class="text-outline">(초)</span>
+              </label>
+              <div class="grid grid-cols-4 gap-2" id="imessage-poll-choices">
+                <div class="choice-btn border border-outline-variant/30 rounded-xl px-3 py-2.5 text-center" data-value="2"><p class="font-label text-xs font-semibold">2초</p><span class="material-symbols-outlined choice-check text-sm">check_circle</span></div>
+                <div class="choice-btn selected border border-outline-variant/30 rounded-xl px-3 py-2.5 text-center" data-value="3"><p class="font-label text-xs font-semibold">3초 <span class="text-primary text-[9px]">기본</span></p><span class="material-symbols-outlined choice-check text-sm">check_circle</span></div>
+                <div class="choice-btn border border-outline-variant/30 rounded-xl px-3 py-2.5 text-center" data-value="5"><p class="font-label text-xs font-semibold">5초</p><span class="material-symbols-outlined choice-check text-sm">check_circle</span></div>
+                <div class="choice-btn border border-outline-variant/30 rounded-xl px-3 py-2.5 text-center" data-value="10"><p class="font-label text-xs font-semibold">10초</p><span class="material-symbols-outlined choice-check text-sm">check_circle</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─────────────── STEP 4: 메모리 ─────────────── -->
+        <div id="step-4" class="step-panel p-8">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="material-symbols-outlined text-primary text-3xl">memory</span>
+            <h2 class="font-headline text-2xl font-bold">메모리 설정</h2>
+          </div>
+          <p class="font-body text-sm text-on-surface-variant mb-6">AI가 대화 기록, 메모, 할 일을 <strong class="text-on-surface">어디에 저장</strong>할지 선택합니다.</p>
+
+          <div class="space-y-2 mb-5" id="memory-choices">
+            <div class="choice-btn selected border border-outline-variant/30 rounded-xl px-4 py-4 flex items-center justify-between" data-value="local">
+              <div>
+                <p class="font-label text-sm font-semibold">로컬 파일 <span class="text-primary text-xs ml-1">권장</span></p>
+                <p class="font-body text-xs text-outline mt-0.5">내 컴퓨터에 파일로 저장 — 설치 후 바로 사용 가능</p>
+              </div>
+              <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+            </div>
+            <div class="choice-btn border border-outline-variant/30 rounded-xl px-4 py-4 flex items-center justify-between" data-value="custom">
+              <div>
+                <p class="font-label text-sm font-semibold">직접 지정</p>
+                <p class="font-body text-xs text-outline mt-0.5">PostgreSQL 등 외부 DB를 사용하는 경우</p>
+              </div>
+              <span class="material-symbols-outlined choice-check text-lg">check_circle</span>
+            </div>
+          </div>
+
+          <div id="memory-custom-wrap" class="hidden mb-4">
+            <label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-widest">Database URL</label>
+            <input id="db-url" type="text" placeholder="예) postgresql://user:pass@localhost/openchiken"
+              class="w-full px-4 py-3 font-mono text-sm"/>
+            <p class="mt-1.5 font-label text-[11px] text-outline">SQLAlchemy 형식의 URL</p>
+          </div>
+
+          <div class="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/20">
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-secondary text-lg mt-0.5">info</span>
+              <div>
+                <p class="font-label text-xs font-bold text-on-surface mb-1.5">저장되는 내용</p>
+                <div class="grid grid-cols-2 gap-1 text-[11px] text-on-surface-variant">
+                  <div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-xs text-primary">chat</span> 대화 기록</div>
+                  <div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-xs text-primary">note</span> 메모</div>
+                  <div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-xs text-primary">task_alt</span> 할 일 목록</div>
+                  <div class="flex items-center gap-1.5"><span class="material-symbols-outlined text-xs text-primary">schedule</span> 예약 작업</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─────────────── STEP 5: 앱 설정 ─────────────── -->
+        <div id="step-5" class="step-panel p-8">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="material-symbols-outlined text-primary text-3xl">settings_applications</span>
+            <h2 class="font-headline text-2xl font-bold">앱 설정</h2>
+          </div>
+          <p class="font-body text-sm text-on-surface-variant mb-6">Google 연동, 알림 타이밍, 활성화할 기능을 설정합니다. 모두 선택 사항입니다.</p>
+
+          <!-- ── 섹션 A: Google 연동 ── -->
+          <div class="mb-1">
+            <button id="acc-google-toggle" type="button"
+              class="w-full flex items-center justify-between px-4 py-3 bg-surface-container rounded-xl border border-outline-variant/20 text-left group hover:border-primary/30 transition-colors">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg text-on-surface-variant group-hover:text-primary transition-colors">mail</span>
+                <span class="font-label text-sm font-bold text-on-surface">Google 연동 <span class="text-outline font-normal text-xs ml-1">(선택)</span></span>
+              </div>
+              <span id="acc-google-chevron" class="material-symbols-outlined text-sm text-outline transition-transform">expand_more</span>
+            </button>
+            <div id="acc-google-body" class="hidden mt-2 px-1 space-y-3">
+              <p class="font-body text-xs text-on-surface-variant">Gmail · Google Calendar 기능에 필요합니다. 건너뛰면 이메일·일정 기능은 사용할 수 없습니다.</p>
+              <div id="creds-status-ok" class="hidden bg-primary-container/30 border border-primary/30 rounded-xl p-4 flex items-center gap-3">
+                <span class="material-symbols-outlined text-primary text-xl">check_circle</span>
+                <div>
+                  <p class="font-label text-sm font-bold text-primary">credentials.json 확인됨</p>
+                  <p id="creds-path" class="font-body text-xs text-on-surface-variant mt-0.5"></p>
+                </div>
+              </div>
+              <div id="drop-zone"
+                class="drop-zone border-2 border-dashed border-outline-variant/40 rounded-xl p-8 text-center cursor-pointer hover:border-primary/50 transition-all"
+                onclick="document.getElementById('creds-file-input').click()">
+                <span class="material-symbols-outlined text-3xl text-outline mb-2 block">upload_file</span>
+                <p class="font-label text-sm font-semibold text-on-surface">파일 드래그 또는 클릭해서 선택</p>
+                <p class="font-body text-xs text-outline mt-1">GCP에서 다운로드한 OAuth 2.0 JSON 파일</p>
+                <input id="creds-file-input" type="file" accept=".json" class="hidden"/>
+              </div>
+              <p id="creds-filename" class="font-label text-xs text-primary hidden"></p>
+              <button id="guide-toggle" type="button"
+                class="w-full flex items-center justify-between px-4 py-2.5 bg-surface-container-lowest rounded-xl border border-outline-variant/20 text-left group">
+                <span class="font-label text-xs font-bold text-on-surface-variant group-hover:text-primary transition-colors">Google Cloud 설정 가이드</span>
+                <span id="guide-chevron" class="material-symbols-outlined text-sm text-outline transition-transform">expand_more</span>
+              </button>
+              <div id="google-guide" class="hidden space-y-3">
+                <div class="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/20">
+                  <p class="font-label text-xs font-bold text-primary mb-2">G-1 · 프로젝트 생성 → G-2 · Gmail &amp; Calendar API 활성화</p>
+                  <ol class="font-body text-xs text-on-surface-variant space-y-1 list-decimal list-inside">
+                    <li><a href="https://console.cloud.google.com/projectcreate" target="_blank" class="text-primary underline">Cloud Console</a>에서 프로젝트 생성</li>
+                    <li>API 사용 설정 (5종):
+                      <a href="https://console.cloud.google.com/apis/library/gmail.googleapis.com" target="_blank" class="text-primary underline">Gmail</a> ·
+                      <a href="https://console.cloud.google.com/apis/library/calendar-json.googleapis.com" target="_blank" class="text-primary underline">Calendar</a> ·
+                      <a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank" class="text-primary underline">Drive</a> ·
+                      <a href="https://console.cloud.google.com/apis/library/sheets.googleapis.com" target="_blank" class="text-primary underline">Sheets</a> ·
+                      <a href="https://console.cloud.google.com/apis/library/docs.googleapis.com" target="_blank" class="text-primary underline">Docs</a>
+                    </li>
+                  </ol>
+                </div>
+                <div class="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/20">
+                  <p class="font-label text-xs font-bold text-primary mb-2">G-3 · OAuth 동의 화면 → G-4 · 클라이언트 ID JSON 다운로드</p>
+                  <ol class="font-body text-xs text-on-surface-variant space-y-1 list-decimal list-inside">
+                    <li><a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" class="text-primary underline">동의 화면</a> → 외부 → 본인 Gmail을 테스트 사용자에 추가</li>
+                    <li><a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="text-primary underline">사용자 인증 정보</a> → OAuth 클라이언트 ID → 데스크톱 앱 → JSON 다운로드 후 위에 업로드</li>
+                  </ol>
+                </div>
+              </div>
+              <button id="skip-google" type="button"
+                class="text-outline font-label text-xs font-bold uppercase tracking-widest hover:text-primary transition-colors">
+                건너뛰기 →
+              </button>
+            </div>
+          </div>
+
+          <!-- ── 섹션 B: 스케줄러 ── -->
+          <div class="mt-3 mb-1">
+            <button id="acc-scheduler-toggle" type="button"
+              class="w-full flex items-center justify-between px-4 py-3 bg-surface-container rounded-xl border border-outline-variant/20 text-left group hover:border-primary/30 transition-colors">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg text-on-surface-variant group-hover:text-primary transition-colors">schedule</span>
+                <span class="font-label text-sm font-bold text-on-surface">알림 타이밍</span>
+              </div>
+              <span id="acc-scheduler-chevron" class="material-symbols-outlined text-sm text-outline transition-transform rotate-180">expand_more</span>
+            </button>
+            <div id="acc-scheduler-body" class="mt-2 px-1 space-y-5">
+              <!-- 아침 브리핑 -->
+              <div>
+                <label class="block font-label text-xs font-bold text-on-surface-variant mb-3 uppercase tracking-widest">아침 브리핑 시각 (KST)</label>
+                <div class="flex items-center bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/20 mb-3">
+                  <div class="flex-1">
+                    <div class="flex items-baseline gap-1">
+                      <span id="briefing-hour-display" class="font-headline text-4xl font-bold text-primary">08</span>
+                      <span class="font-headline text-2xl font-bold text-on-surface-variant">:00</span>
+                    </div>
+                    <p class="font-label text-xs text-outline mt-1">매일 이 시각에 일정·날씨·메모 브리핑 전송</p>
+                  </div>
+                  <div class="flex flex-col gap-2">
+                    <button id="hour-up" type="button" class="w-10 h-10 flex items-center justify-center bg-surface-container-highest rounded-xl hover:bg-primary-container hover:text-primary transition-all">
+                      <span class="material-symbols-outlined text-lg">add</span>
+                    </button>
+                    <button id="hour-down" type="button" class="w-10 h-10 flex items-center justify-center bg-surface-container-highest rounded-xl hover:bg-primary-container hover:text-primary transition-all">
+                      <span class="material-symbols-outlined text-lg">remove</span>
+                    </button>
+                  </div>
+                </div>
+                <input id="briefing-hour" type="hidden" value="8"/>
+                <div class="grid grid-cols-8 gap-2" id="hour-grid"></div>
+              </div>
+              <!-- 리마인더 -->
+              <div>
+                <label class="block font-label text-xs font-bold text-on-surface-variant mb-3 uppercase tracking-widest">일정 리마인더</label>
+                <div class="grid grid-cols-5 gap-2" id="reminder-choices">
+                  <div class="choice-btn border border-outline-variant/30 rounded-xl px-3 py-2.5 text-center" data-value="5"><p class="font-label text-xs font-semibold">5분 전</p><span class="material-symbols-outlined choice-check text-sm">check_circle</span></div>
+                  <div class="choice-btn border border-outline-variant/30 rounded-xl px-3 py-2.5 text-center" data-value="10"><p class="font-label text-xs font-semibold">10분 전</p><span class="material-symbols-outlined choice-check text-sm">check_circle</span></div>
+                  <div class="choice-btn selected border border-outline-variant/30 rounded-xl px-3 py-2.5 text-center" data-value="15"><p class="font-label text-xs font-semibold">15분 전 <span class="text-primary text-[9px]">기본</span></p><span class="material-symbols-outlined choice-check text-sm">check_circle</span></div>
+                  <div class="choice-btn border border-outline-variant/30 rounded-xl px-3 py-2.5 text-center" data-value="30"><p class="font-label text-xs font-semibold">30분 전</p><span class="material-symbols-outlined choice-check text-sm">check_circle</span></div>
+                  <div class="choice-btn border border-outline-variant/30 rounded-xl px-3 py-2.5 text-center" data-value="60"><p class="font-label text-xs font-semibold">60분 전</p><span class="material-symbols-outlined choice-check text-sm">check_circle</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── 섹션 C: 스킬 ── -->
+          <div class="mt-3">
+            <button id="acc-skills-toggle" type="button"
+              class="w-full flex items-center justify-between px-4 py-3 bg-surface-container rounded-xl border border-outline-variant/20 text-left group hover:border-primary/30 transition-colors">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg text-on-surface-variant group-hover:text-primary transition-colors">extension</span>
+                <span class="font-label text-sm font-bold text-on-surface">활성화할 기능 (스킬)</span>
+              </div>
+              <span id="acc-skills-chevron" class="material-symbols-outlined text-sm text-outline transition-transform rotate-180">expand_more</span>
+            </button>
+            <div id="acc-skills-body" class="mt-2 px-1">
+              <label class="flex items-center gap-3 mb-4 cursor-pointer group">
+                <input type="checkbox" id="skills-use-all" checked
+                  class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary bg-surface-container-lowest"/>
+                <div>
+                  <span class="font-label text-sm font-bold text-on-surface group-hover:text-primary transition-colors">모든 스킬 활성화 (권장)</span>
+                  <p class="font-label text-[11px] text-outline mt-0.5">끄면 아래에서 필요한 스킬만 선택합니다.</p>
+                </div>
+              </label>
+              <div id="skill-chips-wrap" class="hidden">
+                <div class="grid grid-cols-2 gap-2" id="skill-chips">
+                  <div class="channel-chip border border-outline-variant/30 rounded-xl p-3 text-left" data-value="gmail"><span class="font-label text-sm font-semibold">📧 gmail</span><p class="font-body text-[11px] text-outline mt-0.5">Gmail 검색 · 읽기 · 전송</p></div>
+                  <div class="channel-chip border border-outline-variant/30 rounded-xl p-3 text-left" data-value="calendar"><span class="font-label text-sm font-semibold">📅 calendar</span><p class="font-body text-[11px] text-outline mt-0.5">Google Calendar</p></div>
+                  <div class="channel-chip border border-outline-variant/30 rounded-xl p-3 text-left" data-value="drive"><span class="font-label text-sm font-semibold">📁 drive</span><p class="font-body text-[11px] text-outline mt-0.5">파일 조회 · 업로드 · 폴더</p></div>
+                  <div class="channel-chip border border-outline-variant/30 rounded-xl p-3 text-left" data-value="sheets"><span class="font-label text-sm font-semibold">📊 sheets</span><p class="font-body text-[11px] text-outline mt-0.5">스프레드시트 읽기 · 쓰기</p></div>
+                  <div class="channel-chip border border-outline-variant/30 rounded-xl p-3 text-left" data-value="docs"><span class="font-label text-sm font-semibold">📄 docs</span><p class="font-body text-[11px] text-outline mt-0.5">Google Docs 읽기 · 생성</p></div>
+                  <div class="channel-chip border border-outline-variant/30 rounded-xl p-3 text-left" data-value="workflow"><span class="font-label text-sm font-semibold">⚙️ workflow</span><p class="font-body text-[11px] text-outline mt-0.5">스탠드업 · 주간요약 · 미팅준비</p></div>
+                  <div class="channel-chip border border-outline-variant/30 rounded-xl p-3 text-left" data-value="weather"><span class="font-label text-sm font-semibold">🌤 weather</span><p class="font-body text-[11px] text-outline mt-0.5">날씨 · 예보</p></div>
+                  <div class="channel-chip border border-outline-variant/30 rounded-xl p-3 text-left" data-value="web_search"><span class="font-label text-sm font-semibold">🔍 web_search</span><p class="font-body text-[11px] text-outline mt-0.5">웹 검색</p></div>
+                  <div class="channel-chip border border-outline-variant/30 rounded-xl p-3 text-left" data-value="memo"><span class="font-label text-sm font-semibold">📝 memo</span><p class="font-body text-[11px] text-outline mt-0.5">메모 저장</p></div>
+                  <div class="channel-chip border border-outline-variant/30 rounded-xl p-3 text-left" data-value="task"><span class="font-label text-sm font-semibold">📋 task</span><p class="font-body text-[11px] text-outline mt-0.5">작업 큐 추적</p></div>
+                  <div class="channel-chip border border-outline-variant/30 rounded-xl p-3 text-left" data-value="finance"><span class="font-label text-sm font-semibold">💹 finance</span><p class="font-body text-[11px] text-outline mt-0.5">시세 · 분석</p></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── 설정 요약 (마지막 단계) ── -->
+          <div class="mt-6 bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/20">
+            <div class="flex items-center gap-2 mb-4">
+              <span class="material-symbols-outlined text-secondary text-lg">summarize</span>
+              <p class="font-label text-sm font-bold">설정 요약</p>
+            </div>
+            <div id="summary-table" class="space-y-0"></div>
+          </div>
+        </div>
+
+        <!-- ─────────────── 완료 화면 ─────────────── -->
+        <div id="step-done" class="step-panel p-8 text-center">
+          <div class="mb-6">
+            <div class="w-20 h-20 rounded-full bg-primary-container flex items-center justify-center mx-auto mb-6 shadow-lg shadow-primary/20">
+              <span class="material-symbols-outlined text-primary text-4xl">check</span>
+            </div>
+            <h2 class="font-headline text-3xl font-bold mb-3">
+              <span class="text-gradient">설정 완료!</span>
+            </h2>
+            <p class="font-body text-on-surface-variant">OpenChiken AI 비서 설정이 완료되었습니다.<br/>아래 명령으로 시작하세요.</p>
+          </div>
+
+          <div class="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/20 mb-6 text-left">
+            <p class="font-label text-xs text-outline mb-2 uppercase tracking-widest">실행 명령</p>
+            <code class="font-mono text-sm text-primary">uv run python main.py</code>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            <a href="dashboard.html"
+              class="btn-primary px-8 py-3 rounded-xl font-label font-bold text-xs uppercase tracking-widest text-center">
+              대시보드로 이동
+            </a>
+            <a href="settings.html"
+              class="px-8 py-3 rounded-xl bg-surface-container-highest font-label font-bold text-xs uppercase tracking-widest text-on-surface hover:bg-surface-variant transition-all text-center">
+              설정 페이지
+            </a>
+          </div>
+        </div>
+
+        <!-- ── 하단 버튼 영역 ── -->
+        <div id="nav-buttons" class="px-8 pb-8 flex items-center justify-between gap-4">
+          <button id="btn-back" type="button" disabled
+            class="flex items-center gap-2 px-5 py-3 rounded-xl bg-surface-container-highest font-label font-bold text-xs uppercase tracking-widest text-on-surface hover:bg-surface-variant transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+            <span class="material-symbols-outlined text-base">arrow_back</span>
+            이전
+          </button>
+          <div class="flex-1 text-center">
+            <p id="step-hint" class="font-label text-[11px] text-outline"></p>
+          </div>
+          <button id="btn-next" type="button"
+            class="btn-primary flex items-center gap-2 px-6 py-3 rounded-xl font-label font-bold text-xs uppercase tracking-widest">
+            다음
+            <span class="material-symbols-outlined text-base">arrow_forward</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+// ── 상태 ─────────────────────────────────────────────────
+const TOTAL = 5;
+let currentStep = 1;
+let goingBack = false;
+let skipGoogle = false;
+let pendingCredentialsFile = null;
+
+const cfg = {
+  ASSISTANT_NAME: '치킨',
+  ASSISTANT_TONE: "캐주얼하고 친근한 존댓말로 대화합니다. '~요', '~해요' 형태로 답변하세요.",
+  ASSISTANT_PERSONA: "친근하고 유머러스한 성격입니다. 가끔 가벼운 농담을 섞고 사용자와 편하게 대화합니다.",
+  ASSISTANT_EXTRA: '',
+  LLM_PROVIDER: 'openai',
+  OPENAI_API_KEY: '',
+  OPENAI_MODEL: 'gpt-4o',
+  ANTHROPIC_API_KEY: '',
+  ANTHROPIC_MODEL: 'claude-3-5-sonnet-latest',
+  GEMINI_API_KEY: '',
+  GEMINI_MODEL: 'gemini-2.0-flash',
+  TELEGRAM_BOT_TOKEN: '',
+  ALLOWED_USER_IDS: '',
+  DATABASE_URL: 'sqlite:///openchiken.db',
+  MORNING_BRIEFING_HOUR: '8',
+  REMINDER_MINUTES_BEFORE: '15',
+  ENABLED_SKILLS: 'all',
+  SLACK_BOT_TOKEN: '',
+  SLACK_APP_TOKEN: '',
+  DISCORD_BOT_TOKEN: '',
+  IMESSAGE_ALLOWED_HANDLES: '',
+  IMESSAGE_POLL_INTERVAL: '3',
+  ENABLED_CHANNELS: 'telegram',
+};
+
+// macOS 감지: user-agent 기반 (서버 환경에선 항상 로컬이므로 충분함)
+const isMacOS = /Mac/.test(navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent);
+if (isMacOS) {
+  document.getElementById('chip-imessage').classList.remove('hidden');
+}
+
+// ── 진행 표시기 초기화 ──────────────────────────────────
+function initDots() {
+  const container = document.getElementById('dots-container');
+  const stepTitles = ['페르소나','LLM','채널','메모리','앱 설정'];
+  container.innerHTML = '';
+  for (let i = 1; i <= TOTAL; i++) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'flex-1 flex flex-col items-center gap-1';
+    wrapper.id = `dot-step-${i}`;
+
+    const line = i < TOTAL ? `<div class="absolute top-2.5 left-1/2 w-full h-px ${i < currentStep ? 'bg-primary' : 'bg-outline-variant/30'}" style="z-index:0"></div>` : '';
+    wrapper.innerHTML = `
+      <div class="relative w-full flex justify-center">
+        ${line}
+        <div class="step-dot relative z-10 w-5 h-5 rounded-full border-2 ${i < currentStep ? 'border-primary bg-primary' : i === currentStep ? 'border-primary bg-transparent' : 'border-outline-variant/40 bg-transparent'} flex items-center justify-center transition-all duration-300">
+          <div class="step-dot-inner w-2 h-2 rounded-full ${i <= currentStep ? 'bg-on-primary' : 'bg-transparent'}"></div>
+        </div>
+      </div>
+      <span class="font-label text-[9px] ${i === currentStep ? 'text-primary' : 'text-outline'} text-center leading-tight hidden sm:block">${stepTitles[i-1]}</span>
+    `;
+    container.appendChild(wrapper);
+  }
+}
+
+// ── 스텝 이동 ───────────────────────────────────────────
+const stepTitlesMap = {
+  1: 'AI 비서 페르소나 설정',
+  2: 'LLM 설정',
+  3: '채널 설정',
+  4: '메모리 설정',
+  5: '앱 설정',
+};
+
+function goToStep(n, backward = false) {
+  const prevPanel = document.getElementById(`step-${currentStep}`);
+  const nextPanel = document.getElementById(`step-${n}`);
+  if (!nextPanel) return;
+
+  prevPanel.classList.remove('active', 'going-back');
+  prevPanel.classList.add('hidden-panel');
+  nextPanel.classList.remove('hidden-panel', 'going-back');
+  if (backward) nextPanel.classList.add('going-back');
+  nextPanel.classList.add('active');
+
+  currentStep = n;
+  updateUI();
+}
+
+function updateUI() {
+  const progress = (currentStep / TOTAL) * 100;
+  document.getElementById('progress-bar').style.width = `${progress}%`;
+  document.getElementById('step-label').textContent = `STEP ${currentStep} / ${TOTAL}`;
+  document.getElementById('step-title-top').textContent = stepTitlesMap[currentStep] || '';
+
+  document.getElementById('btn-back').disabled = currentStep <= 1;
+  const nextBtn = document.getElementById('btn-next');
+  if (currentStep === TOTAL) {
+    nextBtn.innerHTML = `완료 <span class="material-symbols-outlined text-base">check</span>`;
+  } else {
+    nextBtn.innerHTML = `다음 <span class="material-symbols-outlined text-base">arrow_forward</span>`;
+  }
+
+  // 힌트
+  const hints = {
+    1: '페르소나는 나중에 settings.html에서 변경 가능합니다.',
+    2: 'API 키는 .env 파일에 저장됩니다.',
+    3: '채널은 나중에 추가하거나 변경할 수 있습니다.',
+    4: '로컬 파일 선택 시 별도 설치 없이 바로 사용됩니다.',
+    5: 'Google·스케줄러·스킬은 모두 선택 사항입니다.',
+  };
+  document.getElementById('step-hint').textContent = hints[currentStep] || '';
+
+  initDots();
+
+  if (currentStep === TOTAL) buildSummary();
+}
+
+// ── 선택 버튼 (단일 선택) ──────────────────────────────
+function initChoiceGroup(containerId, onSelect) {
+  const container = document.getElementById(containerId);
+  container.querySelectorAll('.choice-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      container.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      onSelect(btn.dataset.value);
+    });
+  });
+}
+
+// ── 토글 visibility (공용) ────────────────────────────
+function bindToggleVis(btnId, inputId) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const inp = document.getElementById(inputId);
+    const icon = btn.querySelector('.material-symbols-outlined');
+    if (inp.type === 'password') { inp.type = 'text'; icon.textContent = 'visibility'; }
+    else { inp.type = 'password'; icon.textContent = 'visibility_off'; }
+  });
+}
+bindToggleVis('toggle-key-vis-openai', 'openai-key');
+bindToggleVis('toggle-key-vis-anthropic', 'anthropic-key');
+bindToggleVis('toggle-key-vis-gemini', 'gemini-key');
+
+// ── Step 1: 페르소나 ──────────────────────────────────
+initChoiceGroup('tone-choices', val => {
+  if (val === '__custom__') {
+    document.getElementById('tone-custom-wrap').classList.remove('hidden');
+    cfg.ASSISTANT_TONE = '';
+  } else {
+    document.getElementById('tone-custom-wrap').classList.add('hidden');
+    cfg.ASSISTANT_TONE = val;
+  }
+});
+initChoiceGroup('persona-choices', val => {
+  if (val === '__custom__') {
+    document.getElementById('persona-custom-wrap').classList.remove('hidden');
+    cfg.ASSISTANT_PERSONA = '';
+  } else {
+    document.getElementById('persona-custom-wrap').classList.add('hidden');
+    cfg.ASSISTANT_PERSONA = val;
+  }
+});
+document.getElementById('assistant-name').addEventListener('input', e => cfg.ASSISTANT_NAME = e.target.value);
+document.getElementById('assistant-extra').addEventListener('input', e => cfg.ASSISTANT_EXTRA = e.target.value);
+document.getElementById('tone-custom').addEventListener('input', e => cfg.ASSISTANT_TONE = e.target.value);
+document.getElementById('persona-custom').addEventListener('input', e => cfg.ASSISTANT_PERSONA = e.target.value);
+
+// ── Step 2: LLM ───────────────────────────────────────
+function showLLMSection(provider) {
+  ['openai', 'anthropic', 'gemini'].forEach(p => {
+    document.getElementById(`llm-section-${p}`).classList.toggle('hidden', p !== provider);
+  });
+}
+
+initChoiceGroup('provider-choices', val => {
+  cfg.LLM_PROVIDER = val;
+  showLLMSection(val);
+});
+
+// OpenAI 모델
+initChoiceGroup('model-choices-openai', val => {
+  if (val === '__custom__') {
+    document.getElementById('model-custom-wrap-openai').classList.remove('hidden');
+    cfg.OPENAI_MODEL = '';
+  } else {
+    document.getElementById('model-custom-wrap-openai').classList.add('hidden');
+    cfg.OPENAI_MODEL = val;
+  }
+});
+document.getElementById('openai-key').addEventListener('input', e => cfg.OPENAI_API_KEY = e.target.value);
+document.getElementById('model-custom-openai').addEventListener('input', e => cfg.OPENAI_MODEL = e.target.value);
+
+// Anthropic 모델
+initChoiceGroup('model-choices-anthropic', val => {
+  if (val === '__custom__') {
+    document.getElementById('model-custom-wrap-anthropic').classList.remove('hidden');
+    cfg.ANTHROPIC_MODEL = '';
+  } else {
+    document.getElementById('model-custom-wrap-anthropic').classList.add('hidden');
+    cfg.ANTHROPIC_MODEL = val;
+  }
+});
+document.getElementById('anthropic-key').addEventListener('input', e => cfg.ANTHROPIC_API_KEY = e.target.value);
+document.getElementById('model-custom-anthropic').addEventListener('input', e => cfg.ANTHROPIC_MODEL = e.target.value);
+
+// Gemini 모델
+initChoiceGroup('model-choices-gemini', val => {
+  if (val === '__custom__') {
+    document.getElementById('model-custom-wrap-gemini').classList.remove('hidden');
+    cfg.GEMINI_MODEL = '';
+  } else {
+    document.getElementById('model-custom-wrap-gemini').classList.add('hidden');
+    cfg.GEMINI_MODEL = val;
+  }
+});
+document.getElementById('gemini-key').addEventListener('input', e => cfg.GEMINI_API_KEY = e.target.value);
+document.getElementById('model-custom-gemini').addEventListener('input', e => cfg.GEMINI_MODEL = e.target.value);
+
+// ── Step 3: 채널 ──────────────────────────────────────
+function toggleChannelChip(chip) {
+  const channel = chip.dataset.channel;
+  const isSelected = chip.classList.contains('selected');
+  chip.classList.toggle('selected', !isSelected);
+  chip.querySelector('.chip-check').style.opacity = isSelected ? '0' : '1';
+  const wrapMap = {
+    telegram: 'telegram-token-wrap',
+    slack: 'slack-token-wrap',
+    discord: 'discord-token-wrap',
+    imessage: 'imessage-token-wrap',
+  };
+  if (wrapMap[channel]) document.getElementById(wrapMap[channel]).classList.toggle('hidden', isSelected);
+  if (isSelected) {
+    if (channel === 'slack') { cfg.SLACK_BOT_TOKEN = ''; cfg.SLACK_APP_TOKEN = ''; }
+    else if (channel === 'discord') cfg.DISCORD_BOT_TOKEN = '';
+    else if (channel === 'telegram') cfg.TELEGRAM_BOT_TOKEN = '';
+    else if (channel === 'imessage') { cfg.IMESSAGE_ALLOWED_HANDLES = ''; }
+  }
+  syncEnabledChannels();
+}
+
+function syncEnabledChannels() {
+  const channels = [];
+  ['telegram', 'slack', 'discord', 'imessage'].forEach(ch => {
+    const el = document.getElementById(`chip-${ch}`);
+    if (el && el.classList.contains('selected')) channels.push(ch);
+  });
+  cfg.ENABLED_CHANNELS = channels.length ? channels.join(',') : 'telegram';
+}
+
+['chip-telegram', 'chip-slack', 'chip-discord', 'chip-imessage'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', function() { toggleChannelChip(this); });
+});
+
+document.getElementById('telegram-token').addEventListener('input', e => cfg.TELEGRAM_BOT_TOKEN = e.target.value);
+document.getElementById('slack-bot-token').addEventListener('input', e => cfg.SLACK_BOT_TOKEN = e.target.value.trim());
+document.getElementById('slack-app-token').addEventListener('input', e => cfg.SLACK_APP_TOKEN = e.target.value.trim());
+document.getElementById('discord-bot-token').addEventListener('input', e => cfg.DISCORD_BOT_TOKEN = e.target.value.trim());
+document.getElementById('imessage-allowed-handles').addEventListener('input', e => cfg.IMESSAGE_ALLOWED_HANDLES = e.target.value.trim());
+
+initChoiceGroup('imessage-poll-choices', val => { cfg.IMESSAGE_POLL_INTERVAL = val; });
+
+// 시스템 설정 열기 버튼 (서버 API 호출)
+document.getElementById('btn-open-privacy').addEventListener('click', async () => {
+  try {
+    await fetch('/api/system/open-privacy-prefs', { method: 'POST' });
+    document.getElementById('prefs-open-status').classList.remove('hidden');
+  } catch (_) {
+    // 서버 없으면 직접 안내
+    showToast('서버가 실행 중이 아닙니다. 시스템 설정을 직접 여세요.', 'error');
+  }
+});
+
+// 채널별 허용 ID 입력을 하나의 ALLOWED_USER_IDS 로 병합
+function syncAllowedIds() {
+  const telegramIds = (document.getElementById('allowed-ids').value || '').split(',').map(s => s.trim()).filter(Boolean);
+  const discordIds = (document.getElementById('discord-allowed-ids').value || '').split(',').map(s => s.trim()).filter(Boolean);
+  const merged = [...new Set([...telegramIds, ...discordIds])];
+  cfg.ALLOWED_USER_IDS = merged.join(',');
+}
+document.getElementById('allowed-ids').addEventListener('input', syncAllowedIds);
+document.getElementById('discord-allowed-ids').addEventListener('input', syncAllowedIds);
+
+// ── Step 4: 메모리 ─────────────────────────────────────
+initChoiceGroup('memory-choices', val => {
+  cfg.DATABASE_URL = val === 'local' ? 'sqlite:///openchiken.db' : '';
+  document.getElementById('memory-custom-wrap').classList.toggle('hidden', val !== 'custom');
+});
+document.getElementById('db-url').addEventListener('input', e => cfg.DATABASE_URL = e.target.value);
+
+// ── Step 5: 앱 설정 ────────────────────────────────────
+function bindAccordion(toggleId, bodyId, chevronId, startOpen) {
+  const body = document.getElementById(bodyId);
+  const chevron = document.getElementById(chevronId);
+  if (!startOpen) { body.classList.add('hidden'); chevron.classList.remove('rotate-180'); }
+  document.getElementById(toggleId).addEventListener('click', () => {
+    body.classList.toggle('hidden');
+    chevron.classList.toggle('rotate-180', !body.classList.contains('hidden'));
+  });
+}
+bindAccordion('acc-google-toggle', 'acc-google-body', 'acc-google-chevron', false);
+bindAccordion('acc-scheduler-toggle', 'acc-scheduler-body', 'acc-scheduler-chevron', true);
+bindAccordion('acc-skills-toggle', 'acc-skills-body', 'acc-skills-chevron', true);
+
+// Google 가이드
+const guideToggle = document.getElementById('guide-toggle');
+const googleGuide = document.getElementById('google-guide');
+const guideChevron = document.getElementById('guide-chevron');
+guideToggle.addEventListener('click', () => {
+  googleGuide.classList.toggle('hidden');
+  guideChevron.style.transform = googleGuide.classList.contains('hidden') ? '' : 'rotate(180deg)';
+});
+document.getElementById('skip-google').addEventListener('click', () => {
+  skipGoogle = true;
+  document.getElementById('acc-google-body').classList.add('hidden');
+  document.getElementById('acc-google-chevron').classList.remove('rotate-180');
+});
+
+// Drag & Drop
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('creds-file-input');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) handleCredentialsFile(file);
+});
+fileInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (file) handleCredentialsFile(file);
+});
+
+function handleCredentialsFile(file) {
+  pendingCredentialsFile = file;
+  const nameEl = document.getElementById('creds-filename');
+  nameEl.textContent = `✓ ${file.name} 선택됨`;
+  nameEl.classList.remove('hidden');
+  dropZone.classList.add('border-primary/50');
+}
+
+async function checkCredentials() {
+  try {
+    const res = await fetch('/api/setup/credentials/status');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.exists) {
+        document.getElementById('creds-status-ok').classList.remove('hidden');
+        document.getElementById('creds-path').textContent = data.path || '';
+      }
+    }
+  } catch (_) { /* 서버 없을 때 무시 */ }
+}
+checkCredentials();
+
+// 스케줄러
+let briefingHour = 8;
+const MIN_HOUR = 5, MAX_HOUR = 12;
+
+function buildHourGrid() {
+  const grid = document.getElementById('hour-grid');
+  grid.innerHTML = '';
+  for (let h = MIN_HOUR; h <= MAX_HOUR; h++) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = `${h < 10 ? '0' : ''}${h}`;
+    btn.className = `py-2 rounded-xl text-xs font-label font-bold transition-all ${h === briefingHour ? 'bg-primary text-on-primary' : 'bg-surface-container-highest text-on-surface hover:bg-primary-container hover:text-primary'}`;
+    btn.addEventListener('click', () => { briefingHour = h; updateBriefingHour(); });
+    grid.appendChild(btn);
+  }
+}
+function updateBriefingHour() {
+  const clamped = Math.min(MAX_HOUR, Math.max(MIN_HOUR, briefingHour));
+  briefingHour = clamped;
+  document.getElementById('briefing-hour-display').textContent = `${clamped < 10 ? '0' : ''}${clamped}`;
+  document.getElementById('briefing-hour').value = String(clamped);
+  cfg.MORNING_BRIEFING_HOUR = String(clamped);
+  buildHourGrid();
+}
+document.getElementById('hour-up').addEventListener('click', () => { briefingHour++; updateBriefingHour(); });
+document.getElementById('hour-down').addEventListener('click', () => { briefingHour--; updateBriefingHour(); });
+buildHourGrid();
+initChoiceGroup('reminder-choices', val => { cfg.REMINDER_MINUTES_BEFORE = val; });
+
+// 스킬
+let skillsUseAll = true;
+const selectedSkills = new Set();
+
+function syncSkillsCfg() {
+  const allCb = document.getElementById('skills-use-all');
+  skillsUseAll = allCb.checked;
+  document.getElementById('skill-chips-wrap').classList.toggle('hidden', skillsUseAll);
+  cfg.ENABLED_SKILLS = skillsUseAll || selectedSkills.size === 0 ? 'all' : [...selectedSkills].join(',');
+}
+document.getElementById('skills-use-all').addEventListener('change', () => {
+  if (document.getElementById('skills-use-all').checked) {
+    selectedSkills.clear();
+    document.querySelectorAll('#skill-chips .channel-chip').forEach(c => c.classList.remove('selected'));
+  }
+  syncSkillsCfg();
+});
+document.querySelectorAll('#skill-chips .channel-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const val = chip.dataset.value;
+    if (selectedSkills.has(val)) { selectedSkills.delete(val); chip.classList.remove('selected'); }
+    else { selectedSkills.add(val); chip.classList.add('selected'); }
+    syncSkillsCfg();
+  });
+});
+syncSkillsCfg();
+
+// ── 요약 테이블 ───────────────────────────────────────
+function buildSummary() {
+  syncSkillsCfg();
+  const activeApiKey = cfg.LLM_PROVIDER === 'openai' ? cfg.OPENAI_API_KEY
+    : cfg.LLM_PROVIDER === 'anthropic' ? cfg.ANTHROPIC_API_KEY : cfg.GEMINI_API_KEY;
+  const activeModel = cfg.LLM_PROVIDER === 'openai' ? cfg.OPENAI_MODEL
+    : cfg.LLM_PROVIDER === 'anthropic' ? cfg.ANTHROPIC_MODEL : cfg.GEMINI_MODEL;
+  const rows = [
+    ['비서 이름', cfg.ASSISTANT_NAME],
+    ['말투', cfg.ASSISTANT_TONE.length > 35 ? cfg.ASSISTANT_TONE.slice(0, 35) + '…' : cfg.ASSISTANT_TONE],
+    ['AI 공급자', cfg.LLM_PROVIDER],
+    ['모델', activeModel],
+    ['API Key', activeApiKey ? '●●●●●●' + activeApiKey.slice(-4) : '(미입력)'],
+    ['활성 채널', cfg.ENABLED_CHANNELS],
+    ['Telegram 토큰', cfg.TELEGRAM_BOT_TOKEN ? '●●●●…' + cfg.TELEGRAM_BOT_TOKEN.slice(-6) : '(미입력)'],
+    ['허용 User ID', cfg.ALLOWED_USER_IDS || '(전체 허용)'],
+    ...(cfg.SLACK_BOT_TOKEN ? [['Slack 토큰', '●●●●…' + cfg.SLACK_BOT_TOKEN.slice(-4)]] : []),
+    ...(cfg.DISCORD_BOT_TOKEN ? [['Discord 토큰', '●●●●…' + cfg.DISCORD_BOT_TOKEN.slice(-4)]] : []),
+    ...(cfg.ENABLED_CHANNELS.includes('imessage') ? [['iMessage 핸들', cfg.IMESSAGE_ALLOWED_HANDLES || '(전체 허용)']] : []),
+    ['메모리', cfg.DATABASE_URL === 'sqlite:///openchiken.db' ? '로컬 파일' : cfg.DATABASE_URL],
+    ['브리핑 시각', `${cfg.MORNING_BRIEFING_HOUR.padStart(2,'0')}:00`],
+    ['리마인더', `${cfg.REMINDER_MINUTES_BEFORE}분 전`],
+    ['활성 스킬', cfg.ENABLED_SKILLS === 'all' ? '전체 (all)' : cfg.ENABLED_SKILLS],
+    ['Google 연동', pendingCredentialsFile ? pendingCredentialsFile.name : skipGoogle ? '건너뜀' : '미설정'],
+  ];
+
+  const table = document.getElementById('summary-table');
+  table.innerHTML = rows.map(([k, v]) => `
+    <div class="summary-row flex items-center justify-between py-2.5 gap-4">
+      <span class="font-label text-xs text-on-surface-variant whitespace-nowrap">${k}</span>
+      <span class="font-mono text-xs text-on-surface text-right truncate max-w-[200px]">${v}</span>
+    </div>
+  `).join('');
+}
+
+// ── 유효성 검사 ───────────────────────────────────────
+function validateStep(step) {
+  if (step === 2) {
+    const keyMap = { openai: cfg.OPENAI_API_KEY, anthropic: cfg.ANTHROPIC_API_KEY, gemini: cfg.GEMINI_API_KEY };
+    const labelMap = { openai: 'OpenAI API Key', anthropic: 'Anthropic API Key', gemini: 'Google AI API Key' };
+    if (!keyMap[cfg.LLM_PROVIDER]) {
+      showToast(`${labelMap[cfg.LLM_PROVIDER]}를 입력해주세요.`, 'error');
+      return false;
+    }
+  }
+  if (step === 3) {
+    const telegramSelected = document.getElementById('chip-telegram').classList.contains('selected');
+    const slackSelected = document.getElementById('chip-slack').classList.contains('selected');
+    const discordSelected = document.getElementById('chip-discord').classList.contains('selected');
+    const imessageEl = document.getElementById('chip-imessage');
+    const imessageSelected = imessageEl && imessageEl.classList.contains('selected');
+    if (!telegramSelected && !slackSelected && !discordSelected && !imessageSelected) {
+      showToast('채널을 하나 이상 선택해주세요.', 'error');
+      return false;
+    }
+    if (telegramSelected && !cfg.TELEGRAM_BOT_TOKEN) {
+      showToast('Telegram Bot Token을 입력해주세요.', 'error');
+      return false;
+    }
+    if (slackSelected && (!cfg.SLACK_BOT_TOKEN || !cfg.SLACK_APP_TOKEN)) {
+      showToast('Slack Bot Token과 App-Level Token을 모두 입력해주세요.', 'error');
+      return false;
+    }
+    if (discordSelected && !cfg.DISCORD_BOT_TOKEN) {
+      showToast('Discord Bot Token을 입력해주세요.', 'error');
+      return false;
+    }
+  }
+  return true;
+}
+
+// ── 최종 제출 ─────────────────────────────────────────
+async function submitSetup() {
+  const btn = document.getElementById('btn-next');
+  btn.disabled = true;
+  btn.innerHTML = `<span class="material-symbols-outlined text-base animate-spin">progress_activity</span> 저장 중...`;
+
+  try {
+    // 1) credentials.json 업로드 (있으면)
+    if (pendingCredentialsFile) {
+      const fd = new FormData();
+      fd.append('file', pendingCredentialsFile);
+      const r = await fetch('/api/setup/credentials', { method: 'POST', body: fd });
+      if (!r.ok) throw new Error('credentials 업로드 실패');
+    }
+
+    // 2) .env 저장
+    const res = await fetch('/api/setup/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(cfg),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || '저장 실패');
+    }
+
+    // 완료 처리
+    localStorage.setItem('openchiken_setup_done', '1');
+    showDoneScreen();
+
+  } catch (e) {
+    showToast(`오류: ${e.message}`, 'error');
+    btn.disabled = false;
+    btn.innerHTML = `완료 <span class="material-symbols-outlined text-base">check</span>`;
+  }
+}
+
+function showDoneScreen() {
+  const panels = document.querySelectorAll('.step-panel');
+  panels.forEach(p => p.classList.remove('active'));
+  document.getElementById('nav-buttons').classList.add('hidden');
+  document.getElementById('step-done').classList.add('active');
+  document.getElementById('step-label').textContent = 'SETUP DONE';
+  document.getElementById('step-title-top').textContent = '';
+  document.getElementById('progress-bar').style.width = '100%';
+  showToast('설정이 완료되었습니다!', 'success');
+}
+
+// ── 네비게이션 버튼 ───────────────────────────────────
+document.getElementById('btn-next').addEventListener('click', async () => {
+  if (!validateStep(currentStep)) return;
+
+  if (currentStep === TOTAL) {
+    await submitSetup();
+  } else {
+    goToStep(currentStep + 1);
+  }
+});
+
+document.getElementById('btn-back').addEventListener('click', () => {
+  if (currentStep > 1) goToStep(currentStep - 1, true);
+});
+
+// ── Toast ─────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type}`;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => t.classList.add('show'));
+  });
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── 초기화 ────────────────────────────────────────────
+initDots();
+updateUI();
+
+// 서버에 이미 셋업된 경우 알림
+(async () => {
+  try {
+    const res = await fetch('/api/setup/status');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.completed) {
+        showToast('이미 설정이 완료되어 있습니다. 재구성 중입니다.', 'success');
+      }
+    }
+  } catch (_) { /* 서버 없으면 무시 */ }
+})();
+</script>
+</body>
+</html>

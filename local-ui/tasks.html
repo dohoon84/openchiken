@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html class="dark" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OpenChiken | Tasks</title>
+<link rel="icon" type="image/png" href="/static/assets/logo.png"/>
+<link href="/static/shared.css" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600&amp;family=Manrope:wght@400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+tailwind.config = {
+  darkMode: "class",
+  theme: { extend: {
+    colors: {
+      "surface-container-low":"#1c1b1b","on-surface-variant":"#c6c5d4","surface-container-lowest":"#0e0e0e",
+      "secondary":"#bbc3ff","on-primary-container":"#00a7ba","surface-bright":"#393939","primary-fixed":"#9cf0ff",
+      "surface-container-highest":"#353534","on-secondary-container":"#b6beff","surface-dim":"#131313",
+      "on-primary":"#00363d","inverse-on-surface":"#313030","error":"#ffb4ab","on-surface":"#e5e2e1",
+      "outline-variant":"#454652","primary-fixed-dim":"#00daf3","surface-variant":"#353534",
+      "background":"#131313","on-background":"#e5e2e1","surface":"#131313","on-secondary":"#001c95",
+      "primary":"#00daf3","primary-container":"#00363d","on-error-container":"#ffdad6","outline":"#908f9d",
+      "surface-container-high":"#2a2a2a","secondary-container":"#0031e8","surface-tint":"#00daf3",
+      "surface-container":"#201f1f","tertiary":"#49d7f4","error-container":"#93000a"
+    },
+    fontFamily: { "headline":["Space Grotesk"],"body":["Inter"],"label":["Manrope"] },
+    borderRadius: {"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},
+  }}
+}
+</script>
+</head>
+<body class="bg-background text-on-surface font-body">
+<main>
+<header class="mb-8">
+<h1 class="text-3xl font-headline font-bold tracking-tight text-on-surface">Tasks</h1>
+<p class="text-on-surface-variant font-body mt-1 text-sm">태스크 생성, 진행 상태 관리 및 결과를 확인합니다.</p>
+</header>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- Left: Task List -->
+<div class="lg:col-span-4 space-y-6">
+<div class="flex items-center justify-between mb-2">
+<h2 class="text-sm font-label font-bold uppercase tracking-widest text-on-surface-variant">Active</h2>
+<span id="tasks-active-badge" class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">0</span>
+</div>
+<div id="tasks-active-list" class="space-y-3">
+<div class="skeleton-block"></div>
+<div class="skeleton-block"></div>
+</div>
+<div class="pt-6">
+<h2 class="text-sm font-label font-bold uppercase tracking-widest text-on-surface-variant mb-4">History</h2>
+<div id="tasks-history-list" class="space-y-2">
+<div class="skeleton-block h-12"></div>
+</div>
+</div>
+</div>
+
+<!-- Right: Detail & Create -->
+<div class="lg:col-span-8 space-y-6">
+<section id="task-detail" class="bg-surface-container-low rounded-xl overflow-hidden">
+<div class="p-6 border-b border-outline-variant/10">
+<span class="text-[10px] font-label font-bold text-on-surface-variant uppercase tracking-tighter">Task Detail</span>
+<p id="task-detail-empty" class="text-on-surface-variant mt-4 text-sm">왼쪽에서 태스크를 선택하세요.</p>
+<div id="task-detail-content" class="hidden mt-4">
+<h2 id="detail-title" class="text-2xl font-headline font-bold"></h2>
+<p id="detail-description" class="text-sm text-on-surface-variant mt-2"></p>
+<div class="flex gap-3 mt-4">
+<span id="detail-status-badge" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase"></span>
+<span id="detail-time" class="text-[10px] text-on-surface-variant font-label py-1"></span>
+</div>
+<div id="detail-result" class="mt-4 hidden">
+<p class="text-[10px] font-label font-bold text-on-surface-variant uppercase tracking-tighter mb-1">Result</p>
+<p id="detail-result-text" class="text-sm text-on-surface bg-surface-container-lowest p-4 rounded-lg font-mono"></p>
+</div>
+<div class="flex gap-3 mt-6">
+<button id="btn-complete" class="hidden px-4 py-2 bg-secondary/20 text-secondary rounded-lg text-xs font-label font-bold uppercase hover:bg-secondary/30 transition-colors">Complete</button>
+<button id="btn-fail" class="hidden px-4 py-2 bg-error/20 text-error rounded-lg text-xs font-label font-bold uppercase hover:bg-error/30 transition-colors">Fail</button>
+<button id="btn-run" class="hidden px-4 py-2 bg-primary/20 text-primary rounded-lg text-xs font-label font-bold uppercase hover:bg-primary/30 transition-colors">Run</button>
+<button id="btn-delete" class="hidden px-4 py-2 bg-surface-container-highest text-on-surface-variant rounded-lg text-xs font-label font-bold uppercase hover:bg-error/20 hover:text-error transition-colors">Delete</button>
+</div>
+</div>
+</div>
+</section>
+
+<div class="bg-surface-container-low rounded-xl p-6">
+<h3 class="text-sm font-label font-bold uppercase tracking-widest text-on-surface-variant mb-4">New Task</h3>
+<div class="space-y-3">
+<input id="new-task-title" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg py-3 px-4 text-on-surface placeholder:text-on-surface-variant/40 font-headline text-sm focus:ring-1 focus:ring-primary/50 transition-all" placeholder="태스크 제목..." type="text"/>
+<textarea id="new-task-desc" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg py-3 px-4 text-on-surface placeholder:text-on-surface-variant/40 font-body text-sm focus:ring-1 focus:ring-primary/50 transition-all resize-none" rows="2" placeholder="설명 (선택)..."></textarea>
+<button id="btn-create-task" class="primary-gradient text-on-primary font-label text-xs font-bold px-6 py-3 rounded-lg tracking-widest uppercase hover:scale-95 transition-transform duration-100">Create</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+
+<script src="/static/shared.js"></script>
+<script>
+(function() {
+  const $ = id => document.getElementById(id);
+  let allTasks = [];
+  let selectedId = null;
+  const STATUS_META = {
+    running:   { icon:'cycle',        color:'text-primary',   bg:'bg-primary/10 text-primary border border-primary/20' },
+    pending:   { icon:'schedule',     color:'text-on-surface-variant', bg:'bg-surface-container-highest text-on-surface-variant' },
+    completed: { icon:'check_circle', color:'text-secondary', bg:'bg-secondary/10 text-secondary' },
+    failed:    { icon:'error',        color:'text-error',     bg:'bg-error/10 text-error' },
+  };
+  function relativeTime(s) { if(!s) return ''; const m=Math.floor((Date.now()-new Date(s).getTime())/60000); if(m<1) return 'just now'; if(m<60) return m+'m ago'; const h=Math.floor(m/60); if(h<24) return h+'h ago'; return Math.floor(h/24)+'d ago'; }
+
+  async function loadTasks() {
+    try {
+      const res = await fetch('/api/tasks');
+      const data = await res.json();
+      allTasks = data.tasks||[];
+      renderSidebar(allTasks, data.counts||{});
+      if (selectedId) showDetail(selectedId);
+    } catch(e) { $('tasks-active-list').innerHTML='<p class="text-xs text-error py-4">로드 실패</p>'; }
+  }
+  function renderSidebar(tasks, counts) {
+    const active = tasks.filter(t=>t.status==='running'||t.status==='pending');
+    const history = tasks.filter(t=>t.status==='completed'||t.status==='failed');
+    $('tasks-active-badge').textContent = `${(counts.running||0)+(counts.pending||0)} ACTIVE`;
+    const aEl = $('tasks-active-list');
+    if(!active.length) { aEl.innerHTML='<div class="flex items-center gap-2 text-on-surface-variant/60 py-6 justify-center"><span class="material-symbols-outlined text-sm">task_alt</span><p class="text-xs font-label">진행 중인 태스크 없음</p></div>'; }
+    else { aEl.innerHTML = active.map(t => { const m=STATUS_META[t.status]||STATUS_META.pending; const sel=t.id===selectedId; return `<div class="bg-surface-container${sel?'-high':''} rounded-xl p-4 border-l-2 ${t.status==='running'?'border-primary':'border-outline-variant/30'} hover:bg-surface-container-high transition-colors cursor-pointer" data-task-id="${t.id}"><div class="flex justify-between items-start mb-1"><h3 class="font-headline font-semibold text-sm leading-tight">${t.title}</h3><span class="material-symbols-outlined ${m.color} text-sm">${m.icon}</span></div>${t.description?`<p class="text-xs text-on-surface-variant mb-2 line-clamp-2">${t.description}</p>`:''}<div class="flex justify-between items-center text-[10px] font-label font-medium text-on-surface-variant"><span class="${m.bg} px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">${t.status}</span><span>${relativeTime(t.updated_at)}</span></div></div>`; }).join(''); }
+    const hEl = $('tasks-history-list');
+    if(!history.length) { hEl.innerHTML='<p class="text-xs text-on-surface-variant/40 py-4">완료된 태스크 없음</p>'; }
+    else { hEl.innerHTML = history.map(t => { const m=STATUS_META[t.status]||STATUS_META.completed; return `<div class="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer" data-task-id="${t.id}"><span class="material-symbols-outlined ${m.color} text-sm" style="font-variation-settings:'FILL' 1;">${m.icon}</span><span class="text-sm font-body truncate">${t.title}</span><span class="ml-auto text-[10px] font-label text-on-surface-variant shrink-0">${relativeTime(t.updated_at)}</span></div>`; }).join(''); }
+    document.querySelectorAll('[data-task-id]').forEach(el => el.addEventListener('click',()=>showDetail(parseInt(el.dataset.taskId))));
+  }
+  function showDetail(taskId) {
+    selectedId=taskId; const task=allTasks.find(t=>t.id===taskId); if(!task) return;
+    $('task-detail-empty').classList.add('hidden'); $('task-detail-content').classList.remove('hidden');
+    $('detail-title').textContent=task.title; $('detail-description').textContent=task.description||'(설명 없음)';
+    const m=STATUS_META[task.status]||STATUS_META.pending; const b=$('detail-status-badge'); b.className=`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${m.bg}`; b.textContent=task.status;
+    $('detail-time').textContent=`Created: ${task.created_at?.slice(0,16)||''} | Updated: ${relativeTime(task.updated_at)}`;
+    if(task.result){$('detail-result').classList.remove('hidden');$('detail-result-text').textContent=task.result;}else{$('detail-result').classList.add('hidden');}
+    const canAct=task.status==='running'||task.status==='pending';
+    $('btn-complete').classList.toggle('hidden',!canAct); $('btn-fail').classList.toggle('hidden',!canAct);
+    $('btn-run').classList.toggle('hidden',task.status!=='pending'); $('btn-delete').classList.remove('hidden');
+    renderSidebar(allTasks,{});
+  }
+  async function apiAction(url,method='PATCH',body={}){ await fetch(url,{method,headers:{'Content-Type':'application/json'},body:method!=='DELETE'?JSON.stringify(body):undefined}); await loadTasks(); }
+  $('btn-complete').addEventListener('click',()=>{ if(selectedId){const r=prompt('완료 결과 (선택):')||''; apiAction(`/api/tasks/${selectedId}/complete`,'PATCH',{result:r});} });
+  $('btn-fail').addEventListener('click',()=>{ if(selectedId){const r=prompt('실패 사유 (선택):')||''; apiAction(`/api/tasks/${selectedId}/fail`,'PATCH',{result:r});} });
+  $('btn-run').addEventListener('click',()=>{ if(selectedId) apiAction(`/api/tasks/${selectedId}/running`); });
+  $('btn-delete').addEventListener('click',()=>{ if(selectedId&&confirm('삭제하시겠습니까?')){apiAction(`/api/tasks/${selectedId}`,'DELETE');selectedId=null;$('task-detail-empty').classList.remove('hidden');$('task-detail-content').classList.add('hidden');} });
+  $('btn-create-task').addEventListener('click',async()=>{ const t=$('new-task-title').value.trim(); if(!t) return; const d=$('new-task-desc').value.trim(); await fetch('/api/tasks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:t,description:d})}); $('new-task-title').value=''; $('new-task-desc').value=''; await loadTasks(); });
+  $('new-task-title').addEventListener('keydown',e=>{if(e.key==='Enter')$('btn-create-task').click();});
+  loadTasks();
+})();
+</script>
+</body></html>

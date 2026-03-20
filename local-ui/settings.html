@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html class="dark" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OpenChiken | Settings</title>
+<link rel="icon" type="image/png" href="/static/assets/logo.png"/>
+<link href="/static/shared.css" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600&amp;family=Manrope:wght@400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+tailwind.config = {
+  darkMode: "class",
+  theme: { extend: {
+    colors: {
+      "surface-container-low":"#1c1b1b","on-surface-variant":"#c6c5d4","surface-container-lowest":"#0e0e0e",
+      "secondary":"#bbc3ff","on-primary-container":"#00a7ba","surface-bright":"#393939","primary-fixed":"#9cf0ff",
+      "surface-container-highest":"#353534","on-secondary-container":"#b6beff","surface-dim":"#131313",
+      "on-primary":"#00363d","inverse-on-surface":"#313030","error":"#ffb4ab","on-surface":"#e5e2e1",
+      "outline-variant":"#454652","primary-fixed-dim":"#00daf3","surface-variant":"#353534",
+      "background":"#131313","on-background":"#e5e2e1","surface":"#131313","on-secondary":"#001c95",
+      "primary":"#00daf3","primary-container":"#00363d","on-error-container":"#ffdad6","outline":"#908f9d",
+      "surface-container-high":"#2a2a2a","secondary-container":"#0031e8","surface-tint":"#00daf3",
+      "surface-container":"#201f1f","tertiary":"#49d7f4","error-container":"#93000a"
+    },
+    fontFamily: { "headline":["Space Grotesk"],"body":["Inter"],"label":["Manrope"] },
+    borderRadius: {"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},
+  }}
+}
+</script>
+</head>
+<body class="bg-background text-on-surface font-body">
+<main>
+<header class="mb-8">
+<h1 class="text-3xl font-headline font-bold tracking-tight text-on-surface">Settings</h1>
+<p class="text-on-surface-variant font-body text-sm">~/.openchiken/.env 기반 설정을 관리합니다.</p>
+</header>
+
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+<!-- Left Column -->
+<section class="md:col-span-8 flex flex-col gap-6">
+<!-- Persona -->
+<div class="bg-surface-container-low rounded-xl p-6 flex flex-col gap-5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary">smart_toy</span>
+<h2 class="font-headline text-lg font-semibold">Persona</h2>
+</div>
+<div class="space-y-4">
+<div>
+<label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-tighter">이름</label>
+<input id="cfg-name" class="w-full bg-surface-container-lowest border-none rounded-lg px-4 py-3 text-on-surface font-body text-sm" type="text" placeholder="치킨"/>
+</div>
+<div>
+<label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-tighter">말투</label>
+<textarea id="cfg-tone" rows="2" class="w-full bg-surface-container-lowest border-none rounded-lg px-4 py-3 text-on-surface font-body text-sm resize-none" placeholder="말투 지침"></textarea>
+</div>
+<div>
+<label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-tighter">페르소나</label>
+<textarea id="cfg-persona" rows="2" class="w-full bg-surface-container-lowest border-none rounded-lg px-4 py-3 text-on-surface font-body text-sm resize-none" placeholder="성격 설명"></textarea>
+</div>
+</div>
+</div>
+
+<!-- LLM -->
+<div class="bg-surface-container-low rounded-xl p-6 flex flex-col gap-5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">psychology</span>
+<h2 class="font-headline text-lg font-semibold">LLM Provider</h2>
+</div>
+<div class="space-y-4">
+<div>
+<label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-tighter">Provider</label>
+<select id="cfg-provider" class="w-full bg-surface-container-lowest border-none rounded-lg px-4 py-3 text-on-surface font-body text-sm">
+<option value="openai">OpenAI</option>
+<option value="anthropic">Anthropic</option>
+<option value="gemini">Google Gemini</option>
+</select>
+</div>
+<div>
+<label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-tighter">Model</label>
+<input id="cfg-model" class="w-full bg-surface-container-lowest border-none rounded-lg px-4 py-3 text-on-surface font-mono text-sm" type="text" placeholder="gpt-4o"/>
+</div>
+</div>
+</div>
+
+<!-- API Keys -->
+<div class="bg-surface-container-low rounded-xl p-6 flex flex-col gap-5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">key</span>
+<h2 class="font-headline text-lg font-semibold">API Keys &amp; Tokens</h2>
+</div>
+<div class="space-y-6">
+
+<!-- LLM Keys subsection -->
+<div>
+<div class="flex items-center gap-1.5 pb-2 mb-3 border-b border-outline-variant/20">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">psychology</span>
+<span class="font-label text-[10px] text-on-surface-variant uppercase tracking-widest">LLM API Keys</span>
+</div>
+<div class="space-y-3">
+<div>
+<label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-tighter">OpenAI API Key</label>
+<input id="cfg-openai-key" class="w-full bg-surface-container-lowest border-none rounded-lg px-4 py-3 text-primary-fixed-dim font-mono text-sm" placeholder="sk-..." type="password"/>
+<p class="mt-1 font-label text-[11px] text-outline">새 키를 입력하지 않으면 기존 값이 유지됩니다.</p>
+</div>
+<div>
+<label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-tighter">Anthropic API Key</label>
+<input id="cfg-anthropic-key" class="w-full bg-surface-container-lowest border-none rounded-lg px-4 py-3 text-on-surface font-mono text-sm" placeholder="sk-ant-..." type="password"/>
+</div>
+<div>
+<label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-tighter">Gemini API Key</label>
+<input id="cfg-gemini-key" class="w-full bg-surface-container-lowest border-none rounded-lg px-4 py-3 text-on-surface font-mono text-sm" placeholder="AI..." type="password"/>
+</div>
+</div>
+</div>
+
+<!-- Telegram subsection -->
+<div>
+<div class="flex items-center gap-1.5 pb-2 mb-3 border-b border-outline-variant/20">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">send</span>
+<span class="font-label text-[10px] text-on-surface-variant uppercase tracking-widest">Telegram</span>
+</div>
+<div>
+<label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-tighter">Bot Token</label>
+<input id="cfg-telegram" class="w-full bg-surface-container-lowest border-none rounded-lg px-4 py-3 text-on-surface font-mono text-sm transition-shadow" type="password" placeholder="123456:ABC..."/>
+<p id="cfg-telegram-warn" class="hidden mt-1.5 font-label text-[11px] text-error flex items-center gap-1"><span class="material-symbols-outlined text-sm">warning</span> Telegram 활성화를 위해 Bot Token을 입력해주세요.</p>
+</div>
+</div>
+
+<!-- Slack subsection -->
+<div>
+<div class="flex items-center gap-1.5 pb-2 mb-3 border-b border-outline-variant/20">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">tag</span>
+<span class="font-label text-[10px] text-on-surface-variant uppercase tracking-widest">Slack</span>
+</div>
+<div class="space-y-3">
+<div>
+<label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-tighter">Bot Token</label>
+<input id="cfg-slack-bot" class="w-full bg-surface-container-lowest border-none rounded-lg px-4 py-3 text-on-surface font-mono text-sm transition-shadow" type="password" placeholder="xoxb-..."/>
+</div>
+<div>
+<label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-tighter">App Token</label>
+<input id="cfg-slack-app" class="w-full bg-surface-container-lowest border-none rounded-lg px-4 py-3 text-on-surface font-mono text-sm transition-shadow" type="password" placeholder="xapp-..."/>
+</div>
+<p id="cfg-slack-warn" class="hidden font-label text-[11px] text-error flex items-center gap-1"><span class="material-symbols-outlined text-sm">warning</span> Slack 활성화를 위해 Bot Token과 App Token을 입력해주세요.</p>
+</div>
+</div>
+
+<!-- Discord subsection -->
+<div>
+<div class="flex items-center gap-1.5 pb-2 mb-3 border-b border-outline-variant/20">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">sports_esports</span>
+<span class="font-label text-[10px] text-on-surface-variant uppercase tracking-widest">Discord</span>
+</div>
+<div>
+<label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-tighter">Bot Token</label>
+<input id="cfg-discord" class="w-full bg-surface-container-lowest border-none rounded-lg px-4 py-3 text-on-surface font-mono text-sm transition-shadow" type="password" placeholder="MTA..."/>
+<p id="cfg-discord-warn" class="hidden mt-1.5 font-label text-[11px] text-error flex items-center gap-1"><span class="material-symbols-outlined text-sm">warning</span> Discord 활성화를 위해 Bot Token을 입력해주세요.</p>
+</div>
+</div>
+
+<!-- 공통 subsection -->
+<div>
+<div class="flex items-center gap-1.5 pb-2 mb-3 border-b border-outline-variant/20">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">group</span>
+<span class="font-label text-[10px] text-on-surface-variant uppercase tracking-widest">공통</span>
+</div>
+<div>
+<label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-tighter">허용 사용자 ID</label>
+<input id="cfg-allowed-ids" class="w-full bg-surface-container-lowest border-none rounded-lg px-4 py-3 text-on-surface font-mono text-sm" type="text" placeholder="콤마 구분"/>
+<p class="mt-1 font-label text-[11px] text-outline">Telegram · Discord · Slack 모든 채널 공통.</p>
+</div>
+</div>
+
+</div>
+</div>
+
+<!-- DB & Channels -->
+<div class="bg-surface-container-low rounded-xl p-6 flex flex-col gap-5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">storage</span>
+<h2 class="font-headline text-lg font-semibold">Database &amp; Channels</h2>
+</div>
+<div class="space-y-6">
+
+<!-- Database subsection -->
+<div>
+<div class="flex items-center gap-1.5 pb-2 mb-3 border-b border-outline-variant/20">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">database</span>
+<span class="font-label text-[10px] text-on-surface-variant uppercase tracking-widest">Database</span>
+</div>
+<div class="space-y-3">
+<div>
+<label class="block font-label text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-tighter">Database URL</label>
+<input id="cfg-db-url" class="w-full bg-surface-container-lowest border-none rounded-lg px-4 py-3 text-on-surface font-mono text-sm" type="text"/>
+</div>
+<div class="flex items-center gap-3">
+<span id="cfg-google-cred" class="flex items-center gap-1 font-label text-xs"><span class="material-symbols-outlined text-sm">close</span> credentials.json</span>
+<span id="cfg-google-token" class="flex items-center gap-1 font-label text-xs"><span class="material-symbols-outlined text-sm">close</span> token.json</span>
+</div>
+</div>
+</div>
+
+<!-- Channels subsection -->
+<div>
+<div class="flex items-center gap-1.5 pb-2 mb-3 border-b border-outline-variant/20">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">hub</span>
+<span class="font-label text-[10px] text-on-surface-variant uppercase tracking-widest">활성 채널</span>
+</div>
+<div id="cfg-channels" class="grid grid-cols-2 gap-3">
+<div class="skeleton-line col-span-2 h-20 rounded-xl"></div>
+</div>
+</div>
+
+</div>
+</div>
+</section>
+
+<!-- Right Column -->
+<aside class="md:col-span-4 flex flex-col gap-6">
+<!-- Scheduler -->
+<div class="bg-surface-container-low rounded-xl p-6 flex flex-col gap-5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">schedule</span>
+<h2 class="font-headline text-lg font-semibold">스케줄러</h2>
+</div>
+<div class="space-y-5">
+<div>
+<label class="block font-label text-xs font-bold text-on-surface-variant mb-3 uppercase tracking-tighter">모닝 브리핑 시각</label>
+<div class="flex items-center justify-between bg-surface-container-lowest p-3 rounded-lg">
+<span id="cfg-briefing-display" class="text-2xl font-headline font-bold text-primary skeleton">08:00</span>
+<div class="flex gap-2">
+<button id="btn-briefing-dec" class="w-8 h-8 flex items-center justify-center bg-surface-container-highest rounded-full text-on-surface hover:bg-primary transition-colors"><span class="material-symbols-outlined text-sm">remove</span></button>
+<button id="btn-briefing-inc" class="w-8 h-8 flex items-center justify-center bg-surface-container-highest rounded-full text-on-surface hover:bg-primary transition-colors"><span class="material-symbols-outlined text-sm">add</span></button>
+</div>
+</div>
+</div>
+<div>
+<label class="block font-label text-xs font-bold text-on-surface-variant mb-3 uppercase tracking-tighter">리마인더 (분 전)</label>
+<div class="flex items-center gap-4">
+<input id="cfg-reminder" class="flex-1 h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary" max="60" min="5" type="range" value="15"/>
+<span id="cfg-reminder-display" class="font-mono text-sm text-primary w-12 text-right">15m</span>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Current Status -->
+<div class="relative bg-surface-container-low rounded-xl p-6 overflow-hidden flex flex-col gap-4">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl -mr-16 -mt-16 rounded-full"></div>
+<div class="relative z-10">
+<h3 class="font-headline font-bold text-on-surface text-sm mb-3">현재 엔진</h3>
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<span class="font-label text-[11px] text-on-surface-variant">Provider</span>
+<span id="status-provider" class="font-mono text-xs text-primary skeleton">—</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-label text-[11px] text-on-surface-variant">Model</span>
+<span id="status-model" class="font-mono text-xs text-primary skeleton">—</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-label text-[11px] text-on-surface-variant">Skills</span>
+<span id="status-skills" class="font-mono text-xs text-primary skeleton">—</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-label text-[11px] text-on-surface-variant">Channels</span>
+<span id="status-channels" class="font-mono text-xs text-primary skeleton">—</span>
+</div>
+</div>
+</div>
+</div>
+
+<!-- .env path info -->
+<div class="bg-surface-container-low rounded-xl p-5">
+<p class="font-label text-[10px] text-on-surface-variant uppercase tracking-widest mb-2">Config file</p>
+<p id="env-path" class="font-mono text-xs text-primary break-all skeleton">~/.openchiken/.env</p>
+</div>
+</aside>
+</div>
+
+<!-- Footer Actions -->
+<div class="mt-10 pt-6 border-t border-outline-variant/10 flex justify-between items-center">
+<button id="btn-discard" class="text-on-surface-variant font-label font-bold text-xs uppercase tracking-widest hover:text-error px-4 py-3 rounded-lg transition-all">Discard</button>
+<button id="btn-save" class="px-8 py-3 rounded-xl primary-gradient text-on-primary font-label font-bold text-xs uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all">Save</button>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-20 right-6 z-[60] hidden px-5 py-3 rounded-xl font-label text-sm font-bold shadow-2xl transition-all"></div>
+</main>
+
+<script src="/static/shared.js"></script>
+<script>
+(function() {
+  const $ = id => document.getElementById(id);
+  let briefingHour = 8;
+  let maskedTokens = {};
+
+  function showToast(msg, ok=true) {
+    const t=$('toast'); t.textContent=msg;
+    t.className='fixed bottom-20 right-6 z-[60] px-5 py-3 rounded-xl font-label text-sm font-bold shadow-2xl transition-all '+(ok?'bg-primary-container text-primary':'bg-error-container text-error');
+    t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'),3000);
+  }
+  function updateBriefingDisplay(){ $('cfg-briefing-display').textContent=String(briefingHour).padStart(2,'0')+':00'; $('cfg-briefing-display').classList.remove('skeleton'); }
+
+  function updateChannelCardStyle(ch, isActive, tokenOk) {
+    const container = $('cfg-channels');
+    if (!container) return;
+    const card = container.querySelector(`label[data-channel="${ch}"]`);
+    if (!card) return;
+    const statusEl = card.querySelector('.ch-status');
+    const isImessage = ch === 'imessage';
+    const ok = isImessage ? true : tokenOk;
+    const statusColor = isActive ? (ok ? 'text-primary' : 'text-error') : 'text-outline';
+    const statusIcon = isActive ? (ok ? 'check_circle' : 'warning') : 'radio_button_unchecked';
+    const statusText = isImessage
+      ? (isActive ? 'macOS 전용 · 활성' : '비활성')
+      : (isActive ? (ok ? '토큰 설정됨' : '토큰 미설정') : '비활성');
+    if (statusEl) {
+      statusEl.className = `ch-status flex items-center gap-1 ${statusColor}`;
+      statusEl.innerHTML = `<span class="material-symbols-outlined text-sm">${statusIcon}</span><span class="font-label text-[10px]">${statusText}</span>`;
+    }
+    card.className = `${isActive ? 'bg-primary-container border border-primary/20' : 'bg-surface-container-highest border border-outline-variant/10'} rounded-xl p-4 flex flex-col gap-2 cursor-pointer transition-all hover:border-primary/40`;
+    card.querySelectorAll('.ch-label').forEach(el => {
+      el.classList.remove('text-primary','text-on-surface-variant');
+      el.classList.add(isActive ? 'text-primary' : 'text-on-surface-variant');
+    });
+  }
+
+  function validateChannelTokens() {
+    if (!$('cfg-channels')) return;
+    const activeChannels = [...$('cfg-channels').querySelectorAll('input:checked')].map(c => c.value);
+    const channelFieldMap = {
+      telegram: ['cfg-telegram'],
+      slack: ['cfg-slack-bot','cfg-slack-app'],
+      discord: ['cfg-discord'],
+    };
+    const warnMap = { telegram:'cfg-telegram-warn', slack:'cfg-slack-warn', discord:'cfg-discord-warn' };
+    const errorShadow = 'inset 0 0 0 2px rgba(255,180,171,0.6)';
+
+    ['telegram','slack','discord'].forEach(ch => {
+      const isActive = activeChannels.includes(ch);
+      const fields = channelFieldMap[ch];
+      const missingFields = isActive
+        ? fields.filter(fid => { const el=$(fid); return el && el.value==='' && !maskedTokens[fid]; })
+        : [];
+      fields.forEach(fid => {
+        const el = $(fid);
+        if (!el) return;
+        el.style.boxShadow = (isActive && el.value==='' && !maskedTokens[fid]) ? errorShadow : '';
+      });
+      const warnEl = $(warnMap[ch]);
+      if (warnEl) { if (missingFields.length>0) warnEl.classList.remove('hidden'); else warnEl.classList.add('hidden'); }
+      updateChannelCardStyle(ch, isActive, missingFields.length===0);
+    });
+    updateChannelCardStyle('imessage', activeChannels.includes('imessage'), true);
+  }
+
+  async function loadSettings() {
+    try {
+      const res = await fetch('/api/settings/env');
+      const d = await res.json();
+
+      $('cfg-name').value = d.ASSISTANT_NAME || '';
+      $('cfg-tone').value = d.ASSISTANT_TONE || '';
+      $('cfg-persona').value = d.ASSISTANT_PERSONA || '';
+      $('cfg-provider').value = d.LLM_PROVIDER || 'openai';
+
+      const providerModels = { openai:'OPENAI_MODEL', anthropic:'ANTHROPIC_MODEL', gemini:'GEMINI_MODEL' };
+      $('cfg-model').value = d[providerModels[d.LLM_PROVIDER]] || d.OPENAI_MODEL || '';
+
+      $('cfg-openai-key').placeholder = d._masked?.OPENAI_API_KEY || 'sk-...';
+      $('cfg-anthropic-key').placeholder = d._masked?.ANTHROPIC_API_KEY || 'sk-ant-...';
+      $('cfg-gemini-key').placeholder = d._masked?.GEMINI_API_KEY || 'AI...';
+      $('cfg-telegram').placeholder = d._masked?.TELEGRAM_BOT_TOKEN || '123456:ABC...';
+      $('cfg-slack-bot').placeholder = d._masked?.SLACK_BOT_TOKEN || 'xoxb-...';
+      $('cfg-slack-app').placeholder = d._masked?.SLACK_APP_TOKEN || 'xapp-...';
+      $('cfg-discord').placeholder = d._masked?.DISCORD_BOT_TOKEN || 'MTA...';
+
+      maskedTokens = {
+        'cfg-telegram': !!d._masked?.TELEGRAM_BOT_TOKEN,
+        'cfg-slack-bot': !!d._masked?.SLACK_BOT_TOKEN,
+        'cfg-slack-app': !!d._masked?.SLACK_APP_TOKEN,
+        'cfg-discord': !!d._masked?.DISCORD_BOT_TOKEN,
+      };
+
+      $('cfg-allowed-ids').value = d.ALLOWED_USER_IDS || '';
+      $('cfg-db-url').value = d.DATABASE_URL || '';
+
+      briefingHour = parseInt(d.MORNING_BRIEFING_HOUR) || 8;
+      updateBriefingDisplay();
+      const rem = parseInt(d.REMINDER_MINUTES_BEFORE) || 15;
+      $('cfg-reminder').value = rem; $('cfg-reminder-display').textContent = rem+'m';
+
+      const credOk = d._status?.google_credentials;
+      const tokenOk = d._status?.google_token;
+      $('cfg-google-cred').innerHTML = `<span class="material-symbols-outlined text-sm ${credOk?'text-primary':'text-error'}">${credOk?'check_circle':'close'}</span> credentials.json`;
+      $('cfg-google-token').innerHTML = `<span class="material-symbols-outlined text-sm ${tokenOk?'text-primary':'text-error'}">${tokenOk?'check_circle':'close'}</span> token.json`;
+
+      const chAll = ['telegram','slack','discord','imessage'];
+      const active = (d.ENABLED_CHANNELS||'').split(',').map(s=>s.trim()).filter(Boolean);
+      const chIcons = { telegram:'send', slack:'tag', discord:'sports_esports', imessage:'chat_bubble' };
+      const chLabels = { telegram:'Telegram', slack:'Slack', discord:'Discord', imessage:'iMessage' };
+      const chTokenOk = {
+        telegram: !!d._masked?.TELEGRAM_BOT_TOKEN,
+        slack: !!(d._masked?.SLACK_BOT_TOKEN && d._masked?.SLACK_APP_TOKEN),
+        discord: !!d._masked?.DISCORD_BOT_TOKEN,
+        imessage: true,
+      };
+
+      $('cfg-channels').innerHTML = chAll.map(ch => {
+        const on = active.includes(ch);
+        const tok = chTokenOk[ch];
+        const isImessage = ch === 'imessage';
+        const cardBg = on ? 'bg-primary-container border border-primary/20' : 'bg-surface-container-highest border border-outline-variant/10';
+        const labelColor = on ? 'text-primary' : 'text-on-surface-variant';
+        const statusColor = on ? (tok ? 'text-primary' : 'text-error') : 'text-outline';
+        const statusIcon = on ? (tok ? 'check_circle' : 'warning') : 'radio_button_unchecked';
+        const statusText = isImessage
+          ? (on ? 'macOS 전용 · 활성' : '비활성')
+          : (on ? (tok ? '토큰 설정됨' : '토큰 미설정') : '비활성');
+        return `<label class="${cardBg} rounded-xl p-4 flex flex-col gap-2 cursor-pointer transition-all hover:border-primary/40" data-channel="${ch}">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="ch-label material-symbols-outlined text-base ${labelColor}">${chIcons[ch]}</span>
+              <span class="ch-label font-label text-xs font-bold uppercase tracking-wider ${labelColor}">${chLabels[ch]}</span>
+            </div>
+            <input type="checkbox" class="accent-primary channel-toggle" value="${ch}" ${on?'checked':''}/>
+          </div>
+          <div class="ch-status flex items-center gap-1 ${statusColor}">
+            <span class="material-symbols-outlined text-sm">${statusIcon}</span>
+            <span class="font-label text-[10px]">${statusText}</span>
+          </div>
+        </label>`;
+      }).join('');
+
+      $('cfg-channels').querySelectorAll('input.channel-toggle').forEach(cb => {
+        cb.addEventListener('change', validateChannelTokens);
+      });
+
+      ['status-provider','status-model','status-skills','status-channels'].forEach(id=>$(id).classList.remove('skeleton'));
+      $('status-provider').textContent = (d.LLM_PROVIDER||'').toUpperCase();
+      $('status-model').textContent = d[providerModels[d.LLM_PROVIDER]] || '';
+      $('status-skills').textContent = d.ENABLED_SKILLS || 'all';
+      $('status-channels').textContent = active.join(', ') || '—';
+      $('env-path').textContent = d._env_path || '~/.openchiken/.env';
+      $('env-path').classList.remove('skeleton');
+
+      validateChannelTokens();
+    } catch(e) { showToast('설정 로드 실패: '+e.message, false); }
+  }
+
+  ['cfg-telegram','cfg-slack-bot','cfg-slack-app','cfg-discord'].forEach(fid => {
+    const el = $(fid);
+    if (el) el.addEventListener('input', validateChannelTokens);
+  });
+
+  $('btn-briefing-inc').addEventListener('click',()=>{ briefingHour=Math.min(23,briefingHour+1); updateBriefingDisplay(); });
+  $('btn-briefing-dec').addEventListener('click',()=>{ briefingHour=Math.max(0,briefingHour-1); updateBriefingDisplay(); });
+  $('cfg-reminder').addEventListener('input',e=>{ $('cfg-reminder-display').textContent=e.target.value+'m'; });
+
+  $('btn-save').addEventListener('click', async()=>{
+    const channels=[...$('cfg-channels').querySelectorAll('input:checked')].map(c=>c.value).join(',');
+    const pv=$('cfg-provider').value;
+    const body = {
+      ASSISTANT_NAME:$('cfg-name').value, ASSISTANT_TONE:$('cfg-tone').value, ASSISTANT_PERSONA:$('cfg-persona').value,
+      LLM_PROVIDER:pv,
+      OPENAI_MODEL:pv==='openai'?$('cfg-model').value:'', ANTHROPIC_MODEL:pv==='anthropic'?$('cfg-model').value:'', GEMINI_MODEL:pv==='gemini'?$('cfg-model').value:'',
+      OPENAI_API_KEY:$('cfg-openai-key').value||'', ANTHROPIC_API_KEY:$('cfg-anthropic-key').value||'', GEMINI_API_KEY:$('cfg-gemini-key').value||'',
+      TELEGRAM_BOT_TOKEN:$('cfg-telegram').value||'', ALLOWED_USER_IDS:$('cfg-allowed-ids').value,
+      DATABASE_URL:$('cfg-db-url').value, MORNING_BRIEFING_HOUR:String(briefingHour), REMINDER_MINUTES_BEFORE:$('cfg-reminder').value,
+      ENABLED_CHANNELS:channels, SLACK_BOT_TOKEN:$('cfg-slack-bot').value||'', SLACK_APP_TOKEN:$('cfg-slack-app').value||'', DISCORD_BOT_TOKEN:$('cfg-discord').value||'',
+    };
+    try {
+      const res=await fetch('/api/setup/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const data=await res.json();
+      if(data.ok) showToast('저장 완료. 서버 재시작 후 적용됩니다.');
+      else showToast('저장 실패: '+(data.detail||'Unknown'),false);
+    } catch(e) { showToast('저장 오류: '+e.message,false); }
+  });
+
+  $('btn-discard').addEventListener('click',()=>loadSettings());
+  loadSettings();
+})();
+</script>
+</body></html>

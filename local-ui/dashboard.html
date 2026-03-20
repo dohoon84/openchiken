@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html class="dark" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OpenChiken | Dashboard</title>
+<link rel="icon" type="image/png" href="/static/assets/logo.png"/>
+<link href="/static/shared.css" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600&amp;family=Manrope:wght@400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+tailwind.config = {
+  darkMode: "class",
+  theme: { extend: {
+    colors: {
+      "surface-container-low":"#1c1b1b","on-surface-variant":"#c6c5d4","surface-container-lowest":"#0e0e0e",
+      "secondary":"#bbc3ff","on-primary-container":"#00a7ba","surface-bright":"#393939","primary-fixed":"#9cf0ff",
+      "surface-container-highest":"#353534","on-secondary-container":"#b6beff","surface-dim":"#131313",
+      "on-primary":"#00363d","inverse-on-surface":"#313030","error":"#ffb4ab","on-surface":"#e5e2e1",
+      "outline-variant":"#454652","primary-fixed-dim":"#00daf3","surface-variant":"#353534",
+      "background":"#131313","on-background":"#e5e2e1","surface":"#131313","on-secondary":"#001c95",
+      "primary":"#00daf3","primary-container":"#00363d","on-error-container":"#ffdad6","outline":"#908f9d",
+      "surface-container-high":"#2a2a2a","secondary-container":"#0031e8","surface-tint":"#00daf3",
+      "surface-container":"#201f1f","tertiary":"#49d7f4","error-container":"#93000a"
+    },
+    fontFamily: { "headline":["Space Grotesk"],"body":["Inter"],"label":["Manrope"] },
+    borderRadius: {"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},
+  }}
+}
+</script>
+</head>
+<body class="bg-background text-on-surface font-body">
+<main>
+<header class="mb-8">
+<h1 class="text-3xl font-headline font-bold tracking-tight text-on-surface mb-1">Dashboard</h1>
+<p class="text-on-surface-variant font-label text-sm">시스템 현황과 실시간 데이터를 확인합니다.</p>
+</header>
+
+<div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+<!-- Engine Status -->
+<div class="md:col-span-8 bg-surface-container-low rounded-xl p-6 relative overflow-hidden flex flex-col justify-between min-h-[150px]">
+<div class="relative z-10">
+<div class="flex items-center gap-2 mb-4">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<h3 class="font-headline text-sm font-bold uppercase tracking-widest text-primary">Engine Status</h3>
+</div>
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<span id="engine-title" class="text-xl font-headline font-medium text-on-surface skeleton">Loading engine status...</span>
+<span id="engine-badge" class="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase skeleton">—</span>
+</div>
+<div id="engine-log" class="space-y-1 font-mono text-[11px]">
+<div class="skeleton-line w-3/4"></div>
+<div class="skeleton-line w-1/2 mt-1"></div>
+</div>
+</div>
+</div>
+<div class="absolute right-0 bottom-0 w-48 h-48 bg-primary/5 blur-[80px] rounded-full -mr-16 -mb-16"></div>
+</div>
+
+<!-- AI Model Card -->
+<div class="md:col-span-4 bg-surface-container-low rounded-xl p-6 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-on-surface-variant font-label text-[10px] uppercase tracking-widest mb-1">Model</p>
+<h3 id="ai-model-name" class="text-2xl font-headline font-bold text-on-surface skeleton">gpt-4o</h3>
+</div>
+<div class="p-2 bg-primary/20 rounded-lg">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings:'FILL' 1;">bolt</span>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-outline-variant/10">
+<div class="flex items-center justify-between">
+<span class="text-sm font-label text-on-surface-variant">Provider</span>
+<span id="ai-provider" class="text-sm font-medium text-primary skeleton">—</span>
+</div>
+<div class="flex items-center justify-between mt-1">
+<span class="text-sm font-label text-on-surface-variant">Status</span>
+<span id="ai-core-status" class="text-sm font-medium text-primary skeleton">—</span>
+</div>
+</div>
+</div>
+
+<!-- Calendar -->
+<div class="md:col-span-4 bg-surface-container rounded-xl p-6 ghost-border">
+<div class="flex items-center justify-between mb-5">
+<h3 class="font-headline font-bold text-lg text-on-surface">오늘 일정</h3>
+<span class="material-symbols-outlined text-secondary">calendar_today</span>
+</div>
+<div id="schedule-list" class="space-y-3">
+<div class="skeleton-line w-full"></div>
+<div class="skeleton-line w-2/3 mt-2"></div>
+<div class="skeleton-line w-1/2 mt-2"></div>
+</div>
+</div>
+
+<!-- Gmail -->
+<div class="md:col-span-4 bg-surface-container rounded-xl p-6 ghost-border">
+<div class="flex items-center justify-between mb-5">
+<h3 class="font-headline font-bold text-lg text-on-surface">메일함</h3>
+<span id="inbox-badge" class="bg-primary text-on-primary px-2 py-0.5 rounded text-[10px] font-bold skeleton">—</span>
+</div>
+<div id="inbox-list" class="space-y-3">
+<div class="skeleton-block h-16"></div>
+<div class="skeleton-block h-16 mt-2"></div>
+</div>
+</div>
+
+<!-- Weather -->
+<div class="md:col-span-4 bg-surface-container rounded-xl p-6 ghost-border relative overflow-hidden">
+<div class="relative z-10 h-full flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<h3 id="weather-city" class="font-headline font-bold text-lg text-on-surface skeleton">Seoul</h3>
+<p id="weather-condition" class="text-xs text-on-surface-variant font-label skeleton">—</p>
+</div>
+<span id="weather-icon" class="material-symbols-outlined text-4xl text-primary" style="font-variation-settings:'FILL' 1;">cloud_queue</span>
+</div>
+<div class="mt-6">
+<div class="flex items-baseline gap-2">
+<span id="weather-temp" class="text-4xl font-headline font-light text-on-surface skeleton">—°</span>
+<span id="weather-temp-min" class="text-lg text-on-surface-variant font-headline skeleton">/ —°</span>
+</div>
+<div class="flex gap-4 mt-3 text-[10px] font-label uppercase tracking-widest text-on-surface-variant">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">water_drop</span>
+<span id="weather-humidity">—</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">air</span>
+<span id="weather-wind">—</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Memory Stream -->
+<div class="md:col-span-12 bg-surface-container-lowest rounded-xl p-6 ghost-border">
+<div class="flex items-center justify-between mb-5">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">history_edu</span>
+<h3 class="font-headline font-bold text-lg text-on-surface">최근 기록</h3>
+</div>
+<a href="logs.html" class="text-xs font-label text-primary hover:underline">전체 보기</a>
+</div>
+<div id="memory-list" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="skeleton-block"></div>
+<div class="skeleton-block"></div>
+<div class="skeleton-block"></div>
+</div>
+</div>
+</div>
+</main>
+
+<script src="/static/shared.js"></script>
+<script>
+(async function loadDashboard() {
+  const API = '/api/dashboard';
+  async function fetchJSON(url) {
+    const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+  function $(id) { return document.getElementById(id); }
+  function clearSkeleton(ids) { ids.forEach(id => { const el = $(id); if (el) el.classList.remove('skeleton'); }); }
+
+  const [agentRes, weatherRes, calendarRes, gmailRes, memoryRes] = await Promise.allSettled([
+    fetchJSON(`${API}/agent-status`),
+    fetchJSON(`${API}/weather?city=Seoul`),
+    fetchJSON(`${API}/calendar`),
+    fetchJSON(`${API}/gmail?max_results=5`),
+    fetchJSON(`${API}/memory?limit=6`),
+  ]);
+
+  clearSkeleton(['engine-title','engine-badge','ai-model-name','ai-provider','ai-core-status',
+    'weather-city','weather-condition','weather-temp','weather-temp-min','weather-humidity','weather-wind','inbox-badge']);
+
+  if (agentRes.status === 'fulfilled') {
+    const d = agentRes.value;
+    $('ai-model-name').textContent = d.model;
+    $('ai-provider').textContent = d.provider;
+    $('ai-core-status').textContent = 'Active';
+    $('engine-title').textContent = `${d.assistant_name} — ${d.provider} Engine`;
+    $('engine-badge').textContent = 'Online';
+    const logEl = $('engine-log');
+    if (logEl) {
+      const skills = d.enabled_skills === 'all' ? 'All Skills' : d.enabled_skills;
+      const channels = Array.isArray(d.enabled_channels) ? d.enabled_channels.join(', ') : d.enabled_channels;
+      logEl.innerHTML = `
+        <p class="text-on-surface-variant/40 line-through">System initialization... [DONE]</p>
+        <p class="text-on-surface-variant/60">Active skills: ${skills}</p>
+        <p class="text-primary font-bold">Channels: ${channels} — Ready</p>`;
+    }
+  } else {
+    $('engine-title').textContent = 'Engine Offline';
+    $('engine-badge').textContent = 'Offline';
+    $('ai-core-status').textContent = 'Disconnected';
+  }
+
+  if (weatherRes.status === 'fulfilled' && !weatherRes.value.error) {
+    const w = weatherRes.value;
+    $('weather-city').textContent = w.city;
+    $('weather-condition').textContent = w.condition;
+    $('weather-icon').textContent = w.icon;
+    $('weather-temp').textContent = `${Math.round(w.temp)}°`;
+    $('weather-temp-min').textContent = w.temp_min != null ? `/ ${Math.round(w.temp_min)}°` : '';
+    $('weather-humidity').textContent = `${w.humidity}%`;
+    $('weather-wind').textContent = `${w.windspeed}km/h`;
+  }
+
+  const scheduleEl = $('schedule-list');
+  if (scheduleEl && calendarRes.status === 'fulfilled') {
+    const cal = calendarRes.value;
+    if (cal.events && cal.events.length > 0) {
+      scheduleEl.innerHTML = cal.events.map((ev, i) => {
+        const isLast = i === cal.events.length - 1;
+        return `<div class="flex gap-4">
+          <div class="flex flex-col items-center">
+            <span class="text-xs font-bold text-primary">${ev.time}</span>
+            ${!isLast ? '<div class="w-px h-full bg-outline-variant/30 my-1"></div>' : ''}
+          </div>
+          <div class="${!isLast ? 'pb-3' : ''}">
+            <p class="text-sm font-medium text-on-surface">${ev.title}</p>
+            <p class="text-xs text-on-surface-variant">${ev.description || ''}</p>
+          </div>
+        </div>`;
+      }).join('');
+    } else if (cal.error) {
+      scheduleEl.innerHTML = `<div class="flex items-center gap-2 text-on-surface-variant/60 py-4"><span class="material-symbols-outlined text-sm">cloud_off</span><p class="text-xs font-label">Google Calendar 미연결</p></div>`;
+    } else {
+      scheduleEl.innerHTML = `<div class="flex items-center gap-2 text-on-surface-variant/60 py-4"><span class="material-symbols-outlined text-sm">event_available</span><p class="text-xs font-label">오늘 일정이 없습니다</p></div>`;
+    }
+  }
+
+  const inboxEl = $('inbox-list');
+  const badgeEl = $('inbox-badge');
+  if (inboxEl && gmailRes.status === 'fulfilled') {
+    const gm = gmailRes.value;
+    if (badgeEl) {
+      badgeEl.textContent = gm.unread_count > 0 ? `${gm.unread_count} NEW` : '0';
+      if (gm.unread_count === 0) { badgeEl.className = 'bg-outline-variant/30 text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-bold'; }
+    }
+    if (gm.messages && gm.messages.length > 0) {
+      inboxEl.innerHTML = gm.messages.map(msg => `
+        <div class="p-3 bg-surface-container-low rounded-lg hover:bg-surface-container-high transition-colors cursor-pointer group">
+          <div class="flex justify-between items-start mb-1">
+            <p class="text-xs font-bold text-secondary">${msg.from}</p>
+            <span class="text-[10px] text-on-surface-variant">${msg.date}</span>
+          </div>
+          <p class="text-sm font-medium text-on-surface group-hover:text-primary transition-colors">${msg.subject}</p>
+        </div>`).join('');
+    } else if (gm.error) {
+      inboxEl.innerHTML = `<div class="flex items-center gap-2 text-on-surface-variant/60 py-4"><span class="material-symbols-outlined text-sm">cloud_off</span><p class="text-xs font-label">Gmail 미연결</p></div>`;
+    } else {
+      inboxEl.innerHTML = `<div class="flex items-center gap-2 text-on-surface-variant/60 py-4"><span class="material-symbols-outlined text-sm">mark_email_read</span><p class="text-xs font-label">읽지 않은 메일이 없습니다</p></div>`;
+    }
+  }
+
+  const memoryEl = $('memory-list');
+  if (memoryEl && memoryRes.status === 'fulfilled') {
+    const mem = memoryRes.value;
+    const items = [];
+    const borders = ['border-primary/40','border-secondary/40','border-tertiary/40'];
+    if (mem.memos) mem.memos.forEach((m,i) => items.push({ content: `${m.title}: ${m.content}`, label: 'Memo', tag: 'Saved', time: m.created_at||'', border: borders[i%3] }));
+    if (mem.messages) mem.messages.forEach((m,i) => items.push({ content: m.content, label: m.type==='human'?'User':'AI', tag: m.type==='human'?'Query':'Response', time:'', border: borders[(i+1)%3] }));
+    const display = items.slice(0, 3);
+    if (display.length > 0) {
+      memoryEl.innerHTML = display.map(item => `
+        <div class="p-4 bg-surface-container-low rounded-lg border-l-2 ${item.border}">
+          <p class="text-[10px] text-on-surface-variant font-label uppercase tracking-tighter mb-1">${item.time || 'Recent'}</p>
+          <p class="text-sm font-medium text-on-surface mb-2">${item.content}</p>
+          <div class="flex gap-2">
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">${item.label}</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">${item.tag}</span>
+          </div>
+        </div>`).join('');
+    } else {
+      memoryEl.innerHTML = `<div class="md:col-span-3 flex items-center gap-2 text-on-surface-variant/60 py-4"><span class="material-symbols-outlined text-sm">memory</span><p class="text-xs font-label">아직 기록된 대화가 없습니다</p></div>`;
+    }
+  }
+})();
+</script>
+</body></html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html class="dark" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>OpenChiken | Memory &amp; Logs</title>
+<link rel="icon" type="image/png" href="/static/assets/logo.png"/>
+<link href="/static/shared.css" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@300;400;500;600&amp;family=Manrope:wght@400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+tailwind.config = {
+  darkMode: "class",
+  theme: { extend: {
+    colors: {
+      "surface-container-low":"#1c1b1b","on-surface-variant":"#c6c5d4","surface-container-lowest":"#0e0e0e",
+      "secondary":"#bbc3ff","on-primary-container":"#00a7ba","surface-bright":"#393939","primary-fixed":"#9cf0ff",
+      "surface-container-highest":"#353534","on-secondary-container":"#b6beff","surface-dim":"#131313",
+      "on-primary":"#00363d","inverse-on-surface":"#313030","error":"#ffb4ab","on-surface":"#e5e2e1",
+      "outline-variant":"#454652","primary-fixed-dim":"#00daf3","surface-variant":"#353534",
+      "background":"#131313","on-background":"#e5e2e1","surface":"#131313","on-secondary":"#001c95",
+      "primary":"#00daf3","primary-container":"#00363d","on-error-container":"#ffdad6","outline":"#908f9d",
+      "surface-container-high":"#2a2a2a","secondary-container":"#0031e8","surface-tint":"#00daf3",
+      "surface-container":"#201f1f","tertiary":"#49d7f4","error-container":"#93000a"
+    },
+    fontFamily: { "headline":["Space Grotesk"],"body":["Inter"],"label":["Manrope"] },
+    borderRadius: {"DEFAULT":"0.125rem","lg":"0.25rem","xl":"0.5rem","full":"0.75rem"},
+  }}
+}
+</script>
+</head>
+<body class="bg-background text-on-surface font-body">
+<main>
+<header class="mb-8">
+<h1 class="text-3xl font-headline font-bold tracking-tight text-on-surface">Memory &amp; Logs</h1>
+<p class="text-on-surface-variant font-label text-sm">대화 기록과 메모를 관리합니다.</p>
+</header>
+
+<!-- Tabs -->
+<div class="flex gap-2 mb-8">
+<button id="tab-conversations" class="px-4 py-2 rounded-lg text-sm font-label font-bold bg-primary/10 text-primary border border-primary/20 transition-all">Conversations</button>
+<button id="tab-memos" class="px-4 py-2 rounded-lg text-sm font-label font-bold bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-all">Memos</button>
+</div>
+
+<!-- Conversations Section -->
+<div id="section-conversations">
+<div class="flex items-center gap-4 mb-6">
+<label class="text-xs font-label text-on-surface-variant uppercase tracking-widest">Session</label>
+<select id="session-filter" class="bg-surface-container-low border border-outline-variant/20 rounded-lg px-3 py-2 text-sm text-on-surface font-body focus:ring-1 focus:ring-primary/50">
+<option value="">All sessions</option>
+</select>
+<span id="log-total" class="text-xs font-label text-on-surface-variant ml-auto"></span>
+</div>
+<div id="log-messages" class="space-y-3">
+<div class="skeleton-block"></div>
+<div class="skeleton-block mt-2"></div>
+<div class="skeleton-block mt-2"></div>
+</div>
+<div class="flex justify-center gap-4 mt-8">
+<button id="btn-prev" class="px-4 py-2 bg-surface-container-low rounded-lg text-xs font-label font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors disabled:opacity-30" disabled>Previous</button>
+<span id="page-info" class="text-xs font-label text-on-surface-variant py-2"></span>
+<button id="btn-next" class="px-4 py-2 bg-surface-container-low rounded-lg text-xs font-label font-bold text-on-surface-variant hover:bg-surface-container-high transition-colors disabled:opacity-30" disabled>Next</button>
+</div>
+</div>
+
+<!-- Memos Section -->
+<div id="section-memos" class="hidden">
+<div class="bg-surface-container-low rounded-xl p-6 mb-6 ghost-border">
+<h3 class="text-sm font-label font-bold uppercase tracking-widest text-on-surface-variant mb-4">New Memo</h3>
+<div class="space-y-3">
+<input id="memo-title" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg py-3 px-4 text-on-surface placeholder:text-on-surface-variant/40 font-headline text-sm focus:ring-1 focus:ring-primary/50 transition-all" placeholder="제목..." type="text"/>
+<textarea id="memo-content" class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg py-3 px-4 text-on-surface placeholder:text-on-surface-variant/40 font-body text-sm focus:ring-1 focus:ring-primary/50 transition-all resize-none" rows="3" placeholder="내용..."></textarea>
+<button id="btn-save-memo" class="primary-gradient text-on-primary font-label text-xs font-bold px-6 py-3 rounded-lg tracking-widest uppercase hover:scale-95 transition-transform duration-100">Save</button>
+</div>
+</div>
+<div id="memo-list" class="space-y-4">
+<div class="skeleton-block"></div>
+<div class="skeleton-block mt-2"></div>
+</div>
+</div>
+</main>
+
+<script src="/static/shared.js"></script>
+<script>
+(function() {
+  const $ = id => document.getElementById(id);
+  const PAGE_SIZE = 30;
+  let currentOffset = 0, totalMessages = 0;
+
+  $('tab-conversations').addEventListener('click',()=>{
+    $('section-conversations').classList.remove('hidden'); $('section-memos').classList.add('hidden');
+    $('tab-conversations').className='px-4 py-2 rounded-lg text-sm font-label font-bold bg-primary/10 text-primary border border-primary/20 transition-all';
+    $('tab-memos').className='px-4 py-2 rounded-lg text-sm font-label font-bold bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-all';
+  });
+  $('tab-memos').addEventListener('click',()=>{
+    $('section-memos').classList.remove('hidden'); $('section-conversations').classList.add('hidden');
+    $('tab-memos').className='px-4 py-2 rounded-lg text-sm font-label font-bold bg-primary/10 text-primary border border-primary/20 transition-all';
+    $('tab-conversations').className='px-4 py-2 rounded-lg text-sm font-label font-bold bg-surface-container text-on-surface-variant hover:bg-surface-container-high transition-all';
+    loadMemos();
+  });
+
+  function escapeHtml(str){const d=document.createElement('div');d.textContent=str;return d.innerHTML;}
+
+  async function loadLogs(){
+    const sid=$('session-filter').value;
+    const params=new URLSearchParams({limit:PAGE_SIZE,offset:currentOffset});
+    if(sid)params.set('session_id',sid);
+    try{
+      const res=await fetch(`/api/logs?${params}`); const data=await res.json();
+      totalMessages=data.total||0;
+      const f=$('session-filter');
+      if(f.options.length<=1&&data.sessions) data.sessions.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;f.appendChild(o);});
+      $('log-total').textContent=`${totalMessages} messages`;
+      renderMessages(data.messages||[]); updatePagination();
+    }catch(e){$('log-messages').innerHTML='<p class="text-xs text-error py-4">로드 실패</p>';}
+  }
+  function renderMessages(msgs){
+    const el=$('log-messages');
+    if(!msgs.length){el.innerHTML='<div class="flex items-center gap-2 text-on-surface-variant/60 py-8 justify-center"><span class="material-symbols-outlined text-sm">chat_bubble_outline</span><p class="text-xs font-label">대화 기록 없음</p></div>';return;}
+    el.innerHTML=msgs.map(msg=>{
+      const h=msg.type==='human'; const bc=h?'border-primary/40':'border-secondary/40'; const ic=h?'person':'smart_toy'; const lb=h?'User':'AI';
+      return `<div class="bg-surface-container-low rounded-lg p-4 border-l-2 ${bc}"><div class="flex items-center gap-2 mb-2"><span class="material-symbols-outlined text-sm ${h?'text-primary':'text-secondary'}">${ic}</span><span class="text-[10px] font-label font-bold uppercase tracking-tighter ${h?'text-primary':'text-secondary'}">${lb}</span><span class="text-[10px] text-on-surface-variant font-label ml-auto">${msg.session_id}</span></div><p class="text-sm text-on-surface whitespace-pre-wrap break-words">${escapeHtml(msg.content)}</p></div>`;
+    }).join('');
+  }
+  function updatePagination(){const p=Math.floor(currentOffset/PAGE_SIZE)+1;const tp=Math.max(1,Math.ceil(totalMessages/PAGE_SIZE));$('page-info').textContent=`${p} / ${tp}`;$('btn-prev').disabled=currentOffset===0;$('btn-next').disabled=currentOffset+PAGE_SIZE>=totalMessages;}
+  $('btn-prev').addEventListener('click',()=>{currentOffset=Math.max(0,currentOffset-PAGE_SIZE);loadLogs();});
+  $('btn-next').addEventListener('click',()=>{currentOffset+=PAGE_SIZE;loadLogs();});
+  $('session-filter').addEventListener('change',()=>{currentOffset=0;loadLogs();});
+
+  async function loadMemos(){
+    try{const res=await fetch('/api/memos');const data=await res.json();renderMemos(data.memos||[]);}
+    catch(e){$('memo-list').innerHTML='<p class="text-xs text-error py-4">로드 실패</p>';}
+  }
+  function renderMemos(memos){
+    const el=$('memo-list');
+    if(!memos.length){el.innerHTML='<div class="flex items-center gap-2 text-on-surface-variant/60 py-8 justify-center"><span class="material-symbols-outlined text-sm">note_stack</span><p class="text-xs font-label">저장된 메모 없음</p></div>';return;}
+    el.innerHTML=memos.map(m=>`<div class="bg-surface-container-low rounded-xl p-5 ghost-border"><div class="flex justify-between items-start mb-2"><h3 class="font-headline font-semibold text-base text-on-surface">${escapeHtml(m.title)}</h3><button class="memo-delete text-on-surface-variant hover:text-error transition-colors" data-memo-id="${m.id}"><span class="material-symbols-outlined text-sm">delete</span></button></div><p class="text-sm text-on-surface-variant whitespace-pre-wrap mb-3">${escapeHtml(m.content)}</p><div class="flex gap-4 text-[10px] font-label text-on-surface-variant/60"><span>Created: ${(m.created_at||'').slice(0,16)}</span><span>Updated: ${(m.updated_at||'').slice(0,16)}</span></div></div>`).join('');
+    document.querySelectorAll('.memo-delete').forEach(btn=>btn.addEventListener('click',async()=>{if(confirm('메모를 삭제하시겠습니까?')){await fetch(`/api/memos/${btn.dataset.memoId}`,{method:'DELETE'});loadMemos();}}));
+  }
+  $('btn-save-memo').addEventListener('click',async()=>{const t=$('memo-title').value.trim();const c=$('memo-content').value.trim();if(!t||!c)return;await fetch('/api/memos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:t,content:c})});$('memo-title').value='';$('memo-content').value='';loadMemos();});
+  loadLogs();
+})();
+</script>
+</body></html>

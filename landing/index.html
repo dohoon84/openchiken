@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html class="dark" lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>OpenChiken — 자율 AI 비서 에이전트</title>
+  <link rel="icon" type="image/png" href="/static/assets/logo.png"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link href="/static/shared.css" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-container-low": "#1c1b1b",
+            "on-surface-variant": "#c6c5d4",
+            "surface-container-lowest": "#0e0e0e",
+            "secondary": "#bbc3ff",
+            "on-primary-container": "#00a7ba",
+            "surface-container-highest": "#353534",
+            "on-primary": "#00363d",
+            "error": "#ffb4ab",
+            "on-surface": "#e5e2e1",
+            "outline-variant": "#454652",
+            "primary-fixed-dim": "#00daf3",
+            "background": "#131313",
+            "surface": "#131313",
+            "primary": "#00daf3",
+            "primary-container": "#00363d",
+            "outline": "#908f9d",
+            "surface-container-high": "#2a2a2a",
+            "surface-container": "#201f1f",
+            "tertiary": "#49d7f4",
+            "tertiary-container": "#00353f",
+          },
+          fontFamily: {
+            "headline": ["Space Grotesk"],
+            "body": ["Inter"],
+            "label": ["Manrope"]
+          },
+          borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+        },
+      },
+    }
+  </script>
+  <style>
+    .hero-glow {
+      background: radial-gradient(ellipse 600px 400px at 50% 40%, rgba(0, 218, 243, 0.08) 0%, transparent 70%);
+    }
+    .feature-glow-1 { background: radial-gradient(circle 200px at 20% 50%, rgba(0, 218, 243, 0.05) 0%, transparent 70%); }
+    .feature-glow-2 { background: radial-gradient(circle 200px at 80% 50%, rgba(187, 195, 255, 0.04) 0%, transparent 70%); }
+    .grid-bg {
+      background-image:
+        linear-gradient(rgba(69, 70, 82, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(69, 70, 82, 0.06) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .text-gradient {
+      background: linear-gradient(135deg, #00daf3 0%, #bbc3ff 50%, #49d7f4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── 마르키 (testimonials) ── */
+    .marquee-track {
+      display: flex;
+      gap: 1.25rem;
+      will-change: transform;
+    }
+    .marquee-row { overflow: hidden; }
+    .marquee-row.row-fwd  .marquee-track { animation: marquee-fwd  42s linear infinite; }
+    .marquee-row.row-rev  .marquee-track { animation: marquee-rev  48s linear infinite; }
+    .marquee-row:hover .marquee-track { animation-play-state: paused; }
+    @keyframes marquee-fwd { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    @keyframes marquee-rev { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+    .marquee-fade {
+      mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+    }
+
+    /* ── Quick Start 탭 ── */
+    .tab-btn.active { color: #00daf3; background: rgba(0,218,243,0.12); }
+    .tab-btn:not(.active) { color: #908f9d; background: transparent; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── 스텝 연결선 ── */
+    .step-line::before {
+      content: '';
+      position: absolute;
+      left: 19px; top: 40px;
+      width: 2px; height: calc(100% - 40px);
+      background: linear-gradient(to bottom, rgba(0,218,243,0.3), transparent);
+    }
+
+    /* ── 네비게이션 글래스 효과 ── */
+    .glass-nav {
+      background: rgba(19, 19, 19, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(69, 70, 82, 0.15);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-body overflow-x-hidden">
+
+  <!-- Top Navigation -->
+  <nav class="fixed top-0 w-full z-50 glass-nav flex justify-between items-center px-6 md:px-12 h-16">
+    <div class="flex items-center gap-8">
+      <a href="index.html" class="flex items-center gap-2.5">
+        <img src="/static/assets/logo.png" alt="OpenChiken" class="w-8 h-8 rounded-lg object-cover"/>
+        <span class="text-2xl font-bold tracking-tighter text-primary font-headline">OpenChiken</span>
+      </a>
+      <div class="hidden md:flex gap-6 items-center">
+        <a href="#channels" class="font-headline text-sm tracking-tight text-on-surface-variant hover:text-on-surface transition-colors">채널</a>
+        <a href="#features" class="font-headline text-sm tracking-tight text-on-surface-variant hover:text-on-surface transition-colors">기능</a>
+        <a href="#how-it-works" class="font-headline text-sm tracking-tight text-on-surface-variant hover:text-on-surface transition-colors">작동 방식</a>
+        <a href="#quickstart" class="font-headline text-sm tracking-tight text-on-surface-variant hover:text-on-surface transition-colors">Quick Start</a>
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <a href="#quickstart" class="hidden sm:flex items-center gap-2 bg-surface-container-highest/50 px-4 py-2 rounded-full text-xs font-label text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-all">
+        <span class="material-symbols-outlined text-sm">rocket_launch</span>
+        로컬에서 시작
+      </a>
+      <a href="#quickstart" class="primary-gradient text-on-primary font-label text-[10px] font-bold px-5 py-2.5 rounded-full tracking-wider uppercase hover:scale-105 transition-transform">
+        Quick Start
+      </a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="relative min-h-screen flex items-center justify-center hero-glow grid-bg pt-16">
+    <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 blur-[120px] rounded-full"></div>
+    <div class="absolute bottom-1/3 right-1/4 w-64 h-64 bg-secondary/5 blur-[100px] rounded-full"></div>
+
+    <div class="relative z-10 text-center max-w-4xl mx-auto px-6">
+      <div class="inline-flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full mb-8 animate-slide-up ghost-border">
+        <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+        <span class="font-label text-xs text-on-surface-variant tracking-wider uppercase">Plan-and-Execute Engine Active</span>
+      </div>
+
+      <h1 class="text-5xl md:text-7xl lg:text-8xl font-headline font-bold tracking-tight leading-[0.95] mb-6 animate-slide-up stagger-1">
+        <span class="text-on-surface">기억하고, 계획하고,</span><br/>
+        <span class="text-gradient">스스로 실행하는</span><br/>
+        <span class="text-on-surface">AI 비서</span>
+      </h1>
+
+      <p class="text-lg md:text-xl text-on-surface-variant font-body max-w-2xl mx-auto mb-8 animate-slide-up stagger-2 leading-relaxed">
+        텔레그램, 슬랙, 카카오톡, 네이버 등 익숙한 메신저에서<br class="hidden md:block"/>
+        이메일, 일정, Drive · Sheets · Docs, 날씨, 검색, 메모를 모두 관리합니다.<br class="hidden md:block"/>
+        복잡한 작업은 AI가 알아서 단계별로 분해하고 실행합니다.
+      </p>
+
+      <!-- Supported Channels Strip -->
+      <div class="flex flex-wrap justify-center items-center gap-3 mb-10 animate-slide-up stagger-2">
+        <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full ghost-border hover:bg-surface-container transition-colors">
+          <div class="w-5 h-5 rounded-md flex items-center justify-center shrink-0" style="background:#26A5E4"><img src="https://cdn.simpleicons.org/telegram/ffffff" width="13" height="13" alt="Telegram" loading="lazy"></div>
+          <span class="font-label text-xs text-on-surface-variant">Telegram</span>
+        </div>
+        <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full ghost-border hover:bg-surface-container transition-colors">
+          <div class="w-5 h-5 rounded-md flex items-center justify-center shrink-0" style="background:#ffffff"><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313z" fill="#E01E5A"/><path d="M8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312z" fill="#36C5F0"/><path d="M18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.271 0a2.528 2.528 0 0 1-2.52 2.521 2.528 2.528 0 0 1-2.521-2.521V2.522A2.528 2.528 0 0 1 15.165 0a2.528 2.528 0 0 1 2.52 2.522v6.312z" fill="#2EB67D"/><path d="M15.165 18.956a2.528 2.528 0 0 1 2.52 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.521-2.522v-2.522h2.521zm0-1.271a2.527 2.527 0 0 1-2.521-2.52 2.528 2.528 0 0 1 2.521-2.521h6.313A2.528 2.528 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.52h-6.313z" fill="#ECB22E"/></svg></div>
+          <span class="font-label text-xs text-on-surface-variant">Slack</span>
+        </div>
+        <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full ghost-border hover:bg-surface-container transition-colors">
+          <div class="w-5 h-5 rounded-md flex items-center justify-center shrink-0" style="background:#5865F2"><img src="https://cdn.simpleicons.org/discord/ffffff" width="13" height="13" alt="Discord" loading="lazy"></div>
+          <span class="font-label text-xs text-on-surface-variant">Discord</span>
+        </div>
+        <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full ghost-border hover:bg-surface-container transition-colors">
+          <div class="w-5 h-5 rounded-md flex items-center justify-center shrink-0" style="background:#34C759"><svg width="11" height="11" viewBox="0 0 24 24" fill="none"><rect x="1" y="2" width="22" height="16" rx="5" fill="white" opacity="0.9"/><circle cx="8.5" cy="10" r="1.3" fill="#34C759"/><circle cx="12" cy="10" r="1.3" fill="#34C759"/><circle cx="15.5" cy="10" r="1.3" fill="#34C759"/><path d="M5 18l2.5-3" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg></div>
+          <span class="font-label text-xs text-on-surface-variant">iMessage</span>
+        </div>
+        <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full ghost-border hover:bg-surface-container transition-colors">
+          <div class="w-5 h-5 rounded-md flex items-center justify-center shrink-0" style="background:#FEE500"><img src="https://cdn.simpleicons.org/kakaotalk/3c1e1e" width="13" height="13" alt="KakaoTalk" loading="lazy"></div>
+          <span class="font-label text-xs text-on-surface-variant">KakaoTalk</span>
+        </div>
+        <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full ghost-border hover:bg-surface-container transition-colors">
+          <div class="w-5 h-5 rounded-md flex items-center justify-center shrink-0" style="background:#03C75A"><img src="https://cdn.simpleicons.org/naver/ffffff" width="13" height="13" alt="Naver" loading="lazy"></div>
+          <span class="font-label text-xs text-on-surface-variant">Naver</span>
+        </div>
+        <div class="flex items-center gap-2 bg-surface-container-low/50 px-4 py-2 rounded-full ghost-border">
+          <span class="material-symbols-outlined text-on-surface-variant/40 text-sm">more_horiz</span>
+          <span class="font-label text-xs text-on-surface-variant/50">더 많은 채널 지원 예정</span>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-4 justify-center items-center animate-slide-up stagger-3">
+        <a href="#quickstart" class="primary-gradient text-on-primary font-label text-xs font-bold px-8 py-4 rounded-full tracking-wider uppercase shadow-[0_0_30px_rgba(0,218,243,0.2)] hover:shadow-[0_0_50px_rgba(0,218,243,0.35)] hover:scale-105 transition-all">
+          Quick Start
+        </a>
+        <a href="#features" class="flex items-center gap-2 text-on-surface-variant font-label text-xs font-bold px-6 py-4 rounded-full tracking-wider uppercase ghost-border hover:text-primary hover:border-primary/30 transition-all">
+          <span class="material-symbols-outlined text-sm">arrow_downward</span>
+          기능 살펴보기
+        </a>
+      </div>
+
+      <!-- Floating Preview Cards -->
+      <div class="relative mt-20 max-w-3xl mx-auto animate-slide-up stagger-4">
+        <div class="bg-surface-container-low rounded-xl p-6 ghost-border relative overflow-hidden">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+            <span class="font-headline text-xs font-bold uppercase tracking-widest text-primary">Engine Status</span>
+          </div>
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xl md:text-2xl font-headline font-medium text-on-surface">Executing: Morning Briefing Protocol</span>
+            <span class="bg-primary/10 text-primary border border-primary/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Running</span>
+          </div>
+          <div class="space-y-1 font-mono text-[11px] text-left">
+            <p class="text-on-surface-variant/40 line-through">Fetching today's calendar events... [DONE]</p>
+            <p class="text-on-surface-variant/60">Scanning unread emails from priority inbox...</p>
+            <p class="text-primary font-bold">Synthesizing weather data for commute advisory...</p>
+          </div>
+          <div class="absolute right-0 bottom-0 w-48 h-48 bg-primary/5 blur-[80px] rounded-full -mr-16 -mb-16"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scroll Indicator -->
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-float">
+      <span class="text-[10px] font-label text-outline-variant uppercase tracking-widest">Scroll</span>
+      <div class="w-px h-8 bg-gradient-to-b from-outline-variant/50 to-transparent"></div>
+    </div>
+  </section>
+
+  <!-- Supported Channels Section -->
+  <section id="channels" class="relative py-24 px-6 md:px-12">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16">
+        <span class="font-label text-xs text-primary uppercase tracking-widest mb-4 block">Omni-Channel</span>
+        <h2 class="text-4xl md:text-5xl font-headline font-bold tracking-tight text-on-surface mb-4">
+          어디서 대화하든,<br/><span class="text-gradient">하나의 AI가 응답합니다</span>
+        </h2>
+        <p class="text-on-surface-variant max-w-xl mx-auto">팀에서 쓰는 슬랙이든, 친구에게 보내는 카카오톡이든 — 채널이 달라도 동일한 지능이 동작합니다.</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        <!-- Telegram -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-6 text-center hover:scale-[1.03] transition-transform group relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-[#26A5E4]/10 blur-[40px] rounded-full -mr-8 -mt-8"></div>
+          <div class="relative z-10">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform" style="background:#26A5E4">
+              <img src="https://cdn.simpleicons.org/telegram/ffffff" width="36" height="36" alt="Telegram" loading="lazy">
+            </div>
+            <h3 class="font-headline text-lg font-bold text-on-surface mb-1">Telegram</h3>
+            <p class="font-label text-[10px] text-primary uppercase tracking-widest font-bold mb-3">현재 지원</p>
+            <p class="text-xs text-on-surface-variant leading-relaxed">개인 봇을 통한 1:1 대화 방식. 명령어와 자연어 모두 지원합니다.</p>
+          </div>
+        </div>
+
+        <!-- Slack -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-6 text-center hover:scale-[1.03] transition-transform group relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-[#36C5F0]/10 blur-[40px] rounded-full -mr-8 -mt-8"></div>
+          <div class="relative z-10">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform" style="background:#ffffff">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313z" fill="#E01E5A"/><path d="M8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312z" fill="#36C5F0"/><path d="M18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.271 0a2.528 2.528 0 0 1-2.52 2.521 2.528 2.528 0 0 1-2.521-2.521V2.522A2.528 2.528 0 0 1 15.165 0a2.528 2.528 0 0 1 2.52 2.522v6.312z" fill="#2EB67D"/><path d="M15.165 18.956a2.528 2.528 0 0 1 2.52 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.521-2.522v-2.522h2.521zm0-1.271a2.527 2.527 0 0 1-2.521-2.52 2.528 2.528 0 0 1 2.521-2.521h6.313A2.528 2.528 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.52h-6.313z" fill="#ECB22E"/></svg>
+            </div>
+            <h3 class="font-headline text-lg font-bold text-on-surface mb-1">Slack</h3>
+            <p class="font-label text-[10px] text-primary uppercase tracking-widest font-bold mb-3">현재 지원</p>
+            <p class="text-xs text-on-surface-variant leading-relaxed">워크스페이스 채널 또는 DM으로 팀 단위 업무를 자동화합니다.</p>
+          </div>
+        </div>
+
+        <!-- Discord -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-6 text-center hover:scale-[1.03] transition-transform group relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-[#5865F2]/10 blur-[40px] rounded-full -mr-8 -mt-8"></div>
+          <div class="relative z-10">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform" style="background:#5865F2">
+              <img src="https://cdn.simpleicons.org/discord/ffffff" width="36" height="36" alt="Discord" loading="lazy">
+            </div>
+            <h3 class="font-headline text-lg font-bold text-on-surface mb-1">Discord</h3>
+            <p class="font-label text-[10px] text-primary uppercase tracking-widest font-bold mb-3">현재 지원</p>
+            <p class="text-xs text-on-surface-variant leading-relaxed">서버 멘션 및 DM을 통해 커뮤니티와 팀 자동화를 지원합니다.</p>
+          </div>
+        </div>
+
+        <!-- iMessage -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-6 text-center hover:scale-[1.03] transition-transform group relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-[#34C759]/10 blur-[40px] rounded-full -mr-8 -mt-8"></div>
+          <div class="relative z-10">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform" style="background:#34C759">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="1" y="2" width="22" height="16" rx="5" fill="white" opacity="0.95"/><circle cx="8.5" cy="10" r="1.5" fill="#34C759"/><circle cx="12" cy="10" r="1.5" fill="#34C759"/><circle cx="15.5" cy="10" r="1.5" fill="#34C759"/><path d="M5 18l2.5-3" stroke="white" stroke-width="2.8" stroke-linecap="round"/></svg>
+            </div>
+            <h3 class="font-headline text-lg font-bold text-on-surface mb-1">iMessage</h3>
+            <p class="font-label text-[10px] text-primary uppercase tracking-widest font-bold mb-3">현재 지원 · macOS</p>
+            <p class="text-xs text-on-surface-variant leading-relaxed">macOS Messages.app 으로 1:1 대화. 별도 API 없이 바로 사용합니다.</p>
+          </div>
+        </div>
+
+        <!-- KakaoTalk -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-6 text-center hover:scale-[1.03] transition-transform group relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-[#FEE500]/10 blur-[40px] rounded-full -mr-8 -mt-8"></div>
+          <div class="relative z-10">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform" style="background:#FEE500">
+              <img src="https://cdn.simpleicons.org/kakaotalk/3c1e1e" width="36" height="36" alt="KakaoTalk" loading="lazy">
+            </div>
+            <h3 class="font-headline text-lg font-bold text-on-surface mb-1">KakaoTalk</h3>
+            <p class="font-label text-[10px] text-tertiary uppercase tracking-widest font-bold mb-3">개발 중</p>
+            <p class="text-xs text-on-surface-variant leading-relaxed">카카오톡 챗봇을 통해 국내 사용자에게 친숙한 환경을 제공합니다.</p>
+          </div>
+        </div>
+
+        <!-- Naver -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-6 text-center hover:scale-[1.03] transition-transform group relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-24 h-24 bg-[#03C75A]/10 blur-[40px] rounded-full -mr-8 -mt-8"></div>
+          <div class="relative z-10">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 group-hover:scale-110 transition-transform" style="background:#03C75A">
+              <img src="https://cdn.simpleicons.org/naver/ffffff" width="36" height="36" alt="Naver" loading="lazy">
+            </div>
+            <h3 class="font-headline text-lg font-bold text-on-surface mb-1">Naver</h3>
+            <p class="font-label text-[10px] text-tertiary uppercase tracking-widest font-bold mb-3">예정</p>
+            <p class="text-xs text-on-surface-variant leading-relaxed">네이버 톡톡 · 라인 연동으로 국내 비즈니스 커뮤니케이션을 지원합니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Channel Architecture Insight -->
+      <div class="mt-12 bg-surface-container-lowest rounded-xl p-6 ghost-border max-w-3xl mx-auto">
+        <div class="flex flex-col md:flex-row items-center gap-6 text-center md:text-left">
+          <div class="flex items-center gap-3 shrink-0">
+            <span class="material-symbols-outlined text-primary text-2xl">hub</span>
+            <span class="font-headline font-bold text-on-surface">Unified Intelligence</span>
+          </div>
+          <p class="text-sm text-on-surface-variant leading-relaxed">
+            모든 채널의 메시지는 하나의 AI 코어로 수렴됩니다. 어떤 플랫폼에서 보내든 동일한 메모리, 동일한 도구, 동일한 Plan-and-Execute 엔진이 응답합니다.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="relative py-32 px-6 md:px-12 feature-glow-1">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-20">
+        <span class="font-label text-xs text-primary uppercase tracking-widest mb-4 block">Capabilities</span>
+        <h2 class="text-4xl md:text-5xl font-headline font-bold tracking-tight text-on-surface mb-4">
+          익숙한 메신저에서<br/>모든 것을 제어합니다
+        </h2>
+        <p class="text-on-surface-variant max-w-xl mx-auto">슬랙이든, 카카오톡이든, 텔레그램이든 — 평소 쓰는 채널에서 이메일, 일정, Drive · Sheets · Docs, 날씨 조회, 메모, 주식 시세까지 11가지 스킬.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Gmail -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-8 hover:scale-[1.02] transition-transform group">
+          <div class="w-12 h-12 mb-6 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 193" width="44" height="33">
+              <path fill="#4285F4" d="M58.182 192.05V93.14L27.507 65.077 0 49.419v125.934c0 9.22 7.474 16.697 16.697 16.697"/>
+              <path fill="#34A853" d="M197.818 192.05h39.484c9.22 0 16.698-7.477 16.698-16.697V49.419l-32.054 23.21"/>
+              <path fill="#FBBC05" d="M197.818 17.504V93.14L256 49.419V26.181C256 3.658 235.015-9.068 215.738 5.653"/>
+              <path fill="#EA4335" d="M0 49.419l26.759 20.07L58.182 93.14V17.504L40.297 5.654C21.01-9.068 0 3.657 0 26.18"/>
+              <path fill="#C5221F" d="M58.182 93.14l-4.174-38.647 4.174-36.989 99.818 74.864 99.818-74.864 4.69 33.302-4.69 42.334L158 167.998"/>
+            </svg>
+          </div>
+          <h3 class="font-headline text-xl font-bold text-on-surface mb-2">이메일 관리</h3>
+          <p class="text-sm text-on-surface-variant leading-relaxed mb-4">Gmail과 직접 연결하여 읽지 않은 이메일 확인, 검색, 답장 초안 작성까지 자동으로.</p>
+          <div class="flex gap-2">
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">검색</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">읽기</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">전송</span>
+          </div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-8 hover:scale-[1.02] transition-transform group">
+          <div class="w-12 h-12 mb-6 flex items-center justify-center rounded-xl overflow-hidden shadow">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+              <rect width="48" height="48" rx="4" fill="white"/>
+              <rect y="0" width="48" height="14" rx="4" fill="#1a73e8"/>
+              <rect y="10" width="48" height="4" fill="#1a73e8"/>
+              <circle cx="16" cy="7" r="2.5" fill="white" opacity="0.75"/>
+              <circle cx="32" cy="7" r="2.5" fill="white" opacity="0.75"/>
+              <text x="24" y="38" font-family="Arial, sans-serif" font-size="16" font-weight="700" fill="#1a73e8" text-anchor="middle">31</text>
+            </svg>
+          </div>
+          <h3 class="font-headline text-xl font-bold text-on-surface mb-2">캘린더</h3>
+          <p class="text-sm text-on-surface-variant leading-relaxed mb-4">Google Calendar와 연동하여 일정 조회, 생성, 삭제를 자연어로 처리합니다.</p>
+          <div class="flex gap-2">
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">조회</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">생성</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">삭제</span>
+          </div>
+        </div>
+
+        <!-- Web Search -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-8 hover:scale-[1.02] transition-transform group">
+          <div class="w-12 h-12 mb-6 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40">
+              <rect width="48" height="48" rx="10" fill="#FF6D00"/>
+              <circle cx="21" cy="21" r="9" fill="none" stroke="white" stroke-width="3.5"/>
+              <line x1="27.5" y1="28" x2="37" y2="37.5" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3 class="font-headline text-xl font-bold text-on-surface mb-2">웹 검색</h3>
+          <p class="text-sm text-on-surface-variant leading-relaxed mb-4">DuckDuckGo 실시간 검색으로 최신 뉴스와 정보를 즉시 파악합니다. API 키 불필요.</p>
+          <div class="flex gap-2">
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">실시간</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">무료</span>
+          </div>
+        </div>
+
+        <!-- Weather -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-8 hover:scale-[1.02] transition-transform group">
+          <div class="w-12 h-12 mb-6 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40">
+              <rect width="48" height="48" rx="10" fill="#039BE5"/>
+              <circle cx="19" cy="19" r="7" fill="#FFD740"/>
+              <rect x="17.5" y="7" width="3" height="5" rx="1.5" fill="#FFD740"/>
+              <rect x="26.5" y="17.5" width="5" height="3" rx="1.5" fill="#FFD740"/>
+              <rect x="8" y="17.5" width="5" height="3" rx="1.5" fill="#FFD740"/>
+              <ellipse cx="31" cy="34" rx="9" ry="6" fill="white" opacity="0.95"/>
+              <ellipse cx="23" cy="35.5" rx="7" ry="5.5" fill="white" opacity="0.95"/>
+              <ellipse cx="27" cy="30" rx="7" ry="6" fill="white" opacity="0.95"/>
+            </svg>
+          </div>
+          <h3 class="font-headline text-xl font-bold text-on-surface mb-2">날씨 조회</h3>
+          <p class="text-sm text-on-surface-variant leading-relaxed mb-4">Open-Meteo API로 전 세계 날씨와 최대 7일 예보를 무료로 제공합니다.</p>
+          <div class="flex gap-2">
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">현재</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">예보</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">글로벌</span>
+          </div>
+        </div>
+
+        <!-- Memo -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-8 hover:scale-[1.02] transition-transform group">
+          <div class="w-12 h-12 mb-6 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40">
+              <rect width="48" height="48" rx="10" fill="#FFB300"/>
+              <path d="M11 9h22l6 6v26H11z" fill="white" opacity="0.95"/>
+              <path d="M33 9l6 6h-6z" fill="#E65100" opacity="0.2"/>
+              <rect x="15" y="19" width="18" height="2" rx="1" fill="#FFB300" opacity="0.65"/>
+              <rect x="15" y="24" width="18" height="2" rx="1" fill="#FFB300" opacity="0.65"/>
+              <rect x="15" y="29" width="12" height="2" rx="1" fill="#FFB300" opacity="0.65"/>
+              <path d="M31 33 l5-5 3 3 -5 5z" fill="#E65100" opacity="0.6"/>
+              <line x1="31" y1="33" x2="27.5" y2="37.5" stroke="#E65100" stroke-width="1.5" opacity="0.6" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3 class="font-headline text-xl font-bold text-on-surface mb-2">메모 & 기억</h3>
+          <p class="text-sm text-on-surface-variant leading-relaxed mb-4">중요한 정보를 SQLite에 영구 저장하고, 대화 문맥을 기억하여 답변합니다.</p>
+          <div class="flex gap-2">
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">저장</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">조회</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">영구</span>
+          </div>
+        </div>
+
+        <!-- Scheduler -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-8 hover:scale-[1.02] transition-transform group relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-[60px] rounded-full -mr-10 -mt-10"></div>
+          <div class="relative z-10">
+            <div class="w-12 h-12 mb-6 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40">
+                <rect width="48" height="48" rx="10" fill="#00ACC1"/>
+                <circle cx="24" cy="27" r="13" fill="white" opacity="0.95"/>
+                <line x1="24" y1="27" x2="24" y2="18" stroke="#00ACC1" stroke-width="2.5" stroke-linecap="round"/>
+                <line x1="24" y1="27" x2="30" y2="31" stroke="#00ACC1" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="24" cy="27" r="2" fill="#00ACC1"/>
+                <line x1="13" y1="11" x2="17" y2="16" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                <line x1="35" y1="11" x2="31" y2="16" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3 class="font-headline text-xl font-bold text-on-surface mb-2">자율 알림</h3>
+            <p class="text-sm text-on-surface-variant leading-relaxed mb-4">매일 아침 브리핑, 일정 리마인더, 주간 브리핑을 사용자 요청 없이 능동적으로 전송합니다.</p>
+            <div class="flex gap-2">
+              <span class="px-2 py-0.5 bg-primary/10 text-primary text-[9px] rounded uppercase font-bold">자동</span>
+              <span class="px-2 py-0.5 bg-primary/10 text-primary text-[9px] rounded uppercase font-bold">능동</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Google Drive -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-8 hover:scale-[1.02] transition-transform group">
+          <div class="w-12 h-12 mb-6 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 87.3 78" width="44" height="39">
+              <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+              <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
+              <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+              <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+              <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+              <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+            </svg>
+          </div>
+          <h3 class="font-headline text-xl font-bold text-on-surface mb-2">Google Drive</h3>
+          <p class="text-sm text-on-surface-variant leading-relaxed mb-4">Drive 파일을 검색하고 읽어오거나, 텍스트를 새 파일로 생성하고 폴더를 관리합니다.</p>
+          <div class="flex gap-2">
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">검색</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">업로드</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">폴더</span>
+          </div>
+        </div>
+
+        <!-- Google Sheets -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-8 hover:scale-[1.02] transition-transform group">
+          <div class="w-12 h-12 mb-6 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40">
+              <path d="M8 4h22l10 10v30H8z" fill="#34a853"/>
+              <path d="M30 4l10 10H30z" fill="#188038"/>
+              <rect x="12" y="19" width="24" height="2" rx="1" fill="white" opacity="0.9"/>
+              <rect x="12" y="24" width="24" height="2" rx="1" fill="white" opacity="0.9"/>
+              <rect x="12" y="29" width="24" height="2" rx="1" fill="white" opacity="0.9"/>
+              <rect x="12" y="34" width="24" height="2" rx="1" fill="white" opacity="0.9"/>
+              <rect x="21" y="17" width="2" height="21" rx="1" fill="white" opacity="0.5"/>
+              <rect x="30" y="17" width="2" height="21" rx="1" fill="white" opacity="0.5"/>
+            </svg>
+          </div>
+          <h3 class="font-headline text-xl font-bold text-on-surface mb-2">Google Sheets</h3>
+          <p class="text-sm text-on-surface-variant leading-relaxed mb-4">스프레드시트 데이터를 읽고 쓰거나, 행을 추가하고 새 시트를 생성합니다.</p>
+          <div class="flex gap-2">
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">읽기</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">쓰기</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">행 추가</span>
+          </div>
+        </div>
+
+        <!-- Google Docs -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-8 hover:scale-[1.02] transition-transform group">
+          <div class="w-12 h-12 mb-6 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40">
+              <path d="M8 4h22l10 10v30H8z" fill="#4285f4"/>
+              <path d="M30 4l10 10H30z" fill="#1a56c0"/>
+              <rect x="12" y="19" width="24" height="2" rx="1" fill="white" opacity="0.9"/>
+              <rect x="12" y="24" width="24" height="2" rx="1" fill="white" opacity="0.9"/>
+              <rect x="12" y="29" width="24" height="2" rx="1" fill="white" opacity="0.9"/>
+              <rect x="12" y="34" width="16" height="2" rx="1" fill="white" opacity="0.9"/>
+            </svg>
+          </div>
+          <h3 class="font-headline text-xl font-bold text-on-surface mb-2">Google Docs</h3>
+          <p class="text-sm text-on-surface-variant leading-relaxed mb-4">Docs 문서 내용을 읽고 새 문서를 생성하거나, 특정 텍스트를 찾아 바꿉니다.</p>
+          <div class="flex gap-2">
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">읽기</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">생성</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">편집</span>
+          </div>
+        </div>
+
+        <!-- Task -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-8 hover:scale-[1.02] transition-transform group">
+          <div class="w-12 h-12 mb-6 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40">
+              <rect width="48" height="48" rx="10" fill="#651FFF"/>
+              <rect x="9" y="12" width="10" height="10" rx="2" fill="white" opacity="0.9"/>
+              <path d="M11.5 17 L14 20.5 L19.5 14" stroke="#651FFF" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="23" y="15" width="16" height="2.5" rx="1.25" fill="white" opacity="0.8"/>
+              <rect x="9" y="27" width="10" height="10" rx="2" fill="white" opacity="0.9"/>
+              <path d="M11.5 32 L14 35.5 L19.5 29" stroke="#651FFF" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+              <rect x="23" y="30" width="16" height="2.5" rx="1.25" fill="white" opacity="0.8"/>
+            </svg>
+          </div>
+          <h3 class="font-headline text-xl font-bold text-on-surface mb-2">태스크 관리</h3>
+          <p class="text-sm text-on-surface-variant leading-relaxed mb-4">복잡한 작업을 태스크로 등록하고 진행 상황을 추적합니다. 완료 · 실패 · 실행 중 상태 관리.</p>
+          <div class="flex gap-2">
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">생성</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">추적</span>
+          </div>
+        </div>
+
+        <!-- Finance -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-8 hover:scale-[1.02] transition-transform group">
+          <div class="w-12 h-12 mb-6 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40">
+              <rect width="48" height="48" rx="10" fill="#00897B"/>
+              <rect x="8" y="28" width="7" height="12" rx="1.5" fill="white" opacity="0.9"/>
+              <rect x="11" y="22" width="1.5" height="6" rx="0.75" fill="white" opacity="0.65"/>
+              <rect x="20.5" y="20" width="7" height="16" rx="1.5" fill="white" opacity="0.9"/>
+              <rect x="23.5" y="14" width="1.5" height="6" rx="0.75" fill="white" opacity="0.65"/>
+              <rect x="33" y="11" width="7" height="22" rx="1.5" fill="white" opacity="0.9"/>
+              <rect x="36" y="7" width="1.5" height="4" rx="0.75" fill="white" opacity="0.65"/>
+              <path d="M11.5 36 L24 27 L36.5 19" stroke="#A5D6A7" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h3 class="font-headline text-xl font-bold text-on-surface mb-2">주식 · 암호화폐</h3>
+          <p class="text-sm text-on-surface-variant leading-relaxed mb-4">실시간 주식·암호화폐 시세와 기술적 분석을 제공합니다. API 키 없이 무료로 사용.</p>
+          <div class="flex gap-2">
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">시세</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">분석</span>
+            <span class="px-2 py-0.5 bg-surface-container-highest text-[9px] rounded uppercase font-bold text-on-surface-variant">무료</span>
+          </div>
+        </div>
+
+        <!-- Workflow -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-8 hover:scale-[1.02] transition-transform group relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-[60px] rounded-full -mr-10 -mt-10"></div>
+          <div class="relative z-10">
+            <div class="w-12 h-12 mb-6 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40">
+                <rect width="48" height="48" rx="10" fill="#00796B"/>
+                <circle cx="11" cy="24" r="5.5" fill="white" opacity="0.95"/>
+                <circle cx="37" cy="11" r="5.5" fill="white" opacity="0.95"/>
+                <circle cx="37" cy="37" r="5.5" fill="white" opacity="0.95"/>
+                <line x1="16.5" y1="21.5" x2="31.5" y2="13.5" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+                <line x1="16.5" y1="26.5" x2="31.5" y2="34.5" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+              </svg>
+            </div>
+            <h3 class="font-headline text-xl font-bold text-on-surface mb-2">Workflow 자동화</h3>
+            <p class="text-sm text-on-surface-variant leading-relaxed mb-4">Gmail · Calendar · Drive를 조합한 복합 자동화. 스탠드업 보고, 주간 다이제스트, 미팅 준비를 한 번에.</p>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-2 py-0.5 bg-primary/10 text-primary text-[9px] rounded uppercase font-bold">스탠드업</span>
+              <span class="px-2 py-0.5 bg-primary/10 text-primary text-[9px] rounded uppercase font-bold">주간요약</span>
+              <span class="px-2 py-0.5 bg-primary/10 text-primary text-[9px] rounded uppercase font-bold">미팅준비</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Skill System -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-8 hover:scale-[1.02] transition-transform group relative overflow-hidden md:col-span-2 lg:col-span-3">
+          <div class="absolute top-0 right-0 w-48 h-48 bg-secondary/5 blur-[80px] rounded-full -mr-16 -mt-16"></div>
+          <div class="relative z-10">
+            <div class="flex flex-col md:flex-row md:items-start gap-8">
+              <div class="flex-1">
+                <div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center mb-6">
+                  <span class="material-symbols-outlined text-secondary text-2xl">extension</span>
+                </div>
+                <h3 class="font-headline text-xl font-bold text-on-surface mb-2">스킬 시스템 <span class="text-xs font-label text-secondary font-normal normal-case tracking-normal">SKILL.md 기반</span></h3>
+                <p class="text-sm text-on-surface-variant leading-relaxed mb-4">
+                  OpenClaw/AgentSkills 호환 스킬 아키텍처. 각 스킬은 <code class="text-primary bg-surface-container px-1 rounded text-xs">SKILL.md</code>(AI 지시) + <code class="text-primary bg-surface-container px-1 rounded text-xs">tool.py</code>(구현)로 구성됩니다.<br/>
+                  <code class="text-secondary bg-surface-container px-1 rounded text-xs">~/.openchiken/skills/</code>에 폴더를 추가하면 다음 실행 시 자동으로 로드됩니다.
+                </p>
+                <div class="flex flex-wrap gap-2">
+                  <span class="px-2 py-0.5 bg-secondary/10 text-secondary text-[9px] rounded uppercase font-bold">동적 로딩</span>
+                  <span class="px-2 py-0.5 bg-secondary/10 text-secondary text-[9px] rounded uppercase font-bold">사용자 확장</span>
+                  <span class="px-2 py-0.5 bg-secondary/10 text-secondary text-[9px] rounded uppercase font-bold">OpenClaw 호환</span>
+                </div>
+              </div>
+              <div class="md:w-72 bg-surface-container-lowest rounded-lg p-4 font-mono text-[11px] border border-outline-variant/10 shrink-0">
+                <div class="text-on-surface-variant/40 mb-2 text-[10px]">~/.openchiken/skills/my_skill/</div>
+                <div class="space-y-1">
+                  <div><span class="text-secondary">─</span> <span class="text-primary">SKILL.md</span> <span class="text-on-surface-variant/40"># AI 지시 + 메타</span></div>
+                  <div><span class="text-secondary">─</span> <span class="text-on-surface">tool.py</span> <span class="text-on-surface-variant/40"># LangChain 도구</span></div>
+                </div>
+                <div class="mt-3 pt-3 border-t border-outline-variant/10 text-on-surface-variant/50 text-[10px]">
+                  <div class="text-on-surface-variant/40 mb-1"># SKILL.md 예시</div>
+                  <div><span class="text-secondary">---</span></div>
+                  <div>name: <span class="text-primary">my_skill</span></div>
+                  <div>enabled: <span class="text-primary">true</span></div>
+                  <div><span class="text-secondary">---</span></div>
+                  <div class="mt-1 text-on-surface-variant/50">## 사용 가능한 도구...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Plan-and-Execute Section -->
+  <section id="how-it-works" class="relative py-32 px-6 md:px-12 feature-glow-2">
+    <div class="max-w-6xl mx-auto">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div>
+          <span class="font-label text-xs text-primary uppercase tracking-widest mb-4 block">Autonomous Engine</span>
+          <h2 class="text-4xl md:text-5xl font-headline font-bold tracking-tight text-on-surface mb-6 leading-tight">
+            복잡한 작업도<br/>
+            <span class="text-gradient">알아서 계획하고 실행</span>
+          </h2>
+          <p class="text-on-surface-variant leading-relaxed mb-8">
+            Plan-and-Execute 엔진이 복잡한 요청을 단계별로 분해합니다.
+            각 단계를 실행하면서 결과를 평가하고, 필요하면 계획을 수정하여 최적의 답변을 도출합니다.
+          </p>
+
+          <div class="space-y-6">
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-1">
+                <span class="font-headline font-bold text-primary text-sm">01</span>
+              </div>
+              <div>
+                <h4 class="font-headline font-bold text-on-surface mb-1">Planner</h4>
+                <p class="text-sm text-on-surface-variant">요청을 분석하여 구체적인 실행 단계를 생성합니다.</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-1">
+                <span class="font-headline font-bold text-primary text-sm">02</span>
+              </div>
+              <div>
+                <h4 class="font-headline font-bold text-on-surface mb-1">Executor</h4>
+                <p class="text-sm text-on-surface-variant">각 단계를 도구(Gmail, Calendar 등)를 활용하여 실행합니다.</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-4">
+              <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-1">
+                <span class="font-headline font-bold text-primary text-sm">03</span>
+              </div>
+              <div>
+                <h4 class="font-headline font-bold text-on-surface mb-1">Replanner</h4>
+                <p class="text-sm text-on-surface-variant">결과를 평가하고, 미완료 시 계획을 동적으로 수정합니다.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visual Demo -->
+        <div class="reveal-on-scroll">
+          <div class="bg-surface-container-low rounded-xl p-6 ghost-border">
+            <div class="flex items-center gap-3 mb-6">
+              <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">psychology</span>
+              <span class="font-label text-xs font-bold text-primary uppercase tracking-widest">Live Execution</span>
+            </div>
+
+            <div class="bg-surface-container-lowest rounded-lg p-5 font-mono text-[11px] leading-relaxed space-y-3 border border-outline-variant/10">
+              <div class="flex gap-3">
+                <span class="text-on-surface-variant/40 shrink-0">14:02</span>
+                <span class="text-on-surface-variant">[user] 미팅 관련 이메일 찾아서 요약하고 답장해줘</span>
+              </div>
+              <div class="flex gap-3">
+                <span class="text-on-surface-variant/40 shrink-0">14:02</span>
+                <span class="text-secondary">[planner] 3단계 계획 생성 완료</span>
+              </div>
+              <div class="flex gap-3">
+                <span class="text-on-surface-variant/40 shrink-0">14:02</span>
+                <span class="text-on-surface-variant/60">[tool] GmailSearch {"query": "미팅"}</span>
+              </div>
+              <div class="flex gap-3">
+                <span class="text-on-surface-variant/40 shrink-0">14:03</span>
+                <span class="text-secondary">[success] 12개 스레드 발견</span>
+              </div>
+
+              <div class="p-3 bg-primary/5 rounded-lg border-l-2 border-primary/50">
+                <div class="font-bold text-primary text-[10px] uppercase tracking-tighter mb-1">Re-planner Active</div>
+                <div class="text-on-surface text-[11px]">"긴급" 키워드 탐지. 우선순위 조정 중...</div>
+              </div>
+
+              <div class="flex gap-3 items-center">
+                <span class="text-on-surface-variant/40 shrink-0">14:03</span>
+                <span class="text-primary flex items-center gap-1">
+                  <span class="w-1 h-3 bg-primary animate-pulse"></span>
+                  요약 및 답장 초안 생성 중...
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tech Stack Section -->
+  <section id="tech-stack" class="py-32 px-6 md:px-12">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16">
+        <span class="font-label text-xs text-primary uppercase tracking-widest mb-4 block">Technology</span>
+        <h2 class="text-4xl md:text-5xl font-headline font-bold tracking-tight text-on-surface">
+          검증된 기술로 구동됩니다
+        </h2>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-6 text-center hover:bg-surface-container transition-colors">
+          <span class="text-3xl font-headline font-bold text-primary block mb-2">GPT-4o</span>
+          <span class="font-label text-[10px] text-on-surface-variant uppercase tracking-widest">AI Reasoning</span>
+        </div>
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-6 text-center hover:bg-surface-container transition-colors">
+          <span class="text-3xl font-headline font-bold text-secondary block mb-2">LC</span>
+          <span class="font-label text-[10px] text-on-surface-variant uppercase tracking-widest">LangChain</span>
+        </div>
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-6 text-center hover:bg-surface-container transition-colors">
+          <span class="text-3xl font-headline font-bold text-tertiary block mb-2">LG</span>
+          <span class="font-label text-[10px] text-on-surface-variant uppercase tracking-widest">LangGraph</span>
+        </div>
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-6 text-center hover:bg-surface-container transition-colors">
+          <span class="text-3xl font-headline font-bold text-on-surface block mb-2">Py</span>
+          <span class="font-label text-[10px] text-on-surface-variant uppercase tracking-widest">Python 3.11+</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture Section -->
+  <section class="py-24 px-6 md:px-12">
+    <div class="max-w-4xl mx-auto">
+      <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-8 md:p-12 ghost-border relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[100px] rounded-full -mr-20 -mt-20"></div>
+        <div class="relative z-10">
+          <div class="flex items-center gap-3 mb-8">
+            <span class="material-symbols-outlined text-primary">hub</span>
+            <span class="font-label text-xs font-bold text-primary uppercase tracking-widest">Architecture</span>
+          </div>
+
+          <div class="bg-surface-container-lowest rounded-lg p-6 font-mono text-xs md:text-sm leading-relaxed text-on-surface-variant border border-outline-variant/10">
+<pre class="whitespace-pre-wrap"><span class="text-tertiary">멀티 채널 입력</span>
+  ├── <span class="text-on-surface">Telegram</span>  ├── <span class="text-on-surface">Slack</span>  ├── <span class="text-on-surface">Discord</span>
+  ├── <span class="text-on-surface">KakaoTalk</span> └── <span class="text-on-surface">Naver</span> ...
+      ↓
+[<span class="text-tertiary">Channel Router</span>]  ─── 통합 메시지 라우팅
+      │
+      ├── 일반 메시지 ──▶ [ReAct Agent]
+      │                       │
+      │                  [<span class="text-secondary">SkillLoader</span>]
+      │                  skills/*/SKILL.md  → 시스템 프롬프트 주입
+      │                  skills/*/tool.py   → 도구 동적 로딩
+      │                  ~/.openchiken/skills/ → 사용자 커스텀 스킬
+      │                       │
+      │                       └── 도구 호출
+      │                            ├── <span class="text-secondary">Gmail</span>
+      │                            ├── <span class="text-secondary">Calendar</span>
+      │                            ├── <span class="text-secondary">Drive</span>
+      │                            ├── <span class="text-secondary">Sheets</span>
+      │                            ├── <span class="text-secondary">Docs</span>
+      │                            ├── <span class="text-secondary">Workflow</span>
+      │                            ├── <span class="text-secondary">WebSearch</span>
+      │                            ├── <span class="text-secondary">Weather</span>
+      │                            ├── <span class="text-secondary">Memo</span>
+      │                            ├── <span class="text-secondary">Task</span>
+      │                            ├── <span class="text-secondary">Finance</span>
+      │                            └── <span class="text-secondary">+ 커스텀 스킬</span>
+      │
+      └── /plan 명령 ──▶ [<span class="text-primary">Plan-and-Execute</span>]
+                              ├── Planner
+                              ├── Executor
+                              └── Replanner
+
+[<span class="text-primary">Scheduler</span>] ─── 자율 실행 → 연결된 채널로 전송
+      ├── 매일 08:00    → 아침 브리핑
+      ├── 매 5분        → 일정 리마인더
+      └── 매주 월 08:05 → 주간 브리핑</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       What People Say — 마르키 리뷰 섹션
+  ════════════════════════════════════════════ -->
+  <section id="reviews" class="py-28 overflow-hidden">
+    <div class="max-w-6xl mx-auto px-6 md:px-12 text-center mb-16">
+      <span class="font-label text-xs text-primary uppercase tracking-widest mb-4 block">What People Say</span>
+      <h2 class="text-4xl md:text-5xl font-headline font-bold tracking-tight text-on-surface">
+        사람들의 이야기
+      </h2>
+    </div>
+
+    <div class="max-w-5xl mx-auto overflow-hidden">
+    <div class="space-y-4 marquee-fade">
+      <!-- Row 1: 왼쪽→오른쪽 -->
+      <div class="marquee-row row-fwd">
+        <div class="marquee-track">
+          <!-- 카드 세트 A -->
+          <div class="flex gap-4 shrink-0">
+            <div class="w-80 shrink-0 bg-surface-container-low rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"텔레그램에서 '오늘 미팅 관련 이메일 요약해줘' 한 마디로 12개 스레드가 정리됐습니다. 마법 같아요."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=minjun&backgroundColor=00daf3&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="김민준"/><div><p class="text-xs font-bold text-on-surface">김민준</p><p class="text-[10px] text-on-surface-variant">스타트업 CTO</p></div></div>
+            </div>
+            <div class="w-80 shrink-0 bg-surface-container-low rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"아침 브리핑이 진짜 유용합니다. 8시에 일정이랑 안 읽은 이메일을 자동으로 보내주니까 하루 시작이 달라졌어요."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=jiyeon&backgroundColor=bbc3ff&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="이지연"/><div><p class="text-xs font-bold text-on-surface">이지연</p><p class="text-[10px] text-on-surface-variant">프리랜서 디자이너</p></div></div>
+            </div>
+            <div class="w-80 shrink-0 bg-surface-container-low rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"Plan-and-Execute 기능이 압도적입니다. '이번 주 미팅 정리하고 각각 답장 초안 작성해줘'가 진짜로 됩니다."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=sunghun&backgroundColor=49d7f4&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="박성훈"/><div><p class="text-xs font-bold text-on-surface">박성훈</p><p class="text-[10px] text-on-surface-variant">PM, 핀테크</p></div></div>
+            </div>
+            <div class="w-80 shrink-0 bg-surface-container-low rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"오픈소스인데 이 정도 퀄리티는 처음 봅니다. 개인 서버에서 돌리니까 데이터 걱정도 없고 완벽해요."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=hyunwoo&backgroundColor=00daf3&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="최현우"/><div><p class="text-xs font-bold text-on-surface">최현우</p><p class="text-[10px] text-on-surface-variant">백엔드 엔지니어</p></div></div>
+            </div>
+            <div class="w-80 shrink-0 bg-surface-container-low rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"슬랙 연동이 드디어 됐네요! DM에서 바로 AI 비서를 쓸 수 있으니 팀 전체가 정말 만족하고 있습니다."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=dohyun&backgroundColor=bbc3ff&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="신도현"/><div><p class="text-xs font-bold text-on-surface">신도현</p><p class="text-[10px] text-on-surface-variant">팀장, IT 컨설팅</p></div></div>
+            </div>
+            <div class="w-72 shrink-0 bg-surface-container-low rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"내일 일정 리마인더를 15분 전에 자동으로 알려주는 게 너무 편해요. 이제 달력 앱 잘 안 봅니다."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=hyerim&backgroundColor=49d7f4&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="오혜림"/><div><p class="text-xs font-bold text-on-surface">오혜림</p><p class="text-[10px] text-on-surface-variant">마케터</p></div></div>
+            </div>
+          </div>
+          <!-- 카드 세트 A 복제 (무한 루프) -->
+          <div class="flex gap-4 shrink-0" aria-hidden="true">
+            <div class="w-80 shrink-0 bg-surface-container-low rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"텔레그램에서 '오늘 미팅 관련 이메일 요약해줘' 한 마디로 12개 스레드가 정리됐습니다. 마법 같아요."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=minjun&backgroundColor=00daf3&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="김민준"/><div><p class="text-xs font-bold text-on-surface">김민준</p><p class="text-[10px] text-on-surface-variant">스타트업 CTO</p></div></div>
+            </div>
+            <div class="w-80 shrink-0 bg-surface-container-low rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"아침 브리핑이 진짜 유용합니다. 8시에 일정이랑 안 읽은 이메일을 자동으로 보내주니까 하루 시작이 달라졌어요."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=jiyeon&backgroundColor=bbc3ff&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="이지연"/><div><p class="text-xs font-bold text-on-surface">이지연</p><p class="text-[10px] text-on-surface-variant">프리랜서 디자이너</p></div></div>
+            </div>
+            <div class="w-80 shrink-0 bg-surface-container-low rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"Plan-and-Execute 기능이 압도적입니다. '이번 주 미팅 정리하고 각각 답장 초안 작성해줘'가 진짜로 됩니다."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=sunghun&backgroundColor=49d7f4&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="박성훈"/><div><p class="text-xs font-bold text-on-surface">박성훈</p><p class="text-[10px] text-on-surface-variant">PM, 핀테크</p></div></div>
+            </div>
+            <div class="w-80 shrink-0 bg-surface-container-low rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"오픈소스인데 이 정도 퀄리티는 처음 봅니다. 개인 서버에서 돌리니까 데이터 걱정도 없고 완벽해요."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=hyunwoo&backgroundColor=00daf3&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="최현우"/><div><p class="text-xs font-bold text-on-surface">최현우</p><p class="text-[10px] text-on-surface-variant">백엔드 엔지니어</p></div></div>
+            </div>
+            <div class="w-80 shrink-0 bg-surface-container-low rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"슬랙 연동이 드디어 됐네요! DM에서 바로 AI 비서를 쓸 수 있으니 팀 전체가 정말 만족하고 있습니다."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=dohyun&backgroundColor=bbc3ff&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="신도현"/><div><p class="text-xs font-bold text-on-surface">신도현</p><p class="text-[10px] text-on-surface-variant">팀장, IT 컨설팅</p></div></div>
+            </div>
+            <div class="w-72 shrink-0 bg-surface-container-low rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"내일 일정 리마인더를 15분 전에 자동으로 알려주는 게 너무 편해요. 이제 달력 앱 잘 안 봅니다."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=hyerim&backgroundColor=49d7f4&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="오혜림"/><div><p class="text-xs font-bold text-on-surface">오혜림</p><p class="text-[10px] text-on-surface-variant">마케터</p></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: 오른쪽→왼쪽 (역방향) -->
+      <div class="marquee-row row-rev">
+        <div class="marquee-track">
+          <!-- 카드 세트 B -->
+          <div class="flex gap-4 shrink-0">
+            <div class="w-72 shrink-0 bg-surface-container rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"카카오톡에서도 쓸 수 있게 되면 주변에 엄청 전파할 것 같습니다. 부모님한테도 드리고 싶어요."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=yeeun&backgroundColor=00daf3&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="정예은"/><div><p class="text-xs font-bold text-on-surface">정예은</p><p class="text-[10px] text-on-surface-variant">UX 리서처</p></div></div>
+            </div>
+            <div class="w-80 shrink-0 bg-surface-container rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"서울 날씨 물어보면 바로 답해주는 게 신기해요. API 키도 없이 무료로 되는 게 말이 됩니까."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=jaewon&backgroundColor=bbc3ff&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="한재원"/><div><p class="text-xs font-bold text-on-surface">한재원</p><p class="text-[10px] text-on-surface-variant">데이터 분석가</p></div></div>
+            </div>
+            <div class="w-80 shrink-0 bg-surface-container rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"LangGraph 기반 Plan-and-Execute 아키텍처가 인상적입니다. 구현이 깔끔하고 확장성도 좋아요."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=jaehyuk&backgroundColor=49d7f4&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="윤재혁"/><div><p class="text-xs font-bold text-on-surface">윤재혁</p><p class="text-[10px] text-on-surface-variant">AI 엔지니어</p></div></div>
+            </div>
+            <div class="w-80 shrink-0 bg-surface-container rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"'아까 그 거래처 이름이 뭐였지?'라고 물었더니 진짜로 찾아줬습니다. 대화 기억이 이렇게 잘 될 줄 몰랐어요."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=gitae&backgroundColor=00daf3&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="남기태"/><div><p class="text-xs font-bold text-on-surface">남기태</p><p class="text-[10px] text-on-surface-variant">영업 팀장</p></div></div>
+            </div>
+            <div class="w-80 shrink-0 bg-surface-container rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"setup.py 로 환경 세팅이 이렇게 쉬울 줄 몰랐어요. 5분도 안 걸렸습니다. 진짜 제품 같아요."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=soyeon&backgroundColor=bbc3ff&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="안소연"/><div><p class="text-xs font-bold text-on-surface">안소연</p><p class="text-[10px] text-on-surface-variant">기획자</p></div></div>
+            </div>
+            <div class="w-72 shrink-0 bg-surface-container rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"주간 브리핑이 월요일 아침 8시에 자동으로 오는 거 보고 팀원들이 다 설치했습니다."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=doyun&backgroundColor=49d7f4&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="임도윤"/><div><p class="text-xs font-bold text-on-surface">임도윤</p><p class="text-[10px] text-on-surface-variant">팀리드, SaaS</p></div></div>
+            </div>
+          </div>
+          <!-- 카드 세트 B 복제 -->
+          <div class="flex gap-4 shrink-0" aria-hidden="true">
+            <div class="w-72 shrink-0 bg-surface-container rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"카카오톡에서도 쓸 수 있게 되면 주변에 엄청 전파할 것 같습니다. 부모님한테도 드리고 싶어요."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=yeeun&backgroundColor=00daf3&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="정예은"/><div><p class="text-xs font-bold text-on-surface">정예은</p><p class="text-[10px] text-on-surface-variant">UX 리서처</p></div></div>
+            </div>
+            <div class="w-80 shrink-0 bg-surface-container rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"서울 날씨 물어보면 바로 답해주는 게 신기해요. API 키도 없이 무료로 되는 게 말이 됩니까."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=jaewon&backgroundColor=bbc3ff&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="한재원"/><div><p class="text-xs font-bold text-on-surface">한재원</p><p class="text-[10px] text-on-surface-variant">데이터 분석가</p></div></div>
+            </div>
+            <div class="w-80 shrink-0 bg-surface-container rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"LangGraph 기반 Plan-and-Execute 아키텍처가 인상적입니다. 구현이 깔끔하고 확장성도 좋아요."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=jaehyuk&backgroundColor=49d7f4&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="윤재혁"/><div><p class="text-xs font-bold text-on-surface">윤재혁</p><p class="text-[10px] text-on-surface-variant">AI 엔지니어</p></div></div>
+            </div>
+            <div class="w-80 shrink-0 bg-surface-container rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"'아까 그 거래처 이름이 뭐였지?'라고 물었더니 진짜로 찾아줬습니다. 대화 기억이 이렇게 잘 될 줄 몰랐어요."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=gitae&backgroundColor=00daf3&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="남기태"/><div><p class="text-xs font-bold text-on-surface">남기태</p><p class="text-[10px] text-on-surface-variant">영업 팀장</p></div></div>
+            </div>
+            <div class="w-80 shrink-0 bg-surface-container rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"setup.py 로 환경 세팅이 이렇게 쉬울 줄 몰랐어요. 5분도 안 걸렸습니다. 진짜 제품 같아요."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=soyeon&backgroundColor=bbc3ff&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="안소연"/><div><p class="text-xs font-bold text-on-surface">안소연</p><p class="text-[10px] text-on-surface-variant">기획자</p></div></div>
+            </div>
+            <div class="w-72 shrink-0 bg-surface-container rounded-xl p-5 ghost-border">
+              <p class="text-sm text-on-surface leading-relaxed mb-4">"주간 브리핑이 월요일 아침 8시에 자동으로 오는 거 보고 팀원들이 다 설치했습니다."</p>
+              <div class="flex items-center gap-2"><img src="https://api.dicebear.com/9.x/thumbs/svg?seed=doyun&backgroundColor=49d7f4&backgroundType=solid&backgroundAlpha=20" class="w-7 h-7 rounded-full" alt="임도윤"/><div><p class="text-xs font-bold text-on-surface">임도윤</p><p class="text-[10px] text-on-surface-variant">팀리드, SaaS</p></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       Quick Start — 로컬 설치 가이드 섹션
+  ════════════════════════════════════════════ -->
+  <section id="quickstart" class="py-28 px-6 md:px-12">
+    <div class="max-w-5xl mx-auto">
+      <div class="text-center mb-16">
+        <span class="font-label text-xs text-primary uppercase tracking-widest mb-4 block">Quick Start</span>
+        <h2 class="text-4xl md:text-5xl font-headline font-bold tracking-tight text-on-surface mb-4">
+          5분 안에 시작하기
+        </h2>
+        <p class="text-on-surface-variant max-w-xl mx-auto">
+          로컬 머신에서 직접 실행합니다. 데이터는 내 컴퓨터에만 저장됩니다.
+        </p>
+      </div>
+
+      <!-- 설치 방식 탭 -->
+      <div class="flex gap-1 mb-10 bg-surface-container-low rounded-full p-1 max-w-sm mx-auto">
+        <button onclick="switchTab('install')" id="tab-install" class="tab-btn active flex-1 py-2 px-3 rounded-full text-xs font-label font-bold transition-all border-b-0">
+          uv install <span class="font-normal opacity-70 hidden sm:inline">권장</span>
+        </button>
+        <button onclick="switchTab('clone')" id="tab-clone" class="tab-btn flex-1 py-2 px-3 rounded-full text-xs font-label font-bold transition-all border-b-0">
+          git clone <span class="font-normal opacity-70 hidden sm:inline">개발자</span>
+        </button>
+        <button onclick="switchTab('web')" id="tab-web" class="tab-btn flex-1 py-2 px-3 rounded-full text-xs font-label font-bold transition-all border-b-0">
+          Web UI <span class="font-normal opacity-70 hidden sm:inline">브라우저</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 items-start">
+
+        <!-- 좌측: 스텝 가이드 -->
+        <div class="lg:col-span-3 space-y-0">
+
+          <!-- ── uv tool install 탭 ── -->
+          <div id="panel-install" class="tab-panel active space-y-0">
+
+            <!-- Step 1 -->
+            <div class="relative step-line flex gap-5 pb-8">
+              <div class="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center shrink-0 z-10">
+                <span class="font-headline font-bold text-primary text-sm">1</span>
+              </div>
+              <div class="pt-1.5 flex-1">
+                <h3 class="font-headline font-bold text-on-surface mb-1">사전 준비</h3>
+                <p class="text-sm text-on-surface-variant mb-3">Python 3.11+ 와 <code class="text-primary bg-surface-container px-1.5 py-0.5 rounded text-xs">uv</code> 패키지 매니저가 필요합니다.</p>
+                <div class="bg-surface-container-lowest rounded-lg p-3 font-mono text-xs text-on-surface-variant border border-outline-variant/10">
+                  <span class="text-on-surface-variant/40 select-none">$&nbsp;</span><span class="text-primary">curl</span> -LsSf https://astral.sh/uv/install.sh | bash
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="relative step-line flex gap-5 pb-8">
+              <div class="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center shrink-0 z-10">
+                <span class="font-headline font-bold text-primary text-sm">2</span>
+              </div>
+              <div class="pt-1.5 flex-1">
+                <h3 class="font-headline font-bold text-on-surface mb-1">설치 <span class="text-xs font-label text-on-surface-variant font-normal normal-case">git clone 불필요</span></h3>
+                <p class="text-sm text-on-surface-variant mb-3">한 줄로 설치하면 <code class="text-primary bg-surface-container px-1.5 py-0.5 rounded text-xs">openchiken</code> 명령이 전역으로 사용 가능합니다.</p>
+                <div class="bg-surface-container-lowest rounded-lg p-3 font-mono text-xs text-on-surface-variant border border-outline-variant/10">
+                  <div><span class="text-on-surface-variant/40 select-none">$&nbsp;</span><span class="text-primary">uv</span> tool install git+https://github.com/your-org/openchiken.git</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="relative step-line flex gap-5 pb-8">
+              <div class="w-10 h-10 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center shrink-0 z-10 shadow-[0_0_12px_rgba(0,218,243,0.25)]">
+                <span class="font-headline font-bold text-primary text-sm">3</span>
+              </div>
+              <div class="pt-1.5 flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="font-headline font-bold text-on-surface">설정 위저드 실행</h3>
+                  <span class="px-2 py-0.5 bg-primary/10 text-primary text-[9px] rounded uppercase font-bold tracking-wider">핵심</span>
+                </div>
+                <p class="text-sm text-on-surface-variant mb-3">인터랙티브 TUI가 LLM 공급자, API 키, 채널, 스케줄러를 단계별로 안내합니다. 설정은 <code class="text-primary bg-surface-container px-1 rounded text-xs">~/.openchiken/.env</code>에 저장됩니다.</p>
+                <div class="bg-surface-container-lowest rounded-lg p-3 font-mono text-xs text-on-surface-variant border border-primary/20">
+                  <div><span class="text-on-surface-variant/40 select-none">$&nbsp;</span><span class="text-primary">openchiken-setup</span></div>
+                </div>
+                <div class="mt-3 flex flex-wrap gap-2 text-[10px]">
+                  <span class="bg-surface-container px-2 py-1 rounded font-label text-on-surface-variant">LLM 선택</span>
+                  <span class="text-on-surface-variant/40">→</span>
+                  <span class="bg-surface-container px-2 py-1 rounded font-label text-on-surface-variant">채널 설정</span>
+                  <span class="text-on-surface-variant/40">→</span>
+                  <span class="bg-surface-container px-2 py-1 rounded font-label text-on-surface-variant">Google OAuth</span>
+                  <span class="text-on-surface-variant/40">→</span>
+                  <span class="bg-primary/10 px-2 py-1 rounded font-label text-primary">자동 저장</span>
+                </div>
+                <div class="mt-3 flex items-center gap-2 text-[11px] text-on-surface-variant/60">
+                  <span class="material-symbols-outlined text-sm text-tertiary">open_in_browser</span>
+                  TUI 대신 브라우저로 설정하려면 <button onclick="switchTab('web')" class="text-tertiary underline underline-offset-2 hover:text-primary transition-colors">Web UI 탭</button>을 확인하세요.
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="relative flex gap-5">
+              <div class="w-10 h-10 rounded-full primary-gradient flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(0,218,243,0.3)]">
+                <span class="material-symbols-outlined text-on-primary text-sm">rocket_launch</span>
+              </div>
+              <div class="pt-1.5 flex-1">
+                <h3 class="font-headline font-bold text-on-surface mb-1">실행!</h3>
+                <p class="text-sm text-on-surface-variant mb-3">텔레그램 봇에 메시지를 보내면 AI가 응답합니다.</p>
+                <div class="bg-surface-container-lowest rounded-lg p-3 font-mono text-xs text-on-surface-variant border border-outline-variant/10 space-y-1">
+                  <div><span class="text-on-surface-variant/40 select-none">$&nbsp;</span><span class="text-primary">openchiken</span></div>
+                  <div class="text-on-surface-variant/40 mt-2">— 출력 —</div>
+                  <div class="text-secondary">=== OpenChiken AI 비서 시작 ===</div>
+                  <div class="text-on-surface-variant/60">Model : gpt-4o</div>
+                  <div class="text-on-surface-variant/60">스케줄: 아침브리핑 08:00 / 리마인더 15분 전</div>
+                  <div class="text-primary">Telegram bot polling started ✓</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ── git clone 탭 ── -->
+          <div id="panel-clone" class="tab-panel space-y-0">
+
+            <!-- Step 1 -->
+            <div class="relative step-line flex gap-5 pb-8">
+              <div class="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center shrink-0 z-10">
+                <span class="font-headline font-bold text-primary text-sm">1</span>
+              </div>
+              <div class="pt-1.5 flex-1">
+                <h3 class="font-headline font-bold text-on-surface mb-1">사전 준비</h3>
+                <p class="text-sm text-on-surface-variant mb-3">Python 3.11+ 와 <code class="text-primary bg-surface-container px-1.5 py-0.5 rounded text-xs">uv</code> 패키지 매니저가 필요합니다.</p>
+                <div class="bg-surface-container-lowest rounded-lg p-3 font-mono text-xs text-on-surface-variant border border-outline-variant/10">
+                  <span class="text-on-surface-variant/40 select-none">$&nbsp;</span><span class="text-primary">curl</span> -LsSf https://astral.sh/uv/install.sh | bash
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="relative step-line flex gap-5 pb-8">
+              <div class="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center shrink-0 z-10">
+                <span class="font-headline font-bold text-primary text-sm">2</span>
+              </div>
+              <div class="pt-1.5 flex-1">
+                <h3 class="font-headline font-bold text-on-surface mb-1">클론 & 의존성 설치</h3>
+                <p class="text-sm text-on-surface-variant mb-3">저장소를 클론하고 가상환경을 자동 생성합니다.</p>
+                <div class="bg-surface-container-lowest rounded-lg p-3 font-mono text-xs text-on-surface-variant border border-outline-variant/10 space-y-1">
+                  <div><span class="text-on-surface-variant/40 select-none">$&nbsp;</span><span class="text-primary">git</span> clone https://github.com/your-org/openchiken.git</div>
+                  <div><span class="text-on-surface-variant/40 select-none">$&nbsp;</span><span class="text-primary">cd</span> openchiken && <span class="text-primary">uv</span> sync</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="relative step-line flex gap-5 pb-8">
+              <div class="w-10 h-10 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center shrink-0 z-10 shadow-[0_0_12px_rgba(0,218,243,0.25)]">
+                <span class="font-headline font-bold text-primary text-sm">3</span>
+              </div>
+              <div class="pt-1.5 flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="font-headline font-bold text-on-surface">설정 위저드 실행</h3>
+                  <span class="px-2 py-0.5 bg-primary/10 text-primary text-[9px] rounded uppercase font-bold tracking-wider">핵심</span>
+                </div>
+                <p class="text-sm text-on-surface-variant mb-3">인터랙티브 TUI가 LLM 공급자, API 키, 채널, 스케줄러를 단계별로 안내합니다.</p>
+                <div class="bg-surface-container-lowest rounded-lg p-3 font-mono text-xs text-on-surface-variant border border-primary/20">
+                  <div><span class="text-on-surface-variant/40 select-none">$&nbsp;</span><span class="text-primary">uv</span> run python setup.py</div>
+                </div>
+                <div class="mt-3 flex items-center gap-2 text-[11px] text-on-surface-variant/60">
+                  <span class="material-symbols-outlined text-sm text-tertiary">open_in_browser</span>
+                  브라우저로 설정하려면 <button onclick="switchTab('web')" class="text-tertiary underline underline-offset-2 hover:text-primary transition-colors">Web UI 탭</button>을 확인하세요.
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="relative step-line flex gap-5 pb-8">
+              <div class="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center shrink-0 z-10">
+                <span class="font-headline font-bold text-primary text-sm">4</span>
+              </div>
+              <div class="pt-1.5 flex-1">
+                <h3 class="font-headline font-bold text-on-surface mb-1">Google OAuth (선택)</h3>
+                <p class="text-sm text-on-surface-variant mb-3">Gmail & Calendar 연동이 필요하다면 위저드 Step 3에서 안내에 따라 <code class="text-primary bg-surface-container px-1.5 py-0.5 rounded text-xs">credentials.json</code>을 발급하세요.</p>
+                <a href="https://console.cloud.google.com" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-label text-tertiary hover:underline">
+                  <span class="material-symbols-outlined text-sm">open_in_new</span>
+                  Google Cloud Console 열기
+                </a>
+              </div>
+            </div>
+
+            <!-- Step 5 -->
+            <div class="relative flex gap-5">
+              <div class="w-10 h-10 rounded-full primary-gradient flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(0,218,243,0.3)]">
+                <span class="material-symbols-outlined text-on-primary text-sm">rocket_launch</span>
+              </div>
+              <div class="pt-1.5 flex-1">
+                <h3 class="font-headline font-bold text-on-surface mb-1">실행!</h3>
+                <p class="text-sm text-on-surface-variant mb-3">텔레그램 봇에 메시지를 보내면 AI가 응답합니다.</p>
+                <div class="bg-surface-container-lowest rounded-lg p-3 font-mono text-xs text-on-surface-variant border border-outline-variant/10 space-y-1">
+                  <div><span class="text-on-surface-variant/40 select-none">$&nbsp;</span><span class="text-primary">uv</span> run python main.py</div>
+                  <div class="text-on-surface-variant/40 mt-2">— 출력 —</div>
+                  <div class="text-secondary">=== OpenChiken AI 비서 시작 ===</div>
+                  <div class="text-on-surface-variant/60">Model : gpt-4o</div>
+                  <div class="text-primary">Telegram bot polling started ✓</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- ── Web UI 탭 ── -->
+          <div id="panel-web" class="tab-panel space-y-0">
+
+            <!-- Step 1 -->
+            <div class="relative step-line flex gap-5 pb-8">
+              <div class="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center shrink-0 z-10">
+                <span class="font-headline font-bold text-primary text-sm">1</span>
+              </div>
+              <div class="pt-1.5 flex-1">
+                <h3 class="font-headline font-bold text-on-surface mb-1">사전 준비</h3>
+                <p class="text-sm text-on-surface-variant mb-3">Python 3.11+ 와 <code class="text-primary bg-surface-container px-1.5 py-0.5 rounded text-xs">uv</code> 패키지 매니저가 필요합니다.</p>
+                <div class="bg-surface-container-lowest rounded-lg p-3 font-mono text-xs text-on-surface-variant border border-outline-variant/10">
+                  <span class="text-on-surface-variant/40 select-none">$&nbsp;</span><span class="text-primary">curl</span> -LsSf https://astral.sh/uv/install.sh | bash
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="relative step-line flex gap-5 pb-8">
+              <div class="w-10 h-10 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center shrink-0 z-10">
+                <span class="font-headline font-bold text-primary text-sm">2</span>
+              </div>
+              <div class="pt-1.5 flex-1">
+                <h3 class="font-headline font-bold text-on-surface mb-1">설치</h3>
+                <p class="text-sm text-on-surface-variant mb-3"><code class="text-primary bg-surface-container px-1.5 py-0.5 rounded text-xs">openchiken</code> 명령을 전역으로 설치합니다.</p>
+                <div class="bg-surface-container-lowest rounded-lg p-3 font-mono text-xs text-on-surface-variant border border-outline-variant/10">
+                  <div><span class="text-on-surface-variant/40 select-none">$&nbsp;</span><span class="text-primary">uv</span> tool install git+https://github.com/your-org/openchiken.git</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="relative step-line flex gap-5 pb-8">
+              <div class="w-10 h-10 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center shrink-0 z-10 shadow-[0_0_12px_rgba(0,218,243,0.25)]">
+                <span class="font-headline font-bold text-primary text-sm">3</span>
+              </div>
+              <div class="pt-1.5 flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="font-headline font-bold text-on-surface">웹 서버 실행</h3>
+                  <span class="px-2 py-0.5 bg-primary/10 text-primary text-[9px] rounded uppercase font-bold tracking-wider">핵심</span>
+                </div>
+                <p class="text-sm text-on-surface-variant mb-3">로컬 웹 서버를 시작하면 브라우저에서 설정 위저드를 진행할 수 있습니다.</p>
+                <div class="bg-surface-container-lowest rounded-lg p-3 font-mono text-xs text-on-surface-variant border border-primary/20 space-y-1">
+                  <div><span class="text-on-surface-variant/40 select-none">$&nbsp;</span><span class="text-primary">openchiken-web</span></div>
+                  <div class="text-on-surface-variant/40 text-[10px] pl-1">또는 git clone 환경: uv run python server.py</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="relative step-line flex gap-5 pb-8">
+              <div class="w-10 h-10 rounded-full bg-tertiary/10 border border-tertiary/30 flex items-center justify-center shrink-0 z-10">
+                <span class="font-headline font-bold text-tertiary text-sm">4</span>
+              </div>
+              <div class="pt-1.5 flex-1">
+                <h3 class="font-headline font-bold text-on-surface mb-1">브라우저에서 위저드 진행</h3>
+                <p class="text-sm text-on-surface-variant mb-3">아래 주소를 열면 단계별 GUI 위저드가 시작됩니다. LLM 공급자, 채널 토큰, 스케줄러를 클릭으로 설정합니다.</p>
+                <a href="http://localhost:8000" target="_blank" class="inline-flex items-center gap-2 bg-surface-container border border-primary/20 rounded-lg px-4 py-2.5 font-mono text-xs text-primary hover:bg-primary/5 hover:border-primary/40 transition-all group">
+                  <span class="material-symbols-outlined text-sm">open_in_browser</span>
+                  http://localhost:8000
+                  <span class="material-symbols-outlined text-[10px] text-on-surface-variant/40 group-hover:text-primary transition-colors">arrow_forward</span>
+                </a>
+                <div class="mt-3 grid grid-cols-2 gap-2 text-[10px]">
+                  <div class="flex items-center gap-1.5 text-on-surface-variant"><span class="material-symbols-outlined text-[13px] text-primary">check_circle</span> LLM 공급자 선택</div>
+                  <div class="flex items-center gap-1.5 text-on-surface-variant"><span class="material-symbols-outlined text-[13px] text-primary">check_circle</span> OpenAI / Anthropic / Gemini</div>
+                  <div class="flex items-center gap-1.5 text-on-surface-variant"><span class="material-symbols-outlined text-[13px] text-primary">check_circle</span> Telegram · Slack · Discord</div>
+                  <div class="flex items-center gap-1.5 text-on-surface-variant"><span class="material-symbols-outlined text-[13px] text-primary">check_circle</span> Google OAuth 자동 안내</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 5 -->
+            <div class="relative flex gap-5">
+              <div class="w-10 h-10 rounded-full primary-gradient flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(0,218,243,0.3)]">
+                <span class="material-symbols-outlined text-on-primary text-sm">rocket_launch</span>
+              </div>
+              <div class="pt-1.5 flex-1">
+                <h3 class="font-headline font-bold text-on-surface mb-1">실행!</h3>
+                <p class="text-sm text-on-surface-variant mb-3">위저드 완료 후 봇을 시작합니다.</p>
+                <div class="bg-surface-container-lowest rounded-lg p-3 font-mono text-xs text-on-surface-variant border border-outline-variant/10 space-y-1">
+                  <div><span class="text-on-surface-variant/40 select-none">$&nbsp;</span><span class="text-primary">openchiken</span></div>
+                  <div class="text-on-surface-variant/40 mt-2">— 출력 —</div>
+                  <div class="text-secondary">=== OpenChiken AI 비서 시작 ===</div>
+                  <div class="text-on-surface-variant/60">Model : gpt-4o</div>
+                  <div class="text-primary">Telegram bot polling started ✓</div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- 우측: 미리보기 패널 -->
+        <div class="lg:col-span-2">
+          <div class="sticky top-24 space-y-3">
+
+            <!-- TUI 미리보기 (install / clone 탭) -->
+            <div id="preview-tui">
+              <div class="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/15 shadow-2xl">
+                <!-- 터미널 헤더 -->
+                <div class="flex items-center gap-2 px-4 py-3 bg-surface-container border-b border-outline-variant/10">
+                  <div class="w-3 h-3 rounded-full bg-[#ff5f57]"></div>
+                  <div class="w-3 h-3 rounded-full bg-[#febc2e]"></div>
+                  <div class="w-3 h-3 rounded-full bg-[#28c840]"></div>
+                  <span class="ml-3 text-[10px] font-label text-on-surface-variant/50">openchiken-setup</span>
+                </div>
+                <!-- 터미널 본문 -->
+                <div class="p-5 font-mono text-[11px] leading-relaxed space-y-1 text-on-surface-variant">
+                  <div class="text-primary">  ██████╗ ██████╗ ███████╗███╗   ██╗</div>
+                  <div class="text-primary">  ██╔══██╗██╔══██╗██╔════╝████╗  ██║</div>
+                  <div class="text-primary">  ██║  ██║██████╔╝█████╗  ██╔██╗ ██║</div>
+                  <div class="text-primary mb-2">  ██████╔╝██║     ███████╗██║ ╚████║</div>
+                  <div class="text-on-surface/70 mb-3">  C H I K E N — 자율 AI 비서 에이전트</div>
+                  <div class="h-px bg-outline-variant/20 my-3"></div>
+                  <div class="text-cyan-400">── STEP 2/5  LLM 설정 ──</div>
+                  <div class="mt-2 text-on-surface-variant/50">  ℹ  사용할 AI 공급자를 선택하세요</div>
+                  <div class="mt-2"><span class="text-primary">›</span> <span class="text-on-surface">공급자 선택</span></div>
+                  <div class="ml-4 text-primary">  ❯ OpenAI    <span class="text-on-surface-variant/40">(GPT-4o)</span></div>
+                  <div class="ml-4 text-on-surface-variant/50">    Anthropic  <span class="text-on-surface-variant/30">(Claude 3.5)</span></div>
+                  <div class="ml-4 text-on-surface-variant/50">    Google     <span class="text-on-surface-variant/30">(Gemini 2.0)</span></div>
+                  <div class="mt-2"><span class="text-primary">›</span> <span class="text-on-surface">OpenAI API Key</span></div>
+                  <div class="ml-4 text-on-surface-variant/50">  ●●●●●●●●●●●●●●●●</div>
+                  <div class="mt-3 text-green-400">  ✓  LLM 설정 완료 (openai / gpt-4o)</div>
+                  <div class="mt-1 text-cyan-400">── STEP 3/5  채널 설정 ──</div>
+                  <div class="mt-1"><span class="text-primary">›</span> <span class="text-on-surface">Telegram Bot Token</span> <span class="text-primary animate-pulse">█</span></div>
+                </div>
+              </div>
+              <p class="text-center text-[10px] font-label text-on-surface-variant/40 mt-3 uppercase tracking-wider">Setup Wizard TUI 미리보기</p>
+            </div>
+
+            <!-- Web UI 미리보기 (web 탭) -->
+            <div id="preview-web" style="display:none">
+              <div class="bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/15 shadow-2xl">
+                <!-- 브라우저 헤더 -->
+                <div class="flex items-center gap-2 px-4 py-3 bg-surface-container border-b border-outline-variant/10">
+                  <div class="w-3 h-3 rounded-full bg-[#ff5f57]"></div>
+                  <div class="w-3 h-3 rounded-full bg-[#febc2e]"></div>
+                  <div class="w-3 h-3 rounded-full bg-[#28c840]"></div>
+                  <div class="ml-3 flex-1 bg-surface-container-highest rounded px-3 py-1 text-[10px] font-label text-on-surface-variant/50 flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[11px]">lock</span>
+                    localhost:8000
+                  </div>
+                </div>
+                <!-- 웹 위저드 본문 -->
+                <div class="p-5 text-[11px] leading-relaxed text-on-surface-variant">
+                  <!-- 진행률 바 -->
+                  <div class="flex items-center gap-1 mb-4">
+                    <div class="h-1.5 rounded-full bg-primary flex-1"></div>
+                    <div class="h-1.5 rounded-full bg-primary/30 flex-[4]"></div>
+                  </div>
+                  <div class="text-[10px] text-on-surface-variant/50 mb-3 font-label uppercase tracking-wider">STEP 2 / 5 — LLM 설정</div>
+                  <div class="font-headline font-bold text-on-surface text-sm mb-3">AI 엔진 선택</div>
+                  <!-- 공급자 카드 -->
+                  <div class="grid grid-cols-3 gap-1.5 mb-3">
+                    <div class="border-2 border-primary rounded-lg p-2 text-center bg-primary/5">
+                      <div class="text-primary font-bold text-[10px]">OpenAI</div>
+                      <div class="text-on-surface-variant/40 text-[9px]">GPT-4o</div>
+                    </div>
+                    <div class="border border-outline-variant/20 rounded-lg p-2 text-center">
+                      <div class="text-on-surface-variant text-[10px]">Anthropic</div>
+                      <div class="text-on-surface-variant/40 text-[9px]">Claude 3.5</div>
+                    </div>
+                    <div class="border border-outline-variant/20 rounded-lg p-2 text-center">
+                      <div class="text-on-surface-variant text-[10px]">Google</div>
+                      <div class="text-on-surface-variant/40 text-[9px]">Gemini 2.0</div>
+                    </div>
+                  </div>
+                  <!-- API Key 입력 -->
+                  <div class="text-[10px] text-on-surface-variant/60 mb-1">OpenAI API Key</div>
+                  <div class="bg-surface-container border border-primary/30 rounded px-2 py-1.5 font-mono text-[10px] text-on-surface-variant/50 mb-3">sk-••••••••••••••••••••••••</div>
+                  <!-- 다음 버튼 -->
+                  <div class="flex justify-end">
+                    <div class="bg-primary/10 border border-primary/30 rounded px-3 py-1 text-[10px] text-primary font-bold font-label">다음 →</div>
+                  </div>
+                </div>
+              </div>
+              <p class="text-center text-[10px] font-label text-on-surface-variant/40 mt-3 uppercase tracking-wider">Setup Wizard Web UI 미리보기</p>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="py-32 px-6 md:px-12 relative">
+    <div class="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent pointer-events-none"></div>
+    <div class="relative z-10 text-center max-w-3xl mx-auto">
+      <h2 class="text-4xl md:text-6xl font-headline font-bold tracking-tight text-on-surface mb-6">
+        지금 바로<br/>시작하세요
+      </h2>
+      <p class="text-on-surface-variant text-lg mb-10 max-w-xl mx-auto">
+        OpenChiken으로 반복적인 작업에서 벗어나세요.<br/>
+        AI가 기억하고, 계획하고, 실행합니다.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="#quickstart" class="primary-gradient text-on-primary font-label text-xs font-bold px-10 py-5 rounded-full tracking-wider uppercase shadow-[0_0_40px_rgba(0,218,243,0.25)] hover:shadow-[0_0_60px_rgba(0,218,243,0.4)] hover:scale-105 transition-all animate-glow-pulse">
+          설치하고 로컬에서 켜기
+        </a>
+        <a href="#features" class="flex items-center justify-center gap-2 text-on-surface font-label text-xs font-bold px-8 py-5 rounded-full tracking-wider uppercase ghost-border hover:text-primary transition-all">
+          <span class="material-symbols-outlined text-sm">extension</span>
+          기능 · 스킬
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-12 px-6 md:px-12 border-t border-outline-variant/10">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+      <div class="flex items-center gap-3">
+        <img src="/static/assets/logo.png" alt="OpenChiken" class="w-6 h-6 rounded object-cover"/>
+        <span class="text-xl font-bold tracking-tighter text-primary font-headline">OpenChiken</span>
+        <span class="text-[10px] font-label text-on-surface-variant uppercase tracking-widest">Autonomous AI Assistant</span>
+      </div>
+      <nav class="flex flex-wrap justify-center gap-6">
+        <a href="#quickstart" class="font-label text-xs text-on-surface-variant hover:text-primary transition-colors">Quick Start</a>
+        <a href="#features" class="font-label text-xs text-on-surface-variant hover:text-primary transition-colors">기능</a>
+        <a href="https://github.com/dohoon84/openchiken" class="font-label text-xs text-on-surface-variant hover:text-primary transition-colors">GitHub</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="/static/shared.js"></script>
+  <script>
+    function switchTab(name) {
+      ['install', 'clone', 'web'].forEach(function(t) {
+        document.getElementById('tab-' + t).classList.toggle('active', t === name);
+        document.getElementById('panel-' + t).classList.toggle('active', t === name);
+      });
+      var isTui = (name === 'install' || name === 'clone');
+      document.getElementById('preview-tui').style.display = isTui ? '' : 'none';
+      document.getElementById('preview-web').style.display = isTui ? 'none' : '';
+    }
+  </script>
+</body>
+</html>
