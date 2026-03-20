@@ -211,6 +211,24 @@ def open_privacy_prefs():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/skills/reload")
+def reload_skills():
+    """런타임 스킬 캐시를 무효화합니다. 다음 채팅 요청 시 SKILL.md를 재스캔합니다."""
+    try:
+        import core.agent as ag
+        import skills as sk
+        ag._tools_cache = None
+        ag._skill_instructions_cache = None
+        ag._agent = None
+        ag._plan_graph = None
+        sk._loader = None
+        return {"ok": True, "message": "스킬 캐시가 초기화되었습니다. 다음 요청부터 새 스킬이 반영됩니다."}
+    except ImportError:
+        return {"ok": True, "message": "main.py 미실행 상태 — 재시작 시 자동 반영됩니다."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/system/start")
 def start_main():
     """setup 완료 후 main.py를 백그라운드 서브프로세스로 실행합니다."""

@@ -31,8 +31,17 @@ tailwind.config = {
 <body class="bg-background text-on-surface font-body">
 <main>
 <header class="mb-8">
-<h1 class="text-3xl font-headline font-bold tracking-tight text-on-surface">Skills</h1>
-<p class="text-on-surface-variant font-body text-sm">설치된 스킬 목록과 연결 상태를 확인합니다.</p>
+<div class="flex items-center justify-between gap-4 flex-wrap">
+  <div>
+    <h1 class="text-3xl font-headline font-bold tracking-tight text-on-surface">Skills</h1>
+    <p class="text-on-surface-variant font-body text-sm">설치된 스킬 목록과 연결 상태를 확인합니다.</p>
+  </div>
+  <button id="btn-reload-skills"
+    class="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-container-highest font-label font-bold text-xs uppercase tracking-widest text-on-surface hover:bg-primary/10 hover:text-primary transition-all">
+    <span class="material-symbols-outlined text-base">refresh</span>
+    스킬 재로드
+  </button>
+</div>
 </header>
 
 <!-- Skills Grid -->
@@ -248,6 +257,28 @@ tailwind.config = {
     }
   }
   loadSkills();
+
+  document.getElementById('btn-reload-skills').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-reload-skills');
+    btn.disabled = true;
+    btn.innerHTML = `<span class="material-symbols-outlined text-base animate-spin">progress_activity</span> 재로드 중...`;
+    try {
+      const res = await fetch('/api/skills/reload', { method: 'POST' });
+      const data = await res.json();
+      await loadSkills();
+      btn.innerHTML = `<span class="material-symbols-outlined text-base text-secondary">check_circle</span> ${data.message || '완료'}`;
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = `<span class="material-symbols-outlined text-base">refresh</span> 스킬 재로드`;
+      }, 2500);
+    } catch (e) {
+      btn.innerHTML = `<span class="material-symbols-outlined text-base text-error">error</span> 실패`;
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = `<span class="material-symbols-outlined text-base">refresh</span> 스킬 재로드`;
+      }, 2500);
+    }
+  });
 })();
 </script>
 </body></html>
