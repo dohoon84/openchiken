@@ -30,6 +30,8 @@ dependencies = [
     "python-multipart>=0.0.9",
     "slack-bolt>=1.18.0",
     "discord-py>=2.4.0",
+    "yfinance>=0.2.0",
+    "numpy>=1.26.0",
 ]
 
 [tool.setuptools]
