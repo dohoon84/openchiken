@@ -32,6 +32,15 @@ dependencies = [
     "discord-py>=2.4.0",
 ]
 
+[tool.setuptools]
+py-modules = ["main", "server", "setup_wizard"]
+
+[tool.setuptools.packages.find]
+include = ["core*", "config*", "skills*", "channels*", "scheduler*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.html", "*.css", "*.js", "*.json"]
+
 [project.scripts]
 openchiken = "main:main"
 openchiken-setup = "setup_wizard:main"
