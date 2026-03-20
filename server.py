@@ -77,7 +77,9 @@ class SetupConfig(BaseModel):
 
 @app.get("/")
 def root_redirect():
-    """로컬 웹 진입 시 온보딩으로 안내 (공개 랜딩은 landing/ 별도 배포)."""
+    """셋업 완료(.env 존재) 시 대시보드로, 미완료 시 온보딩으로 이동."""
+    if ENV_FILE.exists():
+        return RedirectResponse(url="/dashboard.html", status_code=302)
     return RedirectResponse(url="/setup.html", status_code=302)
 
 
