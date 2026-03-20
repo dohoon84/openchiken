@@ -45,12 +45,24 @@ _KO_TO_EN: dict[str, str] = {
 }
 
 
+def _normalize_korean_city(city: str) -> str:
+    """한국어 도시명에서 행정구역 접미사를 제거하여 매핑 가능한 형태로 정규화합니다.
+    예) '성남시' → '성남', '제주도' → '제주', '강남구' → '강남'
+    """
+    for suffix in ("특별시", "광역시", "특별자치시", "특별자치도", "시", "군", "구", "도"):
+        if city.endswith(suffix) and len(city) > len(suffix):
+            return city[: -len(suffix)]
+    return city
+
+
 def _geocode(city: str) -> tuple[float, float, str]:
     """Return (lat, lon, resolved_name) for a city name via Open-Meteo geocoding.
 
     Tries Korean→English mapping first, then falls back to querying as-is.
     """
-    query = _KO_TO_EN.get(city, city)
+    # 행정구역 접미사 제거 후 매핑 시도 (예: '성남시' → '성남' → 'Seongnam')
+    normalized = _normalize_korean_city(city)
+    query = _KO_TO_EN.get(city) or _KO_TO_EN.get(normalized) or city
 
     def _query(name: str) -> list:
         url = (
@@ -62,9 +74,13 @@ def _geocode(city: str) -> tuple[float, float, str]:
 
     results = _query(query)
 
-    # If mapped name also fails, try the original input as a last resort
+    # 매핑된 영문명 실패 시 원본 입력으로 재시도
     if not results and query != city:
         results = _query(city)
+
+    # 정규화된 한국어로도 재시도
+    if not results and normalized != city:
+        results = _query(normalized)
 
     if not results:
         raise ValueError(f"'{city}' 위치를 찾을 수 없습니다. 영문 도시명으로 시도해 보세요.")
