@@ -3,7 +3,7 @@
 OpenChiken Setup Wizard
 ───────────────────────
 인터랙티브 TUI로 AI 비서를 처음부터 세팅합니다.
-  uv run python setup.py
+  uv run python setup_wizard.py
 """
 
 import os
@@ -989,7 +989,7 @@ def write_env(cfg: dict):
     provider = cfg.get("LLM_PROVIDER", "openai")
 
     lines = [
-        "# OpenChiken 환경 설정 – setup.py 로 생성됨",
+        "# OpenChiken 환경 설정 – setup_wizard.py 로 생성됨",
         f"# {time.strftime('%Y-%m-%d %H:%M:%S')}",
         "",
         "# ── Persona ──────────────────────────────",
@@ -1101,7 +1101,7 @@ def print_done():
     )
     console.print()
     console.print("  [dim]문제가 생기면 .env 파일을 직접 수정하거나[/]")
-    console.print("  [dim]  uv run python setup.py  를 다시 실행하세요.[/]")
+    console.print("  [dim]  uv run python setup_wizard.py  를 다시 실행하세요.[/]")
     console.print()
 
 

@@ -457,7 +457,7 @@ openchiken/
 │   ├── slack_bot.py          # Socket Mode
 │   ├── discord_bot.py
 │   └── imessage_bot.py       # macOS 전용
-├── setup.py                  # 설정 위저드 (openchiken-setup)
+├── setup_wizard.py           # 설정 위저드 (openchiken-setup)
 └── pyproject.toml
 ```
 
