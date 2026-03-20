@@ -120,6 +120,10 @@
         <a href="#features" class="font-headline text-sm tracking-tight text-on-surface-variant hover:text-on-surface transition-colors">기능</a>
         <a href="#how-it-works" class="font-headline text-sm tracking-tight text-on-surface-variant hover:text-on-surface transition-colors">작동 방식</a>
         <a href="#quickstart" class="font-headline text-sm tracking-tight text-on-surface-variant hover:text-on-surface transition-colors">Quick Start</a>
+        <button onclick="showHubToast()" class="flex items-center gap-1 font-headline text-sm tracking-tight text-primary hover:text-primary/70 transition-colors bg-transparent border-none cursor-pointer p-0">
+          <span class="material-symbols-outlined text-sm">hub</span>
+          Hub
+        </button>
       </div>
     </div>
     <div class="flex items-center gap-4">
@@ -1388,6 +1392,7 @@
         <a href="#quickstart" class="font-label text-xs text-on-surface-variant hover:text-primary transition-colors">Quick Start</a>
         <a href="#features" class="font-label text-xs text-on-surface-variant hover:text-primary transition-colors">기능</a>
         <a href="https://github.com/dohoon84/openchiken" class="font-label text-xs text-on-surface-variant hover:text-primary transition-colors">GitHub</a>
+        <button onclick="showHubToast()" class="font-label text-xs text-on-surface-variant hover:text-primary transition-colors bg-transparent border-none cursor-pointer p-0">Hub</button>
       </nav>
     </div>
   </footer>
@@ -1402,6 +1407,22 @@
       var isTui = (name === 'install' || name === 'clone');
       document.getElementById('preview-tui').style.display = isTui ? '' : 'none';
       document.getElementById('preview-web').style.display = isTui ? 'none' : '';
+    }
+  </script>
+
+  <!-- Hub 준비 중 토스트 -->
+  <div id="hub-toast" style="display:none; position:fixed; bottom:2rem; left:50%; transform:translateX(-50%);
+    background:#1e2a2b; color:#00daf3; padding:0.75rem 1.5rem; border-radius:9999px;
+    font-size:0.75rem; font-weight:700; letter-spacing:0.05em; z-index:9999;
+    border:1px solid rgba(0,218,243,0.3); box-shadow:0 4px 24px rgba(0,218,243,0.15);
+    white-space:nowrap;">
+    🚧 Hub — 서비스 준비 중입니다
+  </div>
+  <script>
+    function showHubToast() {
+      var t = document.getElementById('hub-toast');
+      t.style.display = 'block';
+      setTimeout(function() { t.style.display = 'none'; }, 2500);
     }
   </script>
 </body>
