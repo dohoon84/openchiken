@@ -39,7 +39,10 @@ py-modules = ["main", "server", "setup_wizard"]
 include = ["core*", "config*", "skills*", "channels*", "scheduler*", "static*", "local_ui*"]
 
 [tool.setuptools.package-data]
-"*" = ["*.html", "*.css", "*.js", "*.json", "*.png", "*.ico", "*.svg"]
+"local_ui" = ["*.html"]
+"static" = ["*.css", "*.js"]
+"static.assets" = ["*.png", "*.ico", "*.svg", "*"]
+"*" = ["*.json"]
 
 [project.scripts]
 openchiken = "main:main"
