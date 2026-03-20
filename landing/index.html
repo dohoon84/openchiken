@@ -134,8 +134,36 @@
       <a href="#quickstart" class="primary-gradient text-on-primary font-label text-[10px] font-bold px-5 py-2.5 rounded-full tracking-wider uppercase hover:scale-105 transition-transform">
         Quick Start
       </a>
+      <button id="nav-menu-btn" onclick="toggleMobileNav()"
+        class="flex md:hidden items-center justify-center w-9 h-9 rounded-lg hover:bg-surface-container-highest transition-colors">
+        <span id="nav-menu-icon" class="material-symbols-outlined text-on-surface-variant">menu</span>
+      </button>
     </div>
   </nav>
+
+  <!-- 모바일 드로어 네비 -->
+  <div id="mobile-nav" class="hidden fixed top-16 left-0 right-0 z-40 glass-nav border-t border-outline-variant/10 md:hidden">
+    <div class="flex flex-col px-6 py-5 gap-5">
+      <a href="#channels" onclick="closeMobileNav()"
+        class="font-headline text-sm tracking-tight text-on-surface-variant hover:text-on-surface transition-colors">채널</a>
+      <a href="#features" onclick="closeMobileNav()"
+        class="font-headline text-sm tracking-tight text-on-surface-variant hover:text-on-surface transition-colors">기능</a>
+      <a href="#how-it-works" onclick="closeMobileNav()"
+        class="font-headline text-sm tracking-tight text-on-surface-variant hover:text-on-surface transition-colors">작동 방식</a>
+      <a href="#quickstart" onclick="closeMobileNav()"
+        class="font-headline text-sm tracking-tight text-on-surface-variant hover:text-on-surface transition-colors">Quick Start</a>
+      <button onclick="closeMobileNav(); showHubToast()"
+        class="text-left font-headline text-sm tracking-tight text-primary hover:text-primary/70 transition-colors bg-transparent border-none cursor-pointer p-0 flex items-center gap-1">
+        <span class="material-symbols-outlined text-sm">hub</span>
+        Hub
+      </button>
+      <a href="#quickstart" onclick="closeMobileNav()"
+        class="flex items-center gap-2 primary-gradient text-on-primary font-label text-[10px] font-bold px-5 py-3 rounded-full tracking-wider uppercase w-fit">
+        <span class="material-symbols-outlined text-sm">rocket_launch</span>
+        로컬에서 시작
+      </a>
+    </div>
+  </div>
 
   <!-- Hero Section -->
   <section class="relative min-h-screen flex items-center justify-center hero-glow grid-bg pt-16">
@@ -1229,7 +1257,7 @@
                   http://localhost:8000
                   <span class="material-symbols-outlined text-[10px] text-on-surface-variant/40 group-hover:text-primary transition-colors">arrow_forward</span>
                 </a>
-                <div class="mt-3 grid grid-cols-2 gap-2 text-[10px]">
+                <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
                   <div class="flex items-center gap-1.5 text-on-surface-variant"><span class="material-symbols-outlined text-[13px] text-primary">check_circle</span> LLM 공급자 선택</div>
                   <div class="flex items-center gap-1.5 text-on-surface-variant"><span class="material-symbols-outlined text-[13px] text-primary">check_circle</span> OpenAI / Anthropic / Gemini</div>
                   <div class="flex items-center gap-1.5 text-on-surface-variant"><span class="material-symbols-outlined text-[13px] text-primary">check_circle</span> Telegram · Slack · Discord</div>
@@ -1424,6 +1452,24 @@
       t.style.display = 'block';
       setTimeout(function() { t.style.display = 'none'; }, 2500);
     }
+    function toggleMobileNav() {
+      var nav = document.getElementById('mobile-nav');
+      var icon = document.getElementById('nav-menu-icon');
+      nav.classList.toggle('hidden');
+      icon.textContent = nav.classList.contains('hidden') ? 'menu' : 'close';
+    }
+    function closeMobileNav() {
+      document.getElementById('mobile-nav').classList.add('hidden');
+      document.getElementById('nav-menu-icon').textContent = 'menu';
+    }
+    // 앵커 링크 클릭 시 드로어 닫기
+    document.addEventListener('click', function(e) {
+      var nav = document.getElementById('mobile-nav');
+      var btn = document.getElementById('nav-menu-btn');
+      if (!nav.classList.contains('hidden') && !nav.contains(e.target) && !btn.contains(e.target)) {
+        closeMobileNav();
+      }
+    });
   </script>
 </body>
 </html>
