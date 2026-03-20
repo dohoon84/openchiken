@@ -32,7 +32,7 @@ Telegram · Slack · Discord · iMessage를 통해 명령을 받고, OpenAI / An
 | 경로 | 용도 |
 |------|------|
 | **`landing/`** | 공개 **랜딩 페이지** (별도 도메인에 정적 배포) |
-| **`local-ui/`** | PC에서 `server.py`로 띄우는 **로컬 온보딩 + 관리 화면** |
+| **`local_ui/`** | PC에서 `server.py`로 띄우는 **로컬 온보딩 + 관리 화면** |
 | **`static/`** | 랜딩과 로컬 UI가 공유하는 CSS · JS · 로고 |
 | **`docs/quickstart.md`** | 설치 → 실행 단계 요약 |
 
@@ -420,9 +420,9 @@ EOF
 ```
 openchiken/
 ├── main.py                   # 진입점 (봇 + 스케줄러 시작)
-├── server.py                 # 로컬 웹 서버 (local-ui + /static + 온보딩 API)
+├── server.py                 # 로컬 웹 서버 (local_ui + /static + 온보딩 API)
 ├── landing/                  # 공개 랜딩 (정적 배포 전용)
-├── local-ui/                 # 로컬 온보딩·대시보드 HTML
+├── local_ui/                 # 로컬 온보딩·대시보드 HTML
 ├── static/                   # 공유 자산 (CSS, JS, assets/logo 등)
 ├── docs/
 │   └── quickstart.md

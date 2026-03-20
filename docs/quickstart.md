@@ -32,11 +32,11 @@ uv run python server.py
 기본 포트는 `8000` 입니다. 환경변수 `PORT`로 바꿀 수 있습니다.
 
 - **`http://localhost:8000/`** → **`/setup.html`** 로 리다이렉트 (온보딩)
-- 설정이 끝나면 **`/dashboard.html`** 등 **local-ui** 화면으로 이동합니다.
+- 설정이 끝나면 **`/dashboard.html`** 등 **local_ui** 화면으로 이동합니다.
 
 서빙되는 디렉터리 역할:
 
-- **`local-ui/`** — setup, dashboard, tasks, skills, settings HTML
+- **`local_ui/`** — setup, dashboard, tasks, skills, settings HTML
 - **`static/`** — 공유 스타일·스크립트·로고 (`/static/...`)
 
 ## 4. 비서 실행 (채널)

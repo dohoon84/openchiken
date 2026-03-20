@@ -2,7 +2,7 @@
 """
 OpenChiken Web Server
 ─────────────────────
-FastAPI — 로컬 전용 온보딩(/setup) · 관리 UI(local-ui/) + /static 자산
+FastAPI — 로컬 전용 온보딩(/setup) · 관리 UI(local_ui/) + /static 자산
   uv run python server.py
 
 공개 랜딩(landing/)은 별도 도메인 정적 배포. 이 서버 루트(/)는 온보딩으로 연결됩니다.
@@ -31,7 +31,7 @@ KST = timezone(timedelta(hours=9))
 # ── 경로 설정 ──────────────────────────────────────────────────
 ROOT = Path(__file__).parent
 STATIC_DIR = ROOT / "static"
-LOCAL_UI_DIR = ROOT / "local-ui"
+LOCAL_UI_DIR = ROOT / "local_ui"
 OPENCHIKEN_HOME = Path.home() / ".openchiken"
 ENV_FILE = OPENCHIKEN_HOME / ".env"
 CREDENTIALS_DST = OPENCHIKEN_HOME / "credentials.json"
@@ -894,15 +894,21 @@ def setup_page():
     return FileResponse(LOCAL_UI_DIR / "setup.html")
 
 
-# 정적 자산 → local-ui HTML (마운트 순서: 구체적인 경로를 먼저)
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
-app.mount("/", StaticFiles(directory=str(LOCAL_UI_DIR), html=True), name="local_ui")
+# 정적 자산 → local_ui HTML (마운트 순서: 구체적인 경로를 먼저)
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+if LOCAL_UI_DIR.exists():
+    app.mount("/", StaticFiles(directory=str(LOCAL_UI_DIR), html=True), name="local_ui")
 
 
 # ── 진입점 ──────────────────────────────────────────────────
-if __name__ == "__main__":
+def run_server() -> None:
     import uvicorn
 
     port = int(os.getenv("PORT", "8000"))
     print(f"\n  OpenChiken Web Server — http://localhost:{port}\n")
     uvicorn.run("server:app", host="0.0.0.0", port=port, reload=True)
+
+
+if __name__ == "__main__":
+    run_server()
