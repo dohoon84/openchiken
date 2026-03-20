@@ -1092,7 +1092,8 @@ def print_done():
                 "\n"
                 "  [bold cyan]OpenChiken 세팅 완료!  🐔[/]\n\n"
                 "  아래 명령으로 AI 비서를 시작하세요:\n\n"
-                "  [bold]  uv run python main.py[/]\n\n"
+                "  [bold]  openchiken[/]          (uv tool install 사용 시)\n"
+                "  [bold]  uv run python main.py[/]  (git clone 개발 환경)\n\n"
                 "  [dim]처음 실행 시 Google OAuth 인증을 위해 브라우저가 열립니다.[/]\n"
             ),
             border_style="cyan",
@@ -1101,7 +1102,7 @@ def print_done():
     )
     console.print()
     console.print("  [dim]문제가 생기면 .env 파일을 직접 수정하거나[/]")
-    console.print("  [dim]  uv run python setup_wizard.py  를 다시 실행하세요.[/]")
+    console.print("  [dim]  openchiken-setup  또는  uv run python setup_wizard.py  를 다시 실행하세요.[/]")
     console.print()
 
 
@@ -1172,7 +1173,13 @@ def main():
         console.print()
         console.print(Rule("[bold cyan]OpenChiken 시작[/]", style="cyan dim"))
         console.print()
-        os.execvp("uv", ["uv", "run", "python", "main.py"])
+        if shutil.which("openchiken"):
+            os.execvp("openchiken", ["openchiken"])
+        elif (ROOT / "main.py").exists():
+            os.execvp("uv", ["uv", "run", "python", str(ROOT / "main.py")])
+        else:
+            from main import main as run_main
+            run_main()
 
 
 if __name__ == "__main__":

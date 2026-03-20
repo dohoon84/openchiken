@@ -36,12 +36,12 @@ dependencies = [
 py-modules = ["main", "server", "setup_wizard"]
 
 [tool.setuptools.packages.find]
-include = ["core*", "config*", "skills*", "channels*", "scheduler*"]
+include = ["core*", "config*", "skills*", "channels*", "scheduler*", "static*", "local_ui*"]
 
 [tool.setuptools.package-data]
-"*" = ["*.html", "*.css", "*.js", "*.json"]
+"*" = ["*.html", "*.css", "*.js", "*.json", "*.png", "*.ico", "*.svg"]
 
 [project.scripts]
 openchiken = "main:main"
 openchiken-setup = "setup_wizard:main"
-openchiken-web = "server:app"
+openchiken-web = "server:run_server"
