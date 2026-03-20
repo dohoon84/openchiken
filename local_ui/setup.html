@@ -869,7 +869,7 @@
             <h2 class="font-headline text-3xl font-bold mb-3">
               <span class="text-gradient">설정 완료!</span>
             </h2>
-            <p class="font-body text-on-surface-variant">OpenChiken AI 비서 설정이 완료되었습니다.<br/>아래 명령으로 시작하세요.</p>
+            <p class="font-body text-on-surface-variant">OpenChiken AI 비서 설정이 완료되었습니다.<br/>자동으로 실행되며 잠시 후 대시보드로 이동합니다.</p>
           </div>
 
           <div class="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/20 mb-6 text-left">
@@ -1424,6 +1424,20 @@ async function submitSetup() {
     // 완료 처리
     localStorage.setItem('openchiken_setup_done', '1');
     showDoneScreen();
+
+    // main.py 자동 실행 후 대시보드로 이동
+    try {
+      btn.innerHTML = `<span class="material-symbols-outlined text-base animate-spin">progress_activity</span> 시작 중...`;
+      const startRes = await fetch('/api/system/start', { method: 'POST' });
+      const startData = await startRes.json();
+      if (startData.ok) {
+        showToast('OpenChiken이 시작되었습니다! 대시보드로 이동합니다.', 'success');
+      }
+    } catch (_) {
+      showToast('설정 완료. 터미널에서 uv run python main.py 를 실행하세요.', 'success');
+    }
+
+    setTimeout(() => { window.location.href = '/dashboard.html'; }, 2500);
 
   } catch (e) {
     showToast(`오류: ${e.message}`, 'error');
