@@ -233,6 +233,96 @@ async def upload_credentials(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class ModelFetchRequest(BaseModel):
+    key: str
+
+
+def _fetch_openai_models(api_key: str) -> list[dict]:
+    req = urllib.request.Request(
+        "https://api.openai.com/v1/models",
+        headers={"Authorization": f"Bearer {api_key}"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="ignore")
+        raise HTTPException(status_code=e.code, detail=f"OpenAI API 오류: {body[:300]}")
+
+    INCLUDE_PREFIXES = ("gpt-4", "gpt-3.5", "o1", "o3", "o4", "chatgpt")
+    EXCLUDE_TOKENS = ("instruct", "embedding", "whisper", "tts", "dall-e",
+                      "babbage", "davinci", "curie", "ada", "moderation",
+                      "realtime", "audio", "search", "ft:")
+    models = [
+        m for m in data.get("data", [])
+        if any(m["id"].startswith(p) for p in INCLUDE_PREFIXES)
+        and not any(x in m["id"] for x in EXCLUDE_TOKENS)
+    ]
+    models.sort(key=lambda m: m.get("created", 0), reverse=True)
+    return [{"id": m["id"], "name": m["id"]} for m in models[:10]]
+
+
+def _fetch_anthropic_models(api_key: str) -> list[dict]:
+    req = urllib.request.Request(
+        "https://api.anthropic.com/v1/models",
+        headers={"x-api-key": api_key, "anthropic-version": "2023-06-01"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="ignore")
+        raise HTTPException(status_code=e.code, detail=f"Anthropic API 오류: {body[:300]}")
+
+    models = data.get("data", [])
+    models.sort(key=lambda m: m.get("created_at", ""), reverse=True)
+    return [{"id": m["id"], "name": m.get("display_name", m["id"])} for m in models[:10]]
+
+
+def _fetch_gemini_models(api_key: str) -> list[dict]:
+    url = f"https://generativelanguage.googleapis.com/v1beta/models?key={urllib.parse.quote(api_key)}"
+    req = urllib.request.Request(url)
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="ignore")
+        raise HTTPException(status_code=e.code, detail=f"Gemini API 오류: {body[:300]}")
+
+    models = [
+        m for m in data.get("models", [])
+        if "generateContent" in m.get("supportedGenerationMethods", [])
+        and "gemini" in m.get("name", "")
+        and "embedding" not in m.get("name", "")
+        and "aqa" not in m.get("name", "")
+    ]
+    models.sort(key=lambda m: m.get("name", ""), reverse=True)
+    return [
+        {"id": m["name"].replace("models/", ""), "name": m.get("displayName", m["name"].replace("models/", ""))}
+        for m in models[:10]
+    ]
+
+
+@app.post("/api/models/{provider}")
+def fetch_provider_models(provider: str, body: ModelFetchRequest):
+    """각 LLM 공급자의 최신 모델 목록을 프록시로 가져옵니다."""
+    if provider not in ("openai", "anthropic", "gemini"):
+        raise HTTPException(status_code=400, detail="지원하지 않는 공급자입니다")
+    if not body.key or len(body.key) < 5:
+        raise HTTPException(status_code=400, detail="API 키가 필요합니다")
+    try:
+        if provider == "openai":
+            return _fetch_openai_models(body.key)
+        elif provider == "anthropic":
+            return _fetch_anthropic_models(body.key)
+        else:
+            return _fetch_gemini_models(body.key)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
 @app.post("/api/system/open-privacy-prefs")
 def open_privacy_prefs():
     """macOS 전체 디스크 접근 시스템 설정 패널을 엽니다."""
@@ -337,27 +427,39 @@ _WEATHER_ICONS: dict[int, str] = {
 
 @app.get("/api/dashboard/agent-status")
 def dashboard_agent_status():
-    """에이전트/모델 상태 정보"""
-    from config.settings import settings
+    """에이전트/모델 상태 정보 — .env를 직접 파싱해 서버 재시작 없이 최신값 반영"""
+    # load_dotenv()는 서버 시작 시 1회만 실행되므로, 셋업 이후 저장된 .env를
+    # os.environ에서 읽으면 이전 값이 반환될 수 있다. 파일 직접 파싱으로 해결.
+    env: dict[str, str] = {}
+    if ENV_FILE.exists():
+        for raw in ENV_FILE.read_text(encoding="utf-8").splitlines():
+            line = raw.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, _, v = line.partition("=")
+                env[k.strip()] = v.strip()
 
-    provider = settings.llm_provider
-    model_map = {
-        "openai": lambda: settings.openai_model,
-        "anthropic": lambda: settings.anthropic_model,
-        "gemini": lambda: settings.gemini_model,
-    }
-    try:
-        model = model_map.get(provider, lambda: "unknown")()
-    except EnvironmentError:
-        model = os.getenv(f"{provider.upper()}_MODEL", "unknown")
+    def ev(key: str, default: str = "") -> str:
+        """env 파일 → os.environ → 기본값 순으로 조회"""
+        return env.get(key) or os.getenv(key, default)
+
+    provider = ev("LLM_PROVIDER", "openai").lower()
+    model_key = {
+        "openai":    "OPENAI_MODEL",
+        "anthropic": "ANTHROPIC_MODEL",
+        "gemini":    "GEMINI_MODEL",
+    }.get(provider, "OPENAI_MODEL")
+    model = ev(model_key, "gpt-4o")
+
+    channels_raw = ev("ENABLED_CHANNELS", "telegram")
+    channels = [ch.strip() for ch in channels_raw.split(",") if ch.strip()]
 
     return {
         "provider": provider,
         "model": model,
-        "assistant_name": settings.assistant_name,
+        "assistant_name": ev("ASSISTANT_NAME", "치킨"),
         "status": "active",
-        "enabled_skills": settings.enabled_skills,
-        "enabled_channels": settings.enabled_channels,
+        "enabled_skills": ev("ENABLED_SKILLS", "all"),
+        "enabled_channels": channels,
     }
 
 
