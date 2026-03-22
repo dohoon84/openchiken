@@ -1010,17 +1010,105 @@ def api_settings_env():
     }
 
 
+# ── Hub & Apps API ────────────────────────────────────────────
+
+
+class HubInstallRequest(BaseModel):
+    name: str
+
+
+class AppGenerateRequest(BaseModel):
+    query: str
+
+
+@app.get("/api/hub/skills")
+def api_hub_skills():
+    """GitHub skill-hub 레포에서 스킬 목록 조회"""
+    try:
+        from core.hub import list_hub_skills
+        return {"ok": True, "skills": list_hub_skills()}
+    except Exception as e:
+        return {"ok": False, "skills": [], "error": str(e)}
+
+
+@app.get("/api/hub/apps")
+def api_hub_apps():
+    """GitHub skill-hub 레포에서 앱 목록 조회"""
+    try:
+        from core.hub import list_hub_apps
+        return {"ok": True, "apps": list_hub_apps()}
+    except Exception as e:
+        return {"ok": False, "apps": [], "error": str(e)}
+
+
+@app.post("/api/hub/install")
+def api_hub_install(req: HubInstallRequest):
+    """허브에서 스킬을 다운로드하여 로컬에 설치"""
+    try:
+        from core.hub import download_skill
+        path = download_skill(req.name)
+        reload_skills()
+        return {"ok": True, "message": f"스킬 '{req.name}' 설치 완료", "path": str(path)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/apps")
+def api_apps_list():
+    """설치된 앱(스킬셋) 목록 조회"""
+    try:
+        from skills import get_skill_loader
+        loader = get_skill_loader()
+        apps = loader.load_apps()
+        return {
+            "ok": True,
+            "apps": [
+                {
+                    "name": a.name,
+                    "description": a.description,
+                    "sub_skills": a.sub_skills,
+                    "schedule": a.schedule,
+                    "enabled": a.enabled,
+                    "version": a.version,
+                }
+                for a in apps
+            ],
+        }
+    except Exception as e:
+        return {"ok": False, "apps": [], "error": str(e)}
+
+
+@app.post("/api/apps/plan")
+async def api_apps_plan(req: AppGenerateRequest):
+    """쿼리를 분석하여 필요한 스킬 플랜만 반환 (실행하지 않음)"""
+    try:
+        from core.orchestrator import get_orchestration_plan
+        plan = await get_orchestration_plan(req.query)
+        return {"ok": True, **plan}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/apps/generate")
+async def api_apps_generate(req: AppGenerateRequest):
+    """자율 앱 생성: 쿼리 분석 → 스킬 확보 → 실행"""
+    try:
+        from core.orchestrator import run_autonomous
+        result = await run_autonomous(req.query, session_id="app_gen")
+        return {"ok": True, "result": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/skills")
 def api_skills_list():
-    """설치된 스킬 목록 (SKILL.md 메타데이터 파싱)"""
+    """설치된 스킬 목록 (내장 + 허브 설치 스킬 통합, SKILL.md 메타데이터 파싱)"""
     from config.settings import settings
 
-    skills_dir = ROOT / "skills"
     enabled_raw = settings.enabled_skills
     has_google = CREDENTIALS_DST.exists() or (ROOT / "credentials.json").exists()
     has_google_token = (OPENCHIKEN_HOME / "token.json").exists()
 
-    skills = []
     icon_map = {
         "gmail": "mail",
         "calendar": "calendar_month",
@@ -1033,63 +1121,82 @@ def api_skills_list():
         "memo": "database",
         "task": "checklist",
         "finance": "trending_up",
+        "crypto_price": "currency_bitcoin",
+        "exchange_rate": "currency_exchange",
+        "news_rss": "newspaper",
+        "geocoding": "pin_drop",
+        "quality_of_life": "location_city",
+        "hacker_news": "terminal",
+        "wikipedia_search": "menu_book",
+        "quickchart": "bar_chart",
+        "sec_edgar": "gavel",
+        "world_bank": "public",
+        "wallstreetbets": "forum",
+        "air_quality": "air",
+        "earthquake": "crisis_alert",
+        "arxiv": "science",
+        "public_holidays": "event",
     }
-    desc_map = {
-        "gmail": "이메일 목록, 검색, 읽기, 전송, 답장",
-        "calendar": "일정 조회, 생성, 삭제",
-        "drive": "파일 목록, 검색, 읽기, 업로드, 폴더 관리",
-        "sheets": "스프레드시트 읽기, 쓰기, 생성, 행 추가",
-        "docs": "Google Docs 읽기, 생성, 내용 추가",
-        "workflow": "스탠드업·주간·모닝 브리핑, 미팅 준비 등 복합 자동화",
-        "weather": "전 세계 날씨 조회 (무료, 키 불필요)",
-        "web_search": "DuckDuckGo 실시간 검색 (무료)",
-        "memo": "영구 메모 저장/조회/삭제",
-        "task": "태스크 생성 및 진행 추적",
-        "finance": "주식/암호화폐 시세 조회 및 분석",
-    }
 
-    if not skills_dir.exists():
-        return {"skills": []}
+    # 내장 스킬 디렉토리 + 허브/자동생성으로 설치된 사용자 스킬 디렉토리
+    skill_roots = [
+        (ROOT / "skills", "bundled"),
+        (OPENCHIKEN_HOME / "skills", "hub_installed"),
+    ]
 
-    for entry in sorted(skills_dir.iterdir()):
-        if not entry.is_dir() or entry.name.startswith("_"):
+    skills = []
+    seen: set[str] = set()
+
+    for skills_dir, source in skill_roots:
+        if not skills_dir.exists():
             continue
-        if not (entry / "SKILL.md").exists() and not (entry / "tool.py").exists():
-            continue
-        skill_id = entry.name
-        md_path = entry / "SKILL.md"
 
-        name = skill_id
-        description = desc_map.get(skill_id, "")
-        requires_google = False
+        for entry in sorted(skills_dir.iterdir()):
+            if not entry.is_dir() or entry.name.startswith("_") or entry.name == "apps":
+                continue
+            if not (entry / "SKILL.md").exists() and not (entry / "tool.py").exists():
+                continue
 
-        if md_path.exists():
-            content = md_path.read_text(encoding="utf-8")
-            for line in content.split("\n"):
-                line = line.strip()
-                if line.startswith("name:"):
-                    name = line.split(":", 1)[1].strip()
-                elif line.startswith("description:"):
-                    description = line.split(":", 1)[1].strip()
-                elif "requires_google_auth: true" in line:
-                    requires_google = True
+            skill_id = entry.name
+            if skill_id in seen:
+                continue
+            seen.add(skill_id)
 
-        is_enabled = enabled_raw == "all" or skill_id in enabled_raw.split(",")
+            md_path = entry / "SKILL.md"
+            name = skill_id
+            description = ""
+            requires_google = False
 
-        if requires_google:
-            status = "connected" if (has_google and has_google_token) else "auth_required"
-        else:
-            status = "connected" if is_enabled else "disabled"
+            if md_path.exists():
+                content = md_path.read_text(encoding="utf-8")
+                for line in content.split("\n"):
+                    line = line.strip()
+                    if line.startswith("name:"):
+                        name = line.split(":", 1)[1].strip()
+                    elif line.startswith("description:"):
+                        description = line.split(":", 1)[1].strip()
+                    elif "requires_google_auth: true" in line:
+                        requires_google = True
 
-        skills.append({
-            "id": skill_id,
-            "name": name,
-            "description": description,
-            "icon": icon_map.get(skill_id, "extension"),
-            "enabled": is_enabled,
-            "status": status,
-            "requires_google": requires_google,
-        })
+            is_enabled = enabled_raw == "all" or skill_id in enabled_raw.split(",")
+
+            if requires_google:
+                status = "connected" if (has_google and has_google_token) else "auth_required"
+            elif source == "hub_installed":
+                status = "hub_installed"
+            else:
+                status = "connected" if is_enabled else "disabled"
+
+            skills.append({
+                "id": skill_id,
+                "name": name,
+                "description": description,
+                "icon": icon_map.get(skill_id, "extension"),
+                "enabled": is_enabled,
+                "status": status,
+                "source": source,
+                "requires_google": requires_google,
+            })
 
     return {"skills": skills}
 

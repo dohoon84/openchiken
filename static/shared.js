@@ -21,6 +21,7 @@
 
   const NAV = [
     { key: 'dashboard', icon: 'dashboard',  label: 'Dashboard',      href: 'dashboard.html' },
+    { key: 'apps',      icon: 'apps',       label: 'Apps',           href: 'apps.html' },
     { key: 'tasks',     icon: 'checklist',   label: 'Tasks',          href: 'tasks.html' },
     { key: 'logs',      icon: 'database',    label: 'Memory / Logs',  href: 'logs.html' },
     { key: 'skills',    icon: 'extension',   label: 'Skills',         href: 'skills.html' },

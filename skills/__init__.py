@@ -31,14 +31,16 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from skills.schema import SkillManifest
+from skills.schema import AppManifest, SkillManifest
 
 logger = logging.getLogger(__name__)
 
 _BUNDLED_SKILLS_DIR = Path(__file__).parent
 _USER_SKILLS_DIR = Path.home() / ".openchiken" / "skills"
+_BUNDLED_APPS_DIR = Path(__file__).parent / "apps"
+_USER_APPS_DIR = Path.home() / ".openchiken" / "apps"
 
-_SKIP_DIRS = {"__pycache__"}
+_SKIP_DIRS = {"__pycache__", "apps"}
 
 
 @dataclass
@@ -49,6 +51,19 @@ class Skill:
     tools: list = field(default_factory=list)
     enabled: bool = True
     requires_google_auth: bool = False
+
+
+@dataclass
+class App:
+    """스킬 묶음(앱). 자체도 상위 스킬로 취급됩니다."""
+
+    name: str
+    description: str
+    instructions: str
+    sub_skills: list[str] = field(default_factory=list)
+    schedule: str = ""
+    enabled: bool = True
+    version: str = "1.0.0"
 
 
 class SkillLoader:
@@ -113,6 +128,81 @@ class SkillLoader:
             if skill.instructions:
                 parts.append(skill.instructions.strip())
         return "\n\n---\n\n".join(parts)
+
+    def skill_exists(self, name: str) -> bool:
+        """로컬(내장 + 사용자)에 해당 이름의 스킬이 존재하는지 확인합니다."""
+        for skills_root in (_BUNDLED_SKILLS_DIR, _USER_SKILLS_DIR):
+            if not skills_root.exists():
+                continue
+            skill_dir = skills_root / name
+            if skill_dir.is_dir() and (skill_dir / "SKILL.md").exists():
+                return True
+        return False
+
+    def get_all_skill_names(self) -> set[str]:
+        """로컬에 존재하는 모든 스킬 이름을 반환합니다."""
+        names: set[str] = set()
+        for skills_root in (_BUNDLED_SKILLS_DIR, _USER_SKILLS_DIR):
+            if not skills_root.exists():
+                continue
+            for skill_dir in skills_root.iterdir():
+                if not skill_dir.is_dir() or skill_dir.name in _SKIP_DIRS:
+                    continue
+                if (skill_dir / "SKILL.md").exists():
+                    names.add(skill_dir.name)
+        return names
+
+    def load_apps(self) -> list[App]:
+        """내장 앱과 사용자 앱(APP.md)을 로드합니다."""
+        apps: list[App] = []
+        seen: set[str] = set()
+
+        for apps_root in (_BUNDLED_APPS_DIR, _USER_APPS_DIR):
+            if not apps_root.exists():
+                continue
+            for app_dir in sorted(apps_root.iterdir()):
+                if not app_dir.is_dir() or app_dir.name in {"__pycache__"}:
+                    continue
+                app_md = app_dir / "APP.md"
+                if not app_md.exists():
+                    continue
+                app = self._load_app(app_dir)
+                if app is None or app.name in seen:
+                    continue
+                seen.add(app.name)
+                apps.append(app)
+                logger.info("App loaded: %s (%d sub-skills)", app.name, len(app.sub_skills))
+
+        return apps
+
+    def _load_app(self, app_dir: Path) -> App | None:
+        """APP.md를 파싱하여 App 객체를 생성합니다."""
+        try:
+            text = (app_dir / "APP.md").read_text(encoding="utf-8")
+            frontmatter_dict, instructions = _parse_skill_md(text)
+            frontmatter_dict.setdefault("name", app_dir.name)
+
+            try:
+                manifest = AppManifest(**frontmatter_dict)
+            except ValidationError as exc:
+                logger.error("App '%s' manifest 검증 실패: %s", app_dir.name, exc)
+                return None
+
+            if not manifest.enabled:
+                return None
+
+            return App(
+                name=manifest.name,
+                description=manifest.description,
+                instructions=instructions,
+                sub_skills=manifest.skills,
+                schedule=manifest.schedule,
+                enabled=manifest.enabled,
+                version=manifest.version,
+            )
+        except Exception as exc:
+            logger.error("Failed to load app from '%s': %s", app_dir, exc, exc_info=True)
+            return None
 
     # ── 내부 헬퍼 ─────────────────────────────────────────────────────────────
 
