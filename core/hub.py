@@ -69,6 +69,14 @@ def hub_skill_exists(name: str) -> bool:
     return any(s.get("name") == name for s in list_hub_skills())
 
 
+def get_skill_requires_env(name: str) -> list[str]:
+    """허브 인덱스에서 스킬이 필요로 하는 환경변수 목록을 반환합니다."""
+    for skill in list_hub_skills():
+        if skill.get("name") == name:
+            return skill.get("requires_env", [])
+    return []
+
+
 def download_skill(name: str) -> Path:
     """허브에서 스킬을 다운로드하여 ~/.openchiken/skills/<name>/에 저장합니다.
 

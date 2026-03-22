@@ -89,33 +89,79 @@ tailwind.config = {
 </div>
 </main>
 
+<!-- API 키 등록 모달 -->
+<div id="env-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+  <div id="modal-panel" class="bg-surface-container rounded-2xl shadow-2xl w-full max-w-md transition-all duration-200 scale-95 opacity-0">
+    <div class="flex items-center justify-between px-6 pt-6 pb-4 border-b border-outline-variant/15">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-yellow-400 text-xl">key</span>
+        <div>
+          <h2 class="font-headline font-bold text-on-surface text-base">API 키 등록</h2>
+          <p class="font-label text-[10px] text-on-surface-variant uppercase tracking-wider mt-0.5" id="modal-skill-name"></p>
+        </div>
+      </div>
+      <button id="btn-close-modal" class="text-outline hover:text-on-surface transition-colors rounded-lg p-1">
+        <span class="material-symbols-outlined text-xl">close</span>
+      </button>
+    </div>
+    <div class="px-6 py-5">
+      <p class="font-body text-sm text-on-surface-variant mb-5">
+        이 스킬을 사용하려면 아래 API 키가 필요합니다.<br>
+        입력한 키는 <code class="bg-surface-container-highest px-1 rounded text-xs font-mono text-secondary">~/.openchiken/.env</code>에 안전하게 저장됩니다.
+      </p>
+      <div id="modal-env-fields"></div>
+      <div id="modal-docs-link" class="hidden mb-4 p-3 rounded-lg bg-surface-container-highest/60 border border-outline-variant/20"></div>
+      <div id="modal-save-status"></div>
+    </div>
+    <div class="flex items-center justify-end gap-3 px-6 pb-6">
+      <button id="btn-cancel-modal"
+        class="px-4 py-2 rounded-xl font-label text-xs font-bold uppercase tracking-widest text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-colors">
+        취소
+      </button>
+      <button id="btn-save-env"
+        class="flex items-center gap-2 px-5 py-2 rounded-xl bg-yellow-500/20 text-yellow-400 font-label text-xs font-bold uppercase tracking-widest hover:bg-yellow-500/30 transition-colors">
+        <span class="material-symbols-outlined text-sm">save</span> 저장
+      </button>
+    </div>
+  </div>
+</div>
+
 <script src="/static/shared.js"></script>
 <script>
 (function() {
   const $ = id => document.getElementById(id);
 
   const STATUS_CFG = {
-    connected:      { label:'연결됨',       badge:'bg-primary/10 text-primary',                  syncIcon:'sync' },
-    auth_required:  { label:'인증 필요',    badge:'bg-error-container/20 text-error',             syncIcon:'sync_disabled' },
-    disabled:       { label:'비활성',       badge:'bg-surface-container-highest text-outline',    syncIcon:'sync_disabled' },
-    hub_installed:  { label:'허브 설치',    badge:'bg-secondary/10 text-secondary',               syncIcon:'cloud_done' },
-    ai_generated:   { label:'AI 자동생성',  badge:'bg-tertiary/10 text-tertiary',                 syncIcon:'auto_awesome' },
+    connected:     { label:'연결됨',      badge:'bg-primary/10 text-primary',               syncIcon:'sync' },
+    auth_required: { label:'인증 필요',   badge:'bg-error-container/20 text-error',          syncIcon:'sync_disabled' },
+    env_required:  { label:'API 키 필요', badge:'bg-yellow-500/15 text-yellow-400',          syncIcon:'key' },
+    disabled:      { label:'비활성',      badge:'bg-surface-container-highest text-outline', syncIcon:'sync_disabled' },
+    hub_installed: { label:'허브 설치',   badge:'bg-secondary/10 text-secondary',            syncIcon:'cloud_done' },
+    ai_generated:  { label:'AI 자동생성', badge:'bg-tertiary/10 text-tertiary',              syncIcon:'auto_awesome' },
   };
 
-  // 특수한 표시명이 필요한 스킬만 여기에 등록 (나머지는 SKILL.md 데이터로 자동 처리)
   const FRIENDLY_OVERRIDE = {
     gmail:      { name:'Gmail' },
     drive:      { name:'Google Drive' },
     sheets:     { name:'Google Sheets' },
     docs:       { name:'Google Docs' },
     web_search: { name:'Web Search' },
+    hacker_news:{ name:'Hacker News' },
+    news_rss:   { name:'News RSS' },
+    crypto_price:{ name:'Crypto Price' },
+    exchange_rate:{ name:'Exchange Rate' },
+    wikipedia_search:{ name:'Wikipedia' },
+    quality_of_life:{ name:'Quality of Life' },
+    air_quality:{ name:'Air Quality' },
+    public_holidays:{ name:'Public Holidays' },
+    sec_edgar:  { name:'SEC EDGAR' },
+    world_bank: { name:'World Bank' },
+    wallstreetbets:{ name:'WallStreetBets' },
   };
 
-  // skill_id → 표시용 이름 자동 변환 (예: hacker_news → Hacker News)
   function toDisplayName(id) {
     return id.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
-
   function getFriendly(skill) {
     const override = FRIENDLY_OVERRIDE[skill.id] || {};
     return {
@@ -124,6 +170,7 @@ tailwind.config = {
     };
   }
 
+  // ── SVG 아이콘 맵 ─────────────────────────────────────────────────────────
   const ICON_SVG = {
     gmail: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 193" width="36" height="27">
       <path fill="#4285F4" d="M58.182 192.05V93.14L27.507 65.077 0 49.419v125.934c0 9.22 7.474 16.697 16.697 16.697"/>
@@ -132,6 +179,7 @@ tailwind.config = {
       <path fill="#EA4335" d="M0 49.419l26.759 20.07L58.182 93.14V17.504L40.297 5.654C21.01-9.068 0 3.657 0 26.18"/>
       <path fill="#C5221F" d="M58.182 93.14l-4.174-38.647 4.174-36.989 99.818 74.864 99.818-74.864 4.69 33.302-4.69 42.334L158 167.998"/>
     </svg>`,
+
     calendar: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40" style="border-radius:6px;overflow:hidden">
       <rect width="48" height="48" rx="4" fill="white"/>
       <rect y="0" width="48" height="14" rx="4" fill="#1a73e8"/>
@@ -140,6 +188,7 @@ tailwind.config = {
       <circle cx="32" cy="7" r="2.5" fill="white" opacity="0.75"/>
       <text x="24" y="37" font-family="Arial,sans-serif" font-size="15" font-weight="700" fill="#1a73e8" text-anchor="middle">31</text>
     </svg>`,
+
     drive: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 87.3 78" width="38" height="34">
       <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
       <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0-1.2 4.5h27.5z" fill="#00ac47"/>
@@ -148,6 +197,7 @@ tailwind.config = {
       <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
       <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
     </svg>`,
+
     sheets: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="36" height="36">
       <path d="M8 4h22l10 10v30H8z" fill="#34a853"/>
       <path d="M30 4l10 10H30z" fill="#188038"/>
@@ -158,6 +208,7 @@ tailwind.config = {
       <rect x="21" y="17" width="2" height="21" rx="1" fill="white" opacity="0.5"/>
       <rect x="30" y="17" width="2" height="21" rx="1" fill="white" opacity="0.5"/>
     </svg>`,
+
     docs: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="36" height="36">
       <path d="M8 4h22l10 10v30H8z" fill="#4285f4"/>
       <path d="M30 4l10 10H30z" fill="#1a56c0"/>
@@ -166,6 +217,13 @@ tailwind.config = {
       <rect x="12" y="29" width="24" height="2" rx="1" fill="white" opacity="0.9"/>
       <rect x="12" y="34" width="16" height="2" rx="1" fill="white" opacity="0.9"/>
     </svg>`,
+
+    youtube: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
+      <rect width="48" height="48" rx="10" fill="#FF0000"/>
+      <path d="M38.5 16.5s-.4-2.6-1.6-3.7c-1.5-1.6-3.2-1.6-4-1.7C28.8 11 24 11 24 11s-4.8 0-8.9.3c-.8.1-2.5.1-4 1.7-1.2 1.1-1.6 3.7-1.6 3.7S9 19.4 9 22.3v2.7c0 2.9.5 5.8.5 5.8s.4 2.6 1.6 3.7c1.5 1.6 3.5 1.5 4.4 1.7C18.5 36.5 24 36.5 24 36.5s4.8 0 8.9-.3c.8-.1 2.5-.1 4-1.7 1.2-1.1 1.6-3.7 1.6-3.7s.5-2.9.5-5.8v-2.7c0-2.9-.5-5.8-.5-5.8z" fill="#CC0000"/>
+      <polygon points="20,17 20,31 32,24" fill="white"/>
+    </svg>`,
+
     weather: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
       <rect width="48" height="48" rx="10" fill="#039BE5"/>
       <circle cx="19" cy="19" r="7" fill="#FFD740"/>
@@ -176,11 +234,13 @@ tailwind.config = {
       <ellipse cx="23" cy="35.5" rx="7" ry="5.5" fill="white" opacity="0.95"/>
       <ellipse cx="27" cy="30" rx="7" ry="6" fill="white" opacity="0.95"/>
     </svg>`,
+
     web_search: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
       <rect width="48" height="48" rx="10" fill="#FF6D00"/>
       <circle cx="21" cy="21" r="9" fill="none" stroke="white" stroke-width="3.5"/>
       <line x1="27.5" y1="28" x2="37" y2="37.5" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
     </svg>`,
+
     memo: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
       <rect width="48" height="48" rx="10" fill="#FFB300"/>
       <path d="M11 9h22l6 6v26H11z" fill="white" opacity="0.95"/>
@@ -191,6 +251,7 @@ tailwind.config = {
       <path d="M31 33 l5-5 3 3 -5 5z" fill="#E65100" opacity="0.6"/>
       <line x1="31" y1="33" x2="27.5" y2="37.5" stroke="#E65100" stroke-width="1.5" opacity="0.6" stroke-linecap="round"/>
     </svg>`,
+
     task: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
       <rect width="48" height="48" rx="10" fill="#651FFF"/>
       <rect x="9" y="12" width="10" height="10" rx="2" fill="white" opacity="0.9"/>
@@ -200,16 +261,15 @@ tailwind.config = {
       <path d="M11.5 32 L14 35.5 L19.5 29" stroke="#651FFF" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
       <rect x="23" y="30" width="16" height="2.5" rx="1.25" fill="white" opacity="0.8"/>
     </svg>`,
+
     finance: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
       <rect width="48" height="48" rx="10" fill="#00897B"/>
       <rect x="8" y="28" width="7" height="12" rx="1.5" fill="white" opacity="0.9"/>
-      <rect x="11" y="22" width="1.5" height="6" rx="0.75" fill="white" opacity="0.65"/>
-      <rect x="20.5" y="20" width="7" height="16" rx="1.5" fill="white" opacity="0.9"/>
-      <rect x="23.5" y="14" width="1.5" height="6" rx="0.75" fill="white" opacity="0.65"/>
-      <rect x="33" y="11" width="7" height="22" rx="1.5" fill="white" opacity="0.9"/>
-      <rect x="36" y="7" width="1.5" height="4" rx="0.75" fill="white" opacity="0.65"/>
+      <rect x="20.5" y="20" width="7" height="20" rx="1.5" fill="white" opacity="0.9"/>
+      <rect x="33" y="11" width="7" height="29" rx="1.5" fill="white" opacity="0.9"/>
       <path d="M11.5 36 L24 27 L36.5 19" stroke="#A5D6A7" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>`,
+
     workflow: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
       <rect width="48" height="48" rx="10" fill="#00796B"/>
       <circle cx="11" cy="24" r="5.5" fill="white" opacity="0.95"/>
@@ -218,18 +278,128 @@ tailwind.config = {
       <line x1="16.5" y1="21.5" x2="31.5" y2="13.5" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
       <line x1="16.5" y1="26.5" x2="31.5" y2="34.5" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
     </svg>`,
+
+    crypto_price: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
+      <rect width="48" height="48" rx="10" fill="#F7931A"/>
+      <text x="24" y="33" font-family="Arial,sans-serif" font-size="26" font-weight="900" fill="white" text-anchor="middle">₿</text>
+    </svg>`,
+
+    exchange_rate: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
+      <rect width="48" height="48" rx="10" fill="#1565C0"/>
+      <path d="M10 18h22l-5-5M38 30H16l5 5" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+
+    news_rss: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
+      <rect width="48" height="48" rx="10" fill="#E65100"/>
+      <circle cx="13" cy="35" r="4" fill="white"/>
+      <path d="M10 24c7.7 0 14 6.3 14 14" stroke="white" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <path d="M10 14c13.3 0 24 10.7 24 24" stroke="white" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+    </svg>`,
+
+    hacker_news: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
+      <rect width="48" height="48" rx="10" fill="#FF6600"/>
+      <text x="24" y="34" font-family="Verdana,Arial,sans-serif" font-size="22" font-weight="900" fill="white" text-anchor="middle">Y</text>
+    </svg>`,
+
+    wikipedia_search: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
+      <rect width="48" height="48" rx="10" fill="#ffffff" opacity="0.95"/>
+      <text x="24" y="34" font-family="Linux Libertine,Georgia,serif" font-size="28" font-weight="700" fill="#202122" text-anchor="middle">W</text>
+    </svg>`,
+
+    quickchart: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
+      <rect width="48" height="48" rx="10" fill="#1E293B"/>
+      <rect x="7" y="27" width="8" height="13" rx="2" fill="#38BDF8"/>
+      <rect x="20" y="18" width="8" height="22" rx="2" fill="#818CF8"/>
+      <rect x="33" y="10" width="8" height="30" rx="2" fill="#34D399"/>
+    </svg>`,
+
+    geocoding: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
+      <rect width="48" height="48" rx="10" fill="#E53935"/>
+      <path d="M24 8c-6.6 0-12 5.4-12 12 0 9 12 20 12 20s12-11 12-20c0-6.6-5.4-12-12-12z" fill="white" opacity="0.95"/>
+      <circle cx="24" cy="20" r="4.5" fill="#E53935"/>
+    </svg>`,
+
+    quality_of_life: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
+      <rect width="48" height="48" rx="10" fill="#5C6BC0"/>
+      <rect x="6" y="28" width="10" height="14" rx="2" fill="white" opacity="0.9"/>
+      <rect x="19" y="20" width="10" height="22" rx="2" fill="white" opacity="0.9"/>
+      <rect x="32" y="14" width="10" height="28" rx="2" fill="white" opacity="0.9"/>
+      <path d="M8 14 Q18 8 24 14 Q30 20 40 12" stroke="#FFD740" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </svg>`,
+
+    wallstreetbets: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
+      <rect width="48" height="48" rx="10" fill="#FF4500"/>
+      <circle cx="24" cy="18" r="8" fill="white" opacity="0.95"/>
+      <circle cx="24" cy="18" r="4.5" fill="#FF4500"/>
+      <ellipse cx="24" cy="18" rx="14" ry="3" fill="none" stroke="white" stroke-width="2" opacity="0.6"/>
+      <path d="M16 30 Q24 24 32 30 L32 40 Q24 36 16 40z" fill="white" opacity="0.7"/>
+    </svg>`,
+
+    air_quality: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
+      <rect width="48" height="48" rx="10" fill="#00ACC1"/>
+      <path d="M8 20 Q16 14 24 20 Q32 26 40 20" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M8 28 Q16 22 24 28 Q32 34 40 28" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.7"/>
+      <path d="M12 36 Q20 30 28 36" stroke="white" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.4"/>
+    </svg>`,
+
+    earthquake: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
+      <rect width="48" height="48" rx="10" fill="#BF360C"/>
+      <polyline points="4,24 10,24 14,14 18,34 22,20 26,28 30,18 34,30 38,24 44,24"
+        stroke="white" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+
+    arxiv: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
+      <rect width="48" height="48" rx="10" fill="#B31B1B"/>
+      <text x="24" y="32" font-family="Arial,sans-serif" font-size="16" font-weight="900" fill="white" text-anchor="middle">arXiv</text>
+    </svg>`,
+
+    public_holidays: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
+      <rect width="48" height="48" rx="10" fill="#3949AB"/>
+      <rect x="8" y="12" width="32" height="26" rx="3" fill="white" opacity="0.95"/>
+      <rect x="8" y="12" width="32" height="9" rx="3" fill="#3949AB"/>
+      <circle cx="16" cy="9" r="2.5" fill="white"/>
+      <circle cx="32" cy="9" r="2.5" fill="white"/>
+      <rect x="13" y="27" width="5" height="5" rx="1" fill="#3949AB" opacity="0.3"/>
+      <rect x="21.5" y="27" width="5" height="5" rx="1" fill="#F44336"/>
+      <rect x="30" y="27" width="5" height="5" rx="1" fill="#3949AB" opacity="0.3"/>
+    </svg>`,
+
+    sec_edgar: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
+      <rect width="48" height="48" rx="10" fill="#1A237E"/>
+      <path d="M24 7 L38 15 L38 24 C38 32 31 39 24 41 C17 39 10 32 10 24 L10 15 Z" fill="white" opacity="0.15"/>
+      <path d="M24 10 L36 17 L36 24 C36 31 30 37 24 39 C18 37 12 31 12 24 L12 17 Z" fill="white" opacity="0.9"/>
+      <path d="M19 24 L22.5 27.5 L29 21" stroke="#1A237E" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+
+    world_bank: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="38" height="38">
+      <rect width="48" height="48" rx="10" fill="#003087"/>
+      <circle cx="24" cy="24" r="14" fill="none" stroke="white" stroke-width="2.5" opacity="0.9"/>
+      <ellipse cx="24" cy="24" rx="6" ry="14" fill="none" stroke="white" stroke-width="2" opacity="0.7"/>
+      <line x1="10" y1="24" x2="38" y2="24" stroke="white" stroke-width="2" opacity="0.7"/>
+      <line x1="13" y1="16" x2="35" y2="16" stroke="white" stroke-width="1.5" opacity="0.5"/>
+      <line x1="13" y1="32" x2="35" y2="32" stroke="white" stroke-width="1.5" opacity="0.5"/>
+    </svg>`,
   };
 
   function renderIconCell(skill) {
     if (ICON_SVG[skill.id]) {
-      const isCalendar = skill.id === 'calendar';
-      const wrap = isCalendar
-        ? 'w-11 h-11 rounded-lg overflow-hidden flex items-center justify-center'
-        : 'w-11 h-11 flex items-center justify-center';
-      return `<div class="${wrap}">${ICON_SVG[skill.id]}</div>`;
+      return `<div class="w-11 h-11 flex items-center justify-center rounded-lg overflow-hidden">${ICON_SVG[skill.id]}</div>`;
     }
     return `<div class="w-11 h-11 rounded-lg bg-[#353534] flex items-center justify-center">
       <span class="material-symbols-outlined text-secondary text-2xl">${skill.icon}</span>
+    </div>`;
+  }
+
+  function renderEnvNote(skill) {
+    if (skill.status !== 'env_required') return '';
+    const missing = Object.entries(skill.env_status || {})
+      .filter(([, set]) => !set)
+      .map(([key]) => `<code class="bg-surface-container-highest px-1 rounded text-[10px] font-mono text-yellow-400">${key}</code>`)
+      .join(', ');
+    return `<div class="mt-2">
+      <p class="font-label text-[10px] text-yellow-400 flex items-center gap-1 mb-1">
+        <span class="material-symbols-outlined text-[12px]">key</span>API 키 미설정: ${missing}
+      </p>
     </div>`;
   }
 
@@ -243,8 +413,23 @@ tailwind.config = {
       : skill.source === 'ai_generated'
       ? '<p class="font-label text-[10px] text-tertiary mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">auto_awesome</span>AI가 자동 생성한 스킬</p>'
       : '';
+    const envNote = renderEnvNote(skill);
     const isActive = skill.status === 'connected' || skill.status === 'hub_installed' || skill.status === 'ai_generated';
-    const ringClass = skill.source === 'hub' ? ' ring-1 ring-secondary/20' : skill.source === 'ai_generated' ? ' ring-1 ring-tertiary/20' : '';
+    const ringClass = skill.status === 'env_required' ? ' ring-1 ring-yellow-500/30'
+      : skill.source === 'hub' ? ' ring-1 ring-secondary/20'
+      : skill.source === 'ai_generated' ? ' ring-1 ring-tertiary/20' : '';
+
+    // ⚠️ 버튼에 data-* 속성 사용 — onclick 내부에서 JSON 따옴표 충돌 방지
+    const envBtn = skill.status === 'env_required'
+      ? `<button
+           class="btn-open-env flex items-center gap-1 px-2 py-1 rounded bg-yellow-500/15 text-yellow-400 font-label text-[10px] font-bold uppercase tracking-tight hover:bg-yellow-500/25 transition-colors"
+           data-skill-id="${skill.id}"
+           data-env-keys="${encodeURIComponent(JSON.stringify(skill.requires_env || []))}"
+           data-env-status="${encodeURIComponent(JSON.stringify(skill.env_status || {}))}">
+           <span class="material-symbols-outlined text-[12px]">key</span>API 키 등록
+         </button>`
+      : `<span class="material-symbols-outlined text-on-surface-variant text-sm ${isActive?'hover:text-primary cursor-pointer':'cursor-not-allowed'}">${cfg.syncIcon}</span>`;
+
     return `<div class="bg-surface-container-low p-5 rounded-xl flex flex-col justify-between group hover:scale-[1.01] transition-transform${ringClass}">
       <div class="flex justify-between items-start mb-5">
         ${renderIconCell(skill)}
@@ -253,10 +438,10 @@ tailwind.config = {
       <div>
         <h3 class="font-headline text-lg font-bold text-on-surface mb-1">${f.name}</h3>
         <p class="font-body text-sm text-on-surface-variant mb-3">${f.desc}</p>
-        ${googleNote}${hubNote}
+        ${googleNote}${hubNote}${envNote}
       </div>
       <div class="flex items-center justify-between pt-3 border-t border-outline-variant/10 mt-auto">
-        <span class="material-symbols-outlined text-on-surface-variant text-sm ${isActive?'hover:text-primary cursor-pointer':'cursor-not-allowed'}">${cfg.syncIcon}</span>
+        ${envBtn}
         <span class="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">${skill.id}</span>
       </div>
     </div>`;
@@ -287,8 +472,167 @@ tailwind.config = {
   }
   loadSkills();
 
-  document.getElementById('btn-reload-skills').addEventListener('click', async () => {
-    const btn = document.getElementById('btn-reload-skills');
+  // ── API 키 등록 모달 ────────────────────────────────────────────────────────
+  let _modalSkillId = '';
+  let _modalEnvKeys = [];
+  let _modalEnvStatus = {};
+
+  const _ENV_DOCS = {
+    youtube:   { url: 'https://console.cloud.google.com/', label: 'Google Cloud Console → YouTube Data API v3 활성화' },
+    weather:   { url: 'https://openweathermap.org/api',    label: 'OpenWeatherMap 무료 API 키 발급' },
+    news_api:  { url: 'https://newsapi.org/',              label: 'NewsAPI 무료 플랜 가입' },
+    serpapi:   { url: 'https://serpapi.com/',              label: 'SerpAPI 키 발급' },
+  };
+
+  function openEnvModal(skillId, envKeys, envStatus) {
+    _modalSkillId = skillId;
+    _modalEnvKeys = envKeys;
+    _modalEnvStatus = envStatus;
+
+    $('modal-skill-name').textContent = skillId;
+    $('modal-save-status').textContent = '';
+
+    const container = $('modal-env-fields');
+    container.innerHTML = envKeys.map(key => {
+      const isSet = envStatus[key];
+      return `<div class="mb-4">
+        <label class="block font-label text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-1">
+          ${key}
+          ${isSet ? '<span class="ml-2 text-primary text-[10px] normal-case tracking-normal font-normal">✓ 설정됨</span>' : '<span class="ml-2 text-yellow-400 text-[10px] normal-case tracking-normal font-normal">미설정</span>'}
+        </label>
+        <div class="relative">
+          <input id="env-input-${key}" type="password"
+            placeholder="${isSet ? '새 값 입력 (변경 시에만)' : '발급받은 API 키를 입력하세요'}"
+            class="w-full bg-surface-container-highest border border-outline-variant/30 rounded-lg px-3 py-2.5 text-sm font-mono text-on-surface placeholder:text-outline focus:outline-none focus:border-yellow-500/60 focus:ring-1 focus:ring-yellow-500/30 pr-10"/>
+          <button type="button" data-toggle-pw="env-input-${key}"
+            class="absolute right-2.5 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors">
+            <span class="material-symbols-outlined text-base">visibility</span>
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+
+    const docsLink = _ENV_DOCS[skillId];
+    const docsEl = $('modal-docs-link');
+    if (docsLink) {
+      docsEl.innerHTML = `<a href="${docsLink.url}" target="_blank" rel="noopener"
+        class="flex items-center gap-1 text-secondary text-[11px] hover:text-primary transition-colors">
+        <span class="material-symbols-outlined text-[13px]">open_in_new</span>${docsLink.label}
+      </a>`;
+      docsEl.classList.remove('hidden');
+    } else {
+      docsEl.classList.add('hidden');
+    }
+
+    const btn = $('btn-save-env');
+    btn.disabled = false;
+    btn.innerHTML = `<span class="material-symbols-outlined text-sm">save</span> 저장`;
+
+    $('env-modal').classList.remove('hidden');
+    $('env-modal').classList.add('flex');
+    setTimeout(() => $('modal-panel').classList.remove('scale-95', 'opacity-0'), 10);
+  }
+
+  function closeEnvModal() {
+    $('modal-panel').classList.add('scale-95', 'opacity-0');
+    setTimeout(() => {
+      $('env-modal').classList.add('hidden');
+      $('env-modal').classList.remove('flex');
+    }, 200);
+  }
+
+  // 이벤트 위임 — 동적으로 생성된 버튼들을 처리
+  document.addEventListener('click', e => {
+    // "API 키 등록" 버튼 (data-* 방식)
+    const envBtn = e.target.closest('.btn-open-env');
+    if (envBtn) {
+      const skillId = envBtn.dataset.skillId;
+      const envKeys = JSON.parse(decodeURIComponent(envBtn.dataset.envKeys));
+      const envStatus = JSON.parse(decodeURIComponent(envBtn.dataset.envStatus));
+      openEnvModal(skillId, envKeys, envStatus);
+      return;
+    }
+    // 비밀번호 토글 버튼
+    const toggleBtn = e.target.closest('[data-toggle-pw]');
+    if (toggleBtn) {
+      const inputId = toggleBtn.dataset.togglePw;
+      const input = document.getElementById(inputId);
+      const icon = toggleBtn.querySelector('span');
+      if (input) {
+        input.type = input.type === 'password' ? 'text' : 'password';
+        icon.textContent = input.type === 'password' ? 'visibility' : 'visibility_off';
+      }
+      return;
+    }
+    // 모달 바깥 클릭
+    if (e.target === $('env-modal')) closeEnvModal();
+  });
+
+  $('btn-close-modal').addEventListener('click', closeEnvModal);
+  $('btn-cancel-modal').addEventListener('click', closeEnvModal);
+
+  $('btn-save-env').addEventListener('click', async () => {
+    const btn = $('btn-save-env');
+    const statusEl = $('modal-save-status');
+
+    // 유효성 검사
+    let hasError = false;
+    for (const key of _modalEnvKeys) {
+      const input = document.getElementById(`env-input-${key}`);
+      if (input) input.classList.remove('border-error');
+      const value = input ? input.value.trim() : '';
+      if (!value && !_modalEnvStatus[key]) {
+        if (input) input.classList.add('border-error', 'border-red-500/60');
+        hasError = true;
+      }
+    }
+    if (hasError) {
+      statusEl.textContent = '필수 API 키를 모두 입력해 주세요.';
+      statusEl.className = 'text-error text-xs font-label mt-2';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = `<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> 저장 중...`;
+    statusEl.textContent = '';
+
+    let savedCount = 0;
+    for (const key of _modalEnvKeys) {
+      const input = document.getElementById(`env-input-${key}`);
+      const value = input ? input.value.trim() : '';
+      if (!value) continue;
+      try {
+        const res = await fetch(`/api/skills/${_modalSkillId}/env`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ env_key: key, env_value: value }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || '저장 실패');
+        }
+        savedCount++;
+      } catch(e) {
+        statusEl.textContent = `저장 실패: ${e.message}`;
+        statusEl.className = 'text-error text-xs font-label mt-2';
+        btn.disabled = false;
+        btn.innerHTML = `<span class="material-symbols-outlined text-sm">save</span> 저장`;
+        return;
+      }
+    }
+
+    btn.innerHTML = `<span class="material-symbols-outlined text-sm text-primary">check_circle</span> 저장됨`;
+    statusEl.textContent = `✓ ${savedCount}개 키가 ~/.openchiken/.env에 저장되었습니다.`;
+    statusEl.className = 'text-primary text-xs font-label mt-2';
+
+    setTimeout(async () => {
+      closeEnvModal();
+      await loadSkills();
+    }, 1400);
+  });
+
+  $('btn-reload-skills').addEventListener('click', async () => {
+    const btn = $('btn-reload-skills');
     btn.disabled = true;
     btn.innerHTML = `<span class="material-symbols-outlined text-base animate-spin">progress_activity</span> 재로드 중...`;
     try {
