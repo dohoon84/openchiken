@@ -15,6 +15,7 @@ from typing import List
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
+from core.hub import list_hub_skills
 from core.provider import get_provider
 from skills import get_skill_loader
 
@@ -46,9 +47,13 @@ _PLANNER_SYSTEM_TEMPLATE = """당신은 사용자 요청을 분석하여 필요�
 ## 현재 설치된 스킬 목록 (정확한 ID):
 {installed_skills}
 
+## 허브에서 자동 다운로드 가능한 스킬 목록 (미설치 시 자동 설치됨):
+{hub_skills}
+
 ## 규칙:
-- 위 목록에 있는 스킬은 반드시 **목록에 있는 정확한 ID 그대로** 사용하세요. 절대 변형하지 마세요.
-- 위 목록에 없는 기능이 필요할 때만 새로운 snake_case 이름을 만드세요.
+- **설치된 스킬** 목록에 있는 이름은 반드시 **정확한 ID 그대로** 사용하세요. 절대 변형하지 마세요.
+- **허브 스킬** 목록에 있는 기능이 필요하다면 반드시 **정확한 허브 스킬 ID 그대로** 사용하세요. 자동으로 다운로드됩니다.
+- 위 두 목록 모두에 없는 기능이 필요할 때만 새로운 snake_case 이름을 만드세요.
 - 각 스킬은 하나의 원자적 기능을 담당합니다.
 - 실행 순서(priority)를 고려하여 데이터 수집 → 분석 → 출력 순으로 배치하세요.
 - app_name은 전체 워크플로우를 설명하는 간결한 이름이어야 합니다.
@@ -67,7 +72,18 @@ async def plan_skills(query: str) -> SkillPlanResult:
     all_local = loader.get_all_skill_names()
     installed_skills_str = ", ".join(sorted(all_local)) if all_local else "(없음)"
 
-    system_prompt = _PLANNER_SYSTEM_TEMPLATE.format(installed_skills=installed_skills_str)
+    # 허브 스킬 목록: 미설치 항목만 표시 (이미 설치된 건 위 목록에 있으므로)
+    try:
+        hub_skill_list = list_hub_skills()
+        hub_only = [s["name"] for s in hub_skill_list if s["name"] not in all_local]
+        hub_skills_str = ", ".join(hub_only) if hub_only else "(없음)"
+    except Exception:
+        hub_skills_str = "(허브 연결 실패)"
+
+    system_prompt = _PLANNER_SYSTEM_TEMPLATE.format(
+        installed_skills=installed_skills_str,
+        hub_skills=hub_skills_str,
+    )
 
     result: SkillPlan = await llm.ainvoke([
         SystemMessage(content=system_prompt),
