@@ -124,3 +124,79 @@ def download_app(name: str) -> Path:
         raise RuntimeError(f"허브에서 {name}/APP.md를 찾을 수 없습니다: {e}") from e
 
     return dest
+
+
+def _parse_app_skills_from_md(app_md_text: str) -> list[str]:
+    """APP.md 프런트매터에서 skills 목록을 파싱합니다."""
+    import re
+    skills: list[str] = []
+    in_skills = False
+    for line in app_md_text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("skills:"):
+            # 인라인 형식: skills: web_search, crypto_price
+            inline = stripped[len("skills:"):].strip()
+            if inline:
+                skills = [s.strip() for s in inline.split(",") if s.strip()]
+                break
+            in_skills = True
+            continue
+        if in_skills:
+            if re.match(r"^\s*-\s+", line):
+                skill = line.strip().lstrip("- ").strip()
+                if skill:
+                    skills.append(skill)
+            elif stripped and not stripped.startswith("-"):
+                break
+    return skills
+
+
+def install_app_with_deps(name: str) -> dict[str, list[str]]:
+    """허브에서 앱을 설치하고 의존 스킬을 자동으로 설치합니다.
+
+    Returns:
+        {
+            "app": 설치된 앱 경로 문자열,
+            "installed_skills": 새로 설치한 스킬 목록,
+            "skipped_skills": 이미 설치되어 있어 건너뛴 스킬 목록,
+            "failed_skills": 설치 실패한 스킬 목록,
+        }
+    """
+    from skills import get_skill_loader
+
+    # 1. APP.md 다운로드
+    app_path = download_app(name)
+    app_md_text = (app_path / "APP.md").read_text(encoding="utf-8")
+    required_skills = _parse_app_skills_from_md(app_md_text)
+
+    logger.info("App '%s' requires skills: %s", name, required_skills)
+
+    loader = get_skill_loader()
+    installed: list[str] = []
+    skipped: list[str] = []
+    failed: list[str] = []
+
+    for skill_name in required_skills:
+        if loader.skill_exists(skill_name):
+            skipped.append(skill_name)
+            logger.info("Skill '%s' already installed — skip", skill_name)
+            continue
+
+        if hub_skill_exists(skill_name):
+            try:
+                download_skill(skill_name)
+                installed.append(skill_name)
+                logger.info("Skill '%s' installed from hub", skill_name)
+            except Exception as e:
+                failed.append(skill_name)
+                logger.warning("Failed to install skill '%s': %s", skill_name, e)
+        else:
+            failed.append(skill_name)
+            logger.warning("Skill '%s' not found in hub — skipping", skill_name)
+
+    return {
+        "app": str(app_path),
+        "installed_skills": installed,
+        "skipped_skills": skipped,
+        "failed_skills": failed,
+    }

@@ -61,6 +61,8 @@ class TelegramAdapter(ChannelAdapter):
         app.add_handler(CommandHandler("clear", self._command_handler))
         app.add_handler(CommandHandler("plan", self._command_handler))
         app.add_handler(CommandHandler("tasks", self._command_handler))
+        app.add_handler(CommandHandler("run", self._command_handler))
+        app.add_handler(CommandHandler("apps", self._command_handler))
         app.add_handler(CommandHandler("briefing", self._briefing_command))
         app.add_handler(CommandHandler("weekly", self._weekly_command))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self._message_handler))

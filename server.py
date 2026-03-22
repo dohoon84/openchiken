@@ -79,7 +79,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="OpenChiken Web Server", docs_url=None, redoc_url=None, lifespan=lifespan)
+app = FastAPI(title="OpenChiken Web Server", docs_url=None, redoc_url=None, lifespan=lifespan)  # v2.0
 
 
 # ── Pydantic 모델 ──────────────────────────────────────────────
@@ -1115,13 +1115,46 @@ def api_hub_install(req: HubInstallRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/hub/install-app")
+def api_hub_install_app(req: HubInstallRequest):
+    """허브에서 앱을 다운로드하고 의존 스킬도 자동 설치합니다."""
+    try:
+        from core.hub import install_app_with_deps
+        result = install_app_with_deps(req.name)
+        reload_skills()
+        return {
+            "ok": True,
+            "message": f"앱 '{req.name}' 설치 완료",
+            **result,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/apps")
 def api_apps_list():
     """설치된 앱(스킬셋) 목록 조회"""
     try:
         from skills import get_skill_loader
+
         loader = get_skill_loader()
         apps = loader.load_apps()
+
+        # 설치된 앱 이름 집합 (내장 + 사용자)
+        bundled_names = set()
+        user_names = set()
+        bundled_apps_dir = ROOT / "skills" / "apps"
+        user_apps_dir = OPENCHIKEN_HOME / "apps"
+        if bundled_apps_dir.exists():
+            bundled_names = {d.name for d in bundled_apps_dir.iterdir() if d.is_dir() and (d / "APP.md").exists()}
+        if user_apps_dir.exists():
+            user_names = {d.name for d in user_apps_dir.iterdir() if d.is_dir() and (d / "APP.md").exists()}
+
+        def _source(app_name: str) -> str:
+            if app_name in user_names:
+                return "hub_installed"
+            return "bundled"
+
         return {
             "ok": True,
             "apps": [
@@ -1129,15 +1162,36 @@ def api_apps_list():
                     "name": a.name,
                     "description": a.description,
                     "sub_skills": a.sub_skills,
+                    "steps": a.steps,
+                    "trigger_keywords": a.trigger_keywords,
+                    "output_channel": a.output_channel,
                     "schedule": a.schedule,
                     "enabled": a.enabled,
                     "version": a.version,
+                    "source": _source(a.name),
                 }
                 for a in apps
             ],
         }
     except Exception as e:
         return {"ok": False, "apps": [], "error": str(e)}
+
+
+class AppRunRequest(BaseModel):
+    context: str = ""   # 추가 컨텍스트 (예: 조회 지역, 파라미터)
+
+
+@app.post("/api/apps/{app_name}/run")
+async def api_app_run(app_name: str, req: AppRunRequest):
+    """설치된 앱을 APP.md steps 기반으로 결정론적으로 실행합니다."""
+    try:
+        from core.orchestrator import run_app
+        result = await run_app(app_name, session_id=f"app_run_{app_name}", extra_context=req.context)
+        return {"ok": True, "result": result}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/apps/plan")
