@@ -45,19 +45,25 @@ def _check_missing_env_vars(skill_name: str) -> list[str]:
 
     허브 인덱스의 requires_env 목록을 우선 확인하고,
     설치된 스킬의 SKILL.md에서도 재확인합니다.
+    requires_google_auth: true 인 스킬은 Google 인증 여부도 확인합니다.
     """
     required = get_skill_requires_env(skill_name)
 
-    # 설치된 SKILL.md에서 requires_env를 직접 파싱하여 보완
-    if not required:
-        from pathlib import Path
-        import re
-        skill_path = Path.home() / ".openchiken" / "skills" / skill_name / "SKILL.md"
-        if skill_path.exists():
-            text = skill_path.read_text(encoding="utf-8")
+    # 설치된 SKILL.md에서 requires_env 및 requires_google_auth를 직접 파싱하여 보완
+    from pathlib import Path
+    import re
+    skill_path = Path.home() / ".openchiken" / "skills" / skill_name / "SKILL.md"
+    if skill_path.exists():
+        text = skill_path.read_text(encoding="utf-8")
+        if not required:
             match = re.search(r"requires_env:\s*(.+)", text)
             if match:
                 required = [v.strip() for v in match.group(1).split(",") if v.strip()]
+        # requires_google_auth 체크
+        if re.search(r"requires_google_auth:\s*true", text, re.IGNORECASE):
+            from skills import _google_credentials_available
+            if not _google_credentials_available():
+                required = list(required) + ["GOOGLE_CREDENTIALS"]
 
     return [env for env in required if not os.getenv(env, "").strip()]
 
@@ -77,14 +83,30 @@ async def _ensure_skills(plan_result: SkillPlanResult) -> tuple[list[str], dict[
 
         # 1차: 허브에서 다운로드 시도
         if hub_skill_exists(skill_name):
-            # 다운로드 전 필요 환경변수 사전 확인
-            pre_missing = [
+            # 다운로드 전 필요 환경변수 사전 확인 (requires_env)
+            pre_missing_env = [
                 env for env in get_skill_requires_env(skill_name)
                 if not os.getenv(env, "").strip()
             ]
+
+            # 허브 인덱스의 auth 필드로 Google OAuth 사전 확인
+            from core.hub import get_hub_index
+            hub_index = get_hub_index()
+            hub_skill_meta = next(
+                (s for s in hub_index.get("skills", []) if s.get("name") == skill_name),
+                {},
+            )
+            requires_google_auth = hub_skill_meta.get("auth", "") == "google_oauth"
+            pre_missing_google: list[str] = []
+            if requires_google_auth:
+                from skills import _google_credentials_available
+                if not _google_credentials_available():
+                    pre_missing_google = ["GOOGLE_CREDENTIALS"]
+
+            pre_missing = pre_missing_env + pre_missing_google
             if pre_missing:
                 logger.warning(
-                    "[허브 설치] 스킬 '%s'에 필요한 환경변수 미설정: %s — 다운로드는 진행하나 활성화되지 않습니다.",
+                    "[허브 설치] 스킬 '%s'에 필요한 인증/환경변수 미설정: %s — 다운로드는 진행하나 활성화되지 않습니다.",
                     skill_name, pre_missing,
                 )
                 missing_env_map[skill_name] = pre_missing
@@ -109,20 +131,45 @@ async def _ensure_skills(plan_result: SkillPlanResult) -> tuple[list[str], dict[
 
 
 def _build_env_setup_guide(missing_env_map: dict[str, list[str]]) -> str:
-    """환경변수 설정 안내 메시지를 생성합니다."""
-    lines = [
-        "⚠️ 다음 스킬을 사용하려면 API 키(환경변수) 설정이 필요합니다.\n",
-        "프로젝트 루트의 `.env` 파일에 아래 항목을 추가한 후 다시 시도해 주세요:\n",
-    ]
-    for skill_name, env_vars in missing_env_map.items():
-        lines.append(f"[{skill_name} 스킬]")
-        for env in env_vars:
-            example = _ENV_EXAMPLES.get(env, "<발급받은 키를 입력>")
-            lines.append(f"  {env}={example}")
-    lines.append("\n📌 API 키 발급 안내:")
-    for skill_name in missing_env_map:
-        if skill_name in _SKILL_API_DOCS:
-            lines.append(f"  • {skill_name}: {_SKILL_API_DOCS[skill_name]}")
+    """환경변수/인증 설정 안내 메시지를 생성합니다."""
+    env_skills: dict[str, list[str]] = {}
+    google_auth_skills: list[str] = []
+
+    for skill_name, missing in missing_env_map.items():
+        env_only = [e for e in missing if e != "GOOGLE_CREDENTIALS"]
+        needs_google = "GOOGLE_CREDENTIALS" in missing
+        if env_only:
+            env_skills[skill_name] = env_only
+        if needs_google:
+            google_auth_skills.append(skill_name)
+
+    lines: list[str] = []
+
+    if google_auth_skills:
+        lines.append("🔑 다음 스킬은 Google 계정 인증(OAuth)이 필요합니다.\n")
+        lines.append("아직 Google 연동이 설정되어 있지 않습니다.")
+        lines.append("터미널에서 아래 명령을 실행하여 Google 인증을 완료하세요:\n")
+        lines.append("  openchiken-setup")
+        lines.append("\n또는 Google Cloud Console에서 credentials.json을 발급받아")
+        lines.append("프로젝트 루트에 저장한 후 다시 시도해 주세요.\n")
+        for skill_name in google_auth_skills:
+            if skill_name in _SKILL_API_DOCS:
+                lines.append(f"  📌 {skill_name} 설정 가이드: {_SKILL_API_DOCS[skill_name]}")
+        lines.append("")
+
+    if env_skills:
+        lines.append("⚠️ 다음 스킬을 사용하려면 API 키(환경변수) 설정이 필요합니다.\n")
+        lines.append("프로젝트 루트의 `.env` 파일에 아래 항목을 추가한 후 다시 시도해 주세요:\n")
+        for skill_name, env_vars in env_skills.items():
+            lines.append(f"[{skill_name} 스킬]")
+            for env in env_vars:
+                example = _ENV_EXAMPLES.get(env, "<발급받은 키를 입력>")
+                lines.append(f"  {env}={example}")
+        lines.append("\n📌 API 키 발급 안내:")
+        for skill_name in env_skills:
+            if skill_name in _SKILL_API_DOCS:
+                lines.append(f"  • {skill_name}: {_SKILL_API_DOCS[skill_name]}")
+
     return "\n".join(lines)
 
 
@@ -136,9 +183,11 @@ _ENV_EXAMPLES: dict[str, str] = {
 }
 
 _SKILL_API_DOCS: dict[str, str] = {
-    "youtube": "https://console.cloud.google.com/ → YouTube Data API v3 활성화 후 API 키 발급",
+    "youtube": "https://console.cloud.google.com/ → YouTube Data API v3 활성화 → OAuth 클라이언트 ID 발급 → credentials.json 다운로드",
     "weather": "https://openweathermap.org/api → 무료 플랜 가입 후 API 키 발급",
     "news_api": "https://newsapi.org/ → 무료 플랜 가입 후 API 키 발급",
+    "gmail": "https://console.cloud.google.com/ → Gmail API 활성화 → OAuth 클라이언트 ID 발급",
+    "calendar": "https://console.cloud.google.com/ → Google Calendar API 활성화 → OAuth 클라이언트 ID 발급",
 }
 
 
