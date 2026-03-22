@@ -1,0 +1,110 @@
+{
+  "version": "1.0.0",
+  "description": "OpenChiken Skill Hub — 공식 스킬/앱 인덱스",
+  "skills": [
+    {
+      "name": "crypto_price",
+      "description": "CoinGecko 기반 암호화폐 실시간 시세, 시총, 거래량 조회",
+      "tags": ["finance", "crypto"],
+      "auth": "none"
+    },
+    {
+      "name": "exchange_rate",
+      "description": "Frankfurter API 기반 실시간 환율 조회 및 통화 변환",
+      "tags": ["finance", "currency"],
+      "auth": "none"
+    },
+    {
+      "name": "news_rss",
+      "description": "RSS 피드 파싱을 통한 뉴스 수집 (BBC, Reuters, CNN 등)",
+      "tags": ["news", "rss"],
+      "auth": "none"
+    },
+    {
+      "name": "geocoding",
+      "description": "Nominatim 기반 주소↔좌표 변환 및 위치 검색",
+      "tags": ["geo", "location"],
+      "auth": "none"
+    },
+    {
+      "name": "quality_of_life",
+      "description": "Teleport API 기반 도시별 삶의 질 점수 조회",
+      "tags": ["realestate", "city"],
+      "auth": "none"
+    },
+    {
+      "name": "hacker_news",
+      "description": "HackerNews API 기반 기술/스타트업 뉴스 조회",
+      "tags": ["news", "tech"],
+      "auth": "none"
+    },
+    {
+      "name": "wikipedia_search",
+      "description": "Wikipedia API 기반 백과사전 검색 및 요약 조회",
+      "tags": ["knowledge", "search"],
+      "auth": "none"
+    },
+    {
+      "name": "quickchart",
+      "description": "QuickChart API 기반 차트 이미지 생성",
+      "tags": ["visualization", "chart"],
+      "auth": "none"
+    },
+    {
+      "name": "sec_edgar",
+      "description": "SEC EDGAR 미국 공개기업 연간보고서 조회",
+      "tags": ["finance", "sec"],
+      "auth": "none"
+    },
+    {
+      "name": "world_bank",
+      "description": "World Bank 글로벌 거시경제 데이터 조회",
+      "tags": ["finance", "economics"],
+      "auth": "none"
+    },
+    {
+      "name": "wallstreetbets",
+      "description": "Reddit WallStreetBets 주식 감성 분석",
+      "tags": ["finance", "sentiment"],
+      "auth": "none"
+    },
+    {
+      "name": "air_quality",
+      "description": "OpenAQ 실시간 대기질 데이터 조회",
+      "tags": ["environment", "health"],
+      "auth": "none"
+    },
+    {
+      "name": "earthquake",
+      "description": "USGS 실시간 지진 데이터 조회",
+      "tags": ["science", "safety"],
+      "auth": "none"
+    },
+    {
+      "name": "arxiv",
+      "description": "arXiv 학술 논문 검색",
+      "tags": ["research", "science"],
+      "auth": "none"
+    },
+    {
+      "name": "public_holidays",
+      "description": "Nager.Date 90개국 공휴일 조회",
+      "tags": ["calendar", "utility"],
+      "auth": "none"
+    }
+  ],
+  "apps": [
+    {
+      "name": "btc_daily_advisor",
+      "description": "매일 오전 BTC/NYSE 뉴스 분석 후 매수/매도 판단 및 알림",
+      "skills": ["web_search", "crypto_price", "news_rss", "finance", "wallstreetbets"],
+      "tags": ["finance", "crypto", "trading"]
+    },
+    {
+      "name": "real_estate_scout",
+      "description": "부동산 매물 탐색, 지역 분석, 삶의 질 점수 리포트",
+      "skills": ["geocoding", "quality_of_life", "web_search", "weather", "quickchart"],
+      "tags": ["realestate", "analysis"]
+    }
+  ]
+}

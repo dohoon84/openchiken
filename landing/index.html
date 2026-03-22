@@ -118,12 +118,13 @@
       <div class="hidden md:flex gap-6 items-center">
         <a href="#channels" class="font-headline text-sm tracking-tight text-on-surface-variant hover:text-on-surface transition-colors">채널</a>
         <a href="#features" class="font-headline text-sm tracking-tight text-on-surface-variant hover:text-on-surface transition-colors">기능</a>
+        <a href="#skill-hub" class="font-headline text-sm tracking-tight text-on-surface-variant hover:text-on-surface transition-colors">Skill Hub</a>
         <a href="#how-it-works" class="font-headline text-sm tracking-tight text-on-surface-variant hover:text-on-surface transition-colors">작동 방식</a>
         <a href="#quickstart" class="font-headline text-sm tracking-tight text-on-surface-variant hover:text-on-surface transition-colors">Quick Start</a>
-        <button onclick="showHubToast()" class="flex items-center gap-1 font-headline text-sm tracking-tight text-primary hover:text-primary/70 transition-colors bg-transparent border-none cursor-pointer p-0">
+        <a href="https://github.com/dohoon84/skill-hub" target="_blank" rel="noopener" class="flex items-center gap-1 font-headline text-sm tracking-tight text-primary hover:text-primary/70 transition-colors">
           <span class="material-symbols-outlined text-sm">hub</span>
-          Hub
-        </button>
+          Skill Hub
+        </a>
       </div>
     </div>
     <div class="flex items-center gap-4">
@@ -152,11 +153,11 @@
         class="font-headline text-sm tracking-tight text-on-surface-variant hover:text-on-surface transition-colors">작동 방식</a>
       <a href="#quickstart" onclick="closeMobileNav()"
         class="font-headline text-sm tracking-tight text-on-surface-variant hover:text-on-surface transition-colors">Quick Start</a>
-      <button onclick="closeMobileNav(); showHubToast()"
-        class="text-left font-headline text-sm tracking-tight text-primary hover:text-primary/70 transition-colors bg-transparent border-none cursor-pointer p-0 flex items-center gap-1">
+      <a href="https://github.com/dohoon84/skill-hub" target="_blank" rel="noopener" onclick="closeMobileNav()"
+        class="text-left font-headline text-sm tracking-tight text-primary hover:text-primary/70 transition-colors flex items-center gap-1">
         <span class="material-symbols-outlined text-sm">hub</span>
-        Hub
-      </button>
+        Skill Hub
+      </a>
       <a href="#quickstart" onclick="closeMobileNav()"
         class="flex items-center gap-2 primary-gradient text-on-primary font-label text-[10px] font-bold px-5 py-3 rounded-full tracking-wider uppercase w-fit">
         <span class="material-symbols-outlined text-sm">rocket_launch</span>
@@ -372,7 +373,7 @@
       </p>
       <div class="flex items-center gap-6 shrink-0 ml-auto">
         <div class="text-center">
-          <p class="text-2xl font-headline font-bold text-primary">11+</p>
+          <p class="text-2xl font-headline font-bold text-primary">19+</p>
           <p class="text-[10px] text-on-surface-variant uppercase tracking-widest">스킬</p>
         </div>
         <div class="w-px h-8 bg-outline-variant/40"></div>
@@ -845,31 +846,19 @@
       ↓
 [<span class="text-tertiary">Channel Router</span>]  ─── 통합 메시지 라우팅
       │
-      ├── 일반 메시지 ──▶ [ReAct Agent]
-      │                       │
-      │                  [<span class="text-secondary">SkillLoader</span>]
-      │                  skills/*/SKILL.md  → 시스템 프롬프트 주입
-      │                  skills/*/tool.py   → 도구 동적 로딩
-      │                  ~/.openchiken/skills/ → 사용자 커스텀 스킬
-      │                       │
-      │                       └── 도구 호출
-      │                            ├── <span class="text-secondary">Gmail</span>
-      │                            ├── <span class="text-secondary">Calendar</span>
-      │                            ├── <span class="text-secondary">Drive</span>
-      │                            ├── <span class="text-secondary">Sheets</span>
-      │                            ├── <span class="text-secondary">Docs</span>
-      │                            ├── <span class="text-secondary">Workflow</span>
-      │                            ├── <span class="text-secondary">WebSearch</span>
-      │                            ├── <span class="text-secondary">Weather</span>
-      │                            ├── <span class="text-secondary">Memo</span>
-      │                            ├── <span class="text-secondary">Task</span>
-      │                            ├── <span class="text-secondary">Finance</span>
-      │                            └── <span class="text-secondary">+ 커스텀 스킬</span>
-      │
-      └── /plan 명령 ──▶ [<span class="text-primary">Plan-and-Execute</span>]
-                              ├── Planner
-                              ├── Executor
-                              └── Replanner
+      └── 모든 메시지 ──▶ [<span class="text-primary">Autonomous Orchestrator</span>]
+                              │
+                         ① <span class="text-secondary">Skill Planner</span>   — 필요 스킬 파악
+                              │
+                         ② <span class="text-secondary">Local Check</span>    — skills/* 확인
+                              │  없으면 ↓
+                         ③ <span class="text-secondary">Skill Hub</span>      — GitHub dohoon84/skill-hub
+                              │  없으면 ↓
+                         ④ <span class="text-secondary">Auto Generate</span>  — LLM이 직접 생성
+                              │
+                         ⑤ <span class="text-primary">Plan-and-Execute</span> — 스킬 실행
+                              ├── Planner → Executor → Replanner
+                              └── 스킬들 조합 → 결과 반환
 
 [<span class="text-primary">Scheduler</span>] ─── 자율 실행 → 연결된 채널로 전송
       ├── 매일 08:00    → 아침 브리핑
@@ -878,6 +867,233 @@
           </div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       Skill Hub Section
+  ════════════════════════════════════════════ -->
+  <section id="skill-hub" class="relative py-24 px-6 md:px-12">
+    <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(ellipse 800px 500px at 50% 50%, rgba(187,195,255,0.04) 0%, transparent 70%)"></div>
+    <div class="max-w-6xl mx-auto relative z-10">
+
+      <!-- 헤더 -->
+      <div class="text-center mb-20">
+        <div class="inline-flex items-center gap-2 bg-secondary/10 border border-secondary/20 rounded-full px-4 py-1.5 mb-6">
+          <span class="material-symbols-outlined text-secondary text-sm">hub</span>
+          <span class="font-label text-xs font-bold text-secondary uppercase tracking-widest">Skill Hub</span>
+        </div>
+        <h2 class="text-4xl md:text-5xl font-headline font-bold tracking-tight text-on-surface mb-4">
+          스킬 생태계 — 무한 확장
+        </h2>
+        <p class="text-on-surface-variant max-w-2xl mx-auto text-lg leading-relaxed">
+          스킬 하나하나가 AI의 능력이 됩니다. 스킬을 조합하면 앱이 되고,<br/>
+          필요한 스킬이 없으면 허브에서 찾거나 AI가 직접 만듭니다.
+        </p>
+      </div>
+
+      <!-- 스킬 & 앱 관계 -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+
+        <!-- 스킬 카드 -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-8 ghost-border relative overflow-hidden">
+          <div class="absolute -top-8 -right-8 w-40 h-40 bg-primary/5 blur-[60px] rounded-full"></div>
+          <div class="relative z-10">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+                <span class="material-symbols-outlined text-primary">extension</span>
+              </div>
+              <div>
+                <h3 class="font-headline text-xl font-bold text-on-surface">스킬 (Skill)</h3>
+                <p class="font-label text-[10px] text-primary uppercase tracking-widest">원자 단위 능력</p>
+              </div>
+            </div>
+            <p class="text-sm text-on-surface-variant leading-relaxed mb-6">
+              스킬은 AI가 할 수 있는 <strong class="text-on-surface">하나의 구체적 능력</strong>입니다.
+              각 스킬은 두 파일로 구성됩니다.
+            </p>
+            <div class="bg-surface-container-lowest rounded-lg p-4 font-mono text-xs border border-outline-variant/10 mb-6">
+              <div class="text-on-surface-variant/40 mb-2">skills/crypto_price/</div>
+              <div class="space-y-1.5">
+                <div class="flex items-start gap-2">
+                  <span class="text-primary mt-0.5">SKILL.md</span>
+                  <span class="text-on-surface-variant/50">— AI 지시 + 메타데이터<br/><span class="text-on-surface-variant/30 text-[10px]">name, description, enabled, 사용법 설명</span></span>
+                </div>
+                <div class="flex items-start gap-2">
+                  <span class="text-secondary mt-0.5">tool.py</span>
+                  <span class="text-on-surface-variant/50">— LangChain @tool 구현<br/><span class="text-on-surface-variant/30 text-[10px]">실제 API 호출, 데이터 처리 로직</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-2 py-0.5 bg-primary/10 text-primary text-[9px] rounded uppercase font-bold">crypto_price</span>
+              <span class="px-2 py-0.5 bg-primary/10 text-primary text-[9px] rounded uppercase font-bold">news_rss</span>
+              <span class="px-2 py-0.5 bg-primary/10 text-primary text-[9px] rounded uppercase font-bold">geocoding</span>
+              <span class="px-2 py-0.5 bg-primary/10 text-primary text-[9px] rounded uppercase font-bold">quickchart</span>
+              <span class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant text-[9px] rounded uppercase font-bold">+ 15개</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 앱 카드 -->
+        <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-8 ghost-border relative overflow-hidden">
+          <div class="absolute -top-8 -right-8 w-40 h-40 bg-secondary/5 blur-[60px] rounded-full"></div>
+          <div class="relative z-10">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="w-10 h-10 rounded-lg bg-secondary/10 border border-secondary/20 flex items-center justify-center">
+                <span class="material-symbols-outlined text-secondary">apps</span>
+              </div>
+              <div>
+                <h3 class="font-headline text-xl font-bold text-on-surface">앱 (App)</h3>
+                <p class="font-label text-[10px] text-secondary uppercase tracking-widest">스킬들의 조합</p>
+              </div>
+            </div>
+            <p class="text-sm text-on-surface-variant leading-relaxed mb-6">
+              앱은 <strong class="text-on-surface">여러 스킬을 묶어 하나의 도메인 목적</strong>을 수행하는 상위 스킬입니다.
+              <code class="text-secondary bg-surface-container px-1 rounded text-xs">APP.md</code>로 정의됩니다.
+            </p>
+            <div class="bg-surface-container-lowest rounded-lg p-4 font-mono text-xs border border-outline-variant/10 mb-6">
+              <div class="text-on-surface-variant/40 mb-2"># btc_daily_advisor/APP.md</div>
+              <div class="space-y-0.5 text-[11px]">
+                <div><span class="text-secondary">skills:</span></div>
+                <div class="pl-3"><span class="text-primary">- crypto_price</span>  <span class="text-on-surface-variant/30"># 시세 조회</span></div>
+                <div class="pl-3"><span class="text-primary">- news_rss</span>       <span class="text-on-surface-variant/30"># 뉴스 수집</span></div>
+                <div class="pl-3"><span class="text-primary">- web_search</span>     <span class="text-on-surface-variant/30"># 추가 검색</span></div>
+                <div class="pl-3"><span class="text-primary">- quickchart</span>     <span class="text-on-surface-variant/30"># 차트 생성</span></div>
+                <div class="mt-1"><span class="text-secondary">schedule:</span> <span class="text-on-surface/70">cron(0 8 * * *)</span></div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <span class="px-2 py-0.5 bg-secondary/10 text-secondary text-[9px] rounded uppercase font-bold">btc_daily_advisor</span>
+              <span class="px-2 py-0.5 bg-secondary/10 text-secondary text-[9px] rounded uppercase font-bold">real_estate_scout</span>
+              <span class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant text-[9px] rounded uppercase font-bold">무한 확장 가능</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 자율 발견 플로우 -->
+      <div class="reveal-on-scroll bg-surface-container-low rounded-xl p-8 md:p-12 ghost-border mb-16 relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-80 h-80 bg-primary/4 blur-[120px] rounded-full -ml-20 -mt-20"></div>
+        <div class="relative z-10">
+          <div class="flex items-center gap-3 mb-10">
+            <span class="material-symbols-outlined text-primary">auto_fix_high</span>
+            <div>
+              <h3 class="font-headline text-xl font-bold text-on-surface">자율 스킬 발견 플로우</h3>
+              <p class="font-label text-[10px] text-primary uppercase tracking-widest mt-0.5">메시지 한 번으로 자동 실행</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-0 items-start">
+
+            <!-- Step 1 -->
+            <div class="flex flex-col items-center text-center md:px-2">
+              <div class="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-3">
+                <span class="material-symbols-outlined text-primary text-xl">chat_bubble</span>
+              </div>
+              <p class="font-headline text-sm font-bold text-on-surface mb-1">① 메시지</p>
+              <p class="text-[11px] text-on-surface-variant leading-relaxed">"비트코인 오늘 시세 분석해줘"</p>
+            </div>
+
+            <!-- Arrow -->
+            <div class="hidden md:flex items-center justify-center mt-6">
+              <span class="material-symbols-outlined text-outline text-2xl">arrow_forward</span>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="flex flex-col items-center text-center md:px-2">
+              <div class="w-12 h-12 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center mb-3">
+                <span class="material-symbols-outlined text-secondary text-xl">psychology</span>
+              </div>
+              <p class="font-headline text-sm font-bold text-on-surface mb-1">② 스킬 분석</p>
+              <p class="text-[11px] text-on-surface-variant leading-relaxed">Skill Planner가 필요 스킬 목록 추출</p>
+            </div>
+
+            <!-- Arrow -->
+            <div class="hidden md:flex items-center justify-center mt-6">
+              <span class="material-symbols-outlined text-outline text-2xl">arrow_forward</span>
+            </div>
+
+            <!-- Step 3+4 -->
+            <div class="flex flex-col items-center text-center md:px-2">
+              <div class="w-12 h-12 rounded-xl bg-tertiary/10 border border-tertiary/20 flex items-center justify-center mb-3">
+                <span class="material-symbols-outlined text-tertiary text-xl">hub</span>
+              </div>
+              <p class="font-headline text-sm font-bold text-on-surface mb-1">③ 스킬 확보</p>
+              <p class="text-[11px] text-on-surface-variant leading-relaxed">로컬 → 허브 → LLM 자동생성 순서로 확보</p>
+            </div>
+
+          </div>
+
+          <!-- 3단계 상세 -->
+          <div class="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-surface-container rounded-lg p-4 border border-primary/10">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="material-symbols-outlined text-primary text-base">folder</span>
+                <span class="font-label text-xs font-bold text-primary">1차: 로컬 확인</span>
+              </div>
+              <p class="text-[11px] text-on-surface-variant leading-relaxed">
+                <code class="text-primary text-[10px]">skills/*/</code> 및
+                <code class="text-primary text-[10px]">~/.openchiken/skills/</code> 에서 탐색
+              </p>
+            </div>
+            <div class="bg-surface-container rounded-lg p-4 border border-secondary/10">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="material-symbols-outlined text-secondary text-base">cloud_download</span>
+                <span class="font-label text-xs font-bold text-secondary">2차: 허브 다운로드</span>
+              </div>
+              <p class="text-[11px] text-on-surface-variant leading-relaxed">
+                <a href="https://github.com/dohoon84/skill-hub" target="_blank" class="text-secondary hover:underline">dohoon84/skill-hub</a> 에서
+                <code class="text-secondary text-[10px]">SKILL.md</code> + <code class="text-secondary text-[10px]">tool.py</code> 자동 설치
+              </p>
+            </div>
+            <div class="bg-surface-container rounded-lg p-4 border border-tertiary/10">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="material-symbols-outlined text-tertiary text-base">auto_fix_high</span>
+                <span class="font-label text-xs font-bold text-tertiary">3차: LLM 자동 생성</span>
+              </div>
+              <p class="text-[11px] text-on-surface-variant leading-relaxed">
+                허브에도 없으면 LLM이 스킬 코드를 직접 생성하여 등록 후 즉시 실행
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skill Hub GitHub 배너 -->
+      <div class="reveal-on-scroll rounded-xl p-8 text-center" style="background:linear-gradient(135deg,rgba(187,195,255,0.08) 0%,rgba(0,218,243,0.06) 100%); border:1px solid rgba(187,195,255,0.15)">
+        <div class="w-14 h-14 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center mx-auto mb-4">
+          <span class="material-symbols-outlined text-secondary text-2xl">hub</span>
+        </div>
+        <h3 class="font-headline text-2xl font-bold text-on-surface mb-3">Skill Hub에 기여하세요</h3>
+        <p class="text-sm text-on-surface-variant mb-6 max-w-lg mx-auto leading-relaxed">
+          누구나 스킬을 만들어 허브에 올릴 수 있습니다.<br/>
+          <code class="text-secondary bg-surface-container px-1.5 py-0.5 rounded text-xs">SKILL.md</code> +
+          <code class="text-secondary bg-surface-container px-1.5 py-0.5 rounded text-xs">tool.py</code> 두 파일이면 새로운 AI 능력이 됩니다.
+        </p>
+        <a href="https://github.com/dohoon84/skill-hub" target="_blank" rel="noopener"
+          class="inline-flex items-center gap-2 bg-secondary/10 border border-secondary/30 text-secondary font-label text-xs font-bold px-8 py-3.5 rounded-full tracking-wider uppercase hover:bg-secondary/20 hover:scale-105 transition-all">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+          dohoon84/skill-hub 바로가기
+        </a>
+        <div class="flex items-center justify-center gap-8 mt-6 pt-6 border-t border-outline-variant/10">
+          <div class="text-center">
+            <p class="font-headline text-2xl font-bold text-secondary">15+</p>
+            <p class="text-[10px] text-on-surface-variant uppercase tracking-widest mt-0.5">허브 스킬</p>
+          </div>
+          <div class="w-px h-8 bg-outline-variant/30"></div>
+          <div class="text-center">
+            <p class="font-headline text-2xl font-bold text-secondary">2</p>
+            <p class="text-[10px] text-on-surface-variant uppercase tracking-widest mt-0.5">기본 앱</p>
+          </div>
+          <div class="w-px h-8 bg-outline-variant/30"></div>
+          <div class="text-center">
+            <p class="font-headline text-2xl font-bold text-secondary">∞</p>
+            <p class="text-[10px] text-on-surface-variant uppercase tracking-widest mt-0.5">가능성</p>
+          </div>
+        </div>
+      </div>
+
     </div>
   </section>
 
@@ -1445,7 +1661,9 @@
         <a href="#quickstart" class="font-label text-xs text-on-surface-variant hover:text-primary transition-colors">Quick Start</a>
         <a href="#features" class="font-label text-xs text-on-surface-variant hover:text-primary transition-colors">기능</a>
         <a href="https://github.com/dohoon84/openchiken" class="font-label text-xs text-on-surface-variant hover:text-primary transition-colors">GitHub</a>
-        <button onclick="showHubToast()" class="font-label text-xs text-on-surface-variant hover:text-primary transition-colors bg-transparent border-none cursor-pointer p-0">Hub</button>
+        <a href="https://github.com/dohoon84/skill-hub" target="_blank" rel="noopener" class="font-label text-xs text-primary hover:text-primary/70 transition-colors flex items-center gap-1">
+          <span class="material-symbols-outlined text-xs" style="font-size:13px">hub</span>Skill Hub
+        </a>
       </nav>
     </div>
   </footer>
@@ -1462,20 +1680,7 @@
     }
   </script>
 
-  <!-- Hub 준비 중 토스트 -->
-  <div id="hub-toast" style="display:none; position:fixed; bottom:2rem; left:50%; transform:translateX(-50%);
-    background:#1e2a2b; color:#00daf3; padding:0.75rem 1.5rem; border-radius:9999px;
-    font-size:0.75rem; font-weight:700; letter-spacing:0.05em; z-index:9999;
-    border:1px solid rgba(0,218,243,0.3); box-shadow:0 4px 24px rgba(0,218,243,0.15);
-    white-space:nowrap;">
-    🚧 Hub — 서비스 준비 중입니다
-  </div>
   <script>
-    function showHubToast() {
-      var t = document.getElementById('hub-toast');
-      t.style.display = 'block';
-      setTimeout(function() { t.style.display = 'none'; }, 2500);
-    }
     function toggleMobileNav() {
       var nav = document.getElementById('mobile-nav');
       var icon = document.getElementById('nav-menu-icon');
