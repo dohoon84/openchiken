@@ -1194,6 +1194,97 @@ async def api_app_run(app_name: str, req: AppRunRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.delete("/api/apps/{app_name}")
+def api_app_delete(app_name: str, delete_skills: bool = True):
+    """설치된 앱 삭제. delete_skills=True이면 해당 앱 전용 의존 스킬도 함께 삭제."""
+    import shutil
+
+    user_apps_dir = OPENCHIKEN_HOME / "apps"
+    app_dir = user_apps_dir / app_name
+
+    # 허브 설치 앱만 삭제 가능 (내장 앱은 보호)
+    bundled_app = ROOT / "skills" / "apps" / app_name
+    if bundled_app.exists() and not app_dir.exists():
+        raise HTTPException(status_code=403, detail=f"내장 앱 '{app_name}'은 삭제할 수 없습니다.")
+    if not app_dir.exists():
+        raise HTTPException(status_code=404, detail=f"앱 '{app_name}'을 찾을 수 없습니다.")
+
+    deleted_skills: list[str] = []
+
+    if delete_skills:
+        # 앱 manifest에서 의존 스킬 파악
+        app_md = app_dir / "APP.md"
+        app_skills: list[str] = []
+        if app_md.exists():
+            content = app_md.read_text(encoding="utf-8")
+            in_skills = False
+            for line in content.split("\n"):
+                stripped = line.strip()
+                if stripped == "skills:":
+                    in_skills = True
+                    continue
+                if in_skills:
+                    if stripped.startswith("- "):
+                        app_skills.append(stripped[2:].strip())
+                    elif stripped and not stripped.startswith("#"):
+                        in_skills = False
+
+        # 다른 앱들이 사용하는 스킬 수집
+        other_used: set[str] = set()
+        if user_apps_dir.exists():
+            for other_dir in user_apps_dir.iterdir():
+                if not other_dir.is_dir() or other_dir.name == app_name:
+                    continue
+                other_md = other_dir / "APP.md"
+                if not other_md.exists():
+                    continue
+                in_s = False
+                for line in other_md.read_text(encoding="utf-8").split("\n"):
+                    s = line.strip()
+                    if s == "skills:":
+                        in_s = True
+                        continue
+                    if in_s:
+                        if s.startswith("- "):
+                            other_used.add(s[2:].strip())
+                        elif s and not s.startswith("#"):
+                            in_s = False
+
+        # 이 앱에만 사용되는 스킬(내장이 아닌 것) 삭제
+        user_skills_dir = OPENCHIKEN_HOME / "skills"
+        bundled_skill_dir = ROOT / "skills"
+        for skill in app_skills:
+            if skill in other_used:
+                continue
+            # 내장 스킬은 보호
+            if (bundled_skill_dir / skill).exists():
+                continue
+            skill_dir = user_skills_dir / skill
+            if skill_dir.exists():
+                shutil.rmtree(skill_dir)
+                deleted_skills.append(skill)
+
+    shutil.rmtree(app_dir)
+    return {"ok": True, "deleted_app": app_name, "deleted_skills": deleted_skills}
+
+
+@app.delete("/api/skills/{skill_id}")
+def api_skill_delete(skill_id: str):
+    """허브에서 설치된 스킬 삭제 (내장 스킬은 삭제 불가)."""
+    import shutil
+
+    bundled_dir = ROOT / "skills" / skill_id
+    user_dir = OPENCHIKEN_HOME / "skills" / skill_id
+
+    if bundled_dir.exists() and not user_dir.exists():
+        raise HTTPException(status_code=403, detail=f"내장 스킬 '{skill_id}'은 삭제할 수 없습니다.")
+    if not user_dir.exists():
+        raise HTTPException(status_code=404, detail=f"스킬 '{skill_id}'을 찾을 수 없습니다.")
+
+    shutil.rmtree(user_dir)
+    return {"ok": True, "deleted_skill": skill_id}
+
+
 @app.post("/api/apps/plan")
 async def api_apps_plan(req: AppGenerateRequest):
     """쿼리를 분석하여 필요한 스킬 플랜만 반환 (실행하지 않음)"""

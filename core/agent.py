@@ -203,3 +203,44 @@ async def chat_plan(session_id: str, user_message: str) -> str:
 
     save_message(session_id, AIMessage(content=reply))
     return reply
+
+
+async def chat_plan_with_tools(session_id: str, user_message: str, tools: list) -> str:
+    """필터링된 툴 세트로 Plan-and-Execute 에이전트를 실행합니다.
+
+    전체 툴 캐시 대신 필요한 스킬의 툴만 전달하여
+    LLM 컨텍스트 크기와 API 비용을 줄입니다.
+
+    Args:
+        session_id:   대화 세션 ID
+        user_message: 실행할 쿼리
+        tools:        사용할 툴 목록 (get_tools_for_skills()로 필터링된 것)
+    """
+    from core.planner import build_plan_execute_graph
+
+    graph = build_plan_execute_graph(tools)
+    save_message(session_id, HumanMessage(content=user_message))
+
+    try:
+        state = await graph.ainvoke({
+            "input": user_message,
+            "plan": [],
+            "past_steps": [],
+            "response": "",
+        })
+        reply = state.get("response") or "작업이 완료되었지만 최종 응답을 생성하지 못했습니다."
+    except Exception as e:
+        logger.error("chat_plan_with_tools() failed: %s", e, exc_info=True)
+        reply = f"복잡 작업 처리 중 오류가 발생했습니다: {e}"
+        state = {}
+
+    past = state.get("past_steps", []) if state else []
+    if past:
+        steps_summary = "\n".join(f"  {i+1}. {s}" for i, (s, _) in enumerate(past))
+        logger.info(
+            "chat_plan_with_tools completed %d steps (%d tools used):\n%s",
+            len(past), len(tools), steps_summary,
+        )
+
+    save_message(session_id, AIMessage(content=reply))
+    return reply

@@ -12,6 +12,7 @@ Autonomous Skill Orchestrator — 완전 자율 스킬 오케스트레이션 엔
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 
@@ -188,15 +189,35 @@ async def run_autonomous(query: str, session_id: str) -> str:
             logger.warning("환경변수 누락으로 스킬 비활성화: %s", list(still_missing.keys()))
             return guide
 
-    # Step 3: Plan-and-Execute 에이전트로 실행
-    from core.agent import chat_plan
+    # Step 3: 스킬이 0개 → 단순 대화형 메시지, 바로 chat()으로 처리
+    needed_skills = [s.name for s in plan_result.plan.skills]
+    if not needed_skills:
+        logger.info("run_autonomous: no skills needed — routing to simple chat()")
+        from core.agent import chat
+        result = await chat(session_id, query)
+        logger.info("=== Autonomous orchestration complete (chat path) ===")
+        return result
+
+    # Step 4: 필요한 스킬의 툴만 필터링하여 Plan-and-Execute 실행
+    loader = get_skill_loader()
+    filtered_tools = loader.get_tools_for_skills(needed_skills)
 
     enhanced_query = (
         f"{query}\n\n"
-        f"[사용 가능한 스킬: {', '.join(s.name for s in plan_result.plan.skills)}]"
+        f"[사용 가능한 스킬: {', '.join(needed_skills)}]"
     )
 
-    result = await chat_plan(session_id, enhanced_query)
+    if filtered_tools:
+        from core.agent import chat_plan_with_tools
+        logger.info(
+            "run_autonomous: %d skills → %d tools (전체 대비 축소)",
+            len(needed_skills), len(filtered_tools),
+        )
+        result = await chat_plan_with_tools(session_id, enhanced_query, filtered_tools)
+    else:
+        from core.agent import chat_plan
+        logger.warning("run_autonomous: tool filtering returned empty — using all tools")
+        result = await chat_plan(session_id, enhanced_query)
 
     logger.info("=== Autonomous orchestration complete ===")
     return result
@@ -236,35 +257,67 @@ async def run_app(app_name: str, session_id: str, extra_context: str = "") -> st
             query = f"{extra_context}\n\n{app.instructions}"
         return await run_autonomous(query, session_id)
 
-    # steps를 plan으로 직접 주입 (LLM 플래너 완전 우회)
-    from core.agent import get_tools
+    # ── 툴 필터링: 앱의 sub_skills에 해당하는 툴만 로드 ──────────────────────
+    loader = get_skill_loader()
+    if app.sub_skills:
+        tools = loader.get_tools_for_skills(app.sub_skills)
+        logger.info(
+            "App '%s' tools: %d tools for skills %s",
+            app_name, len(tools), app.sub_skills,
+        )
+    else:
+        from core.agent import get_tools
+        tools = get_tools()
+        logger.warning("App '%s' has no sub_skills — using all tools", app_name)
 
-    try:
-        from core.planner import get_app_execute_graph
-        graph = get_app_execute_graph(get_tools())
-    except Exception as e:
-        logger.warning("App graph build failed (%s), fallback to run_autonomous", e)
-        return await run_autonomous(app.instructions, session_id)
+    if not tools:
+        from core.agent import get_tools
+        tools = get_tools()
+        logger.warning("App '%s' tool filtering returned empty — using all tools", app_name)
 
     # extra_context가 있으면 첫 번째 단계에 컨텍스트를 주입
     steps = list(app.steps)
     if extra_context and steps:
         steps[0] = f"[컨텍스트: {extra_context}] {steps[0]}"
 
-    input_summary = f"{app.description}"
-    if extra_context:
-        input_summary += f" (요청: {extra_context})"
+    logger.info("App '%s' steps (%d)", app_name, len(steps))
 
-    logger.info("App '%s' steps (%d): %s", app_name, len(steps), steps)
+    # ── 병렬 실행: 수집 단계(N-1개) 동시 실행 → 마지막 종합 단계 순차 실행 ──
+    from core.planner import run_step_with_tools
 
     try:
-        state = await graph.ainvoke({
-            "input": input_summary,
-            "plan": steps,
-            "past_steps": [],
-            "response": "",
-        })
-        result = state.get("response") or "앱 실행이 완료되었지만 최종 응답이 없습니다."
+        if len(steps) == 1:
+            # 단계가 하나뿐이면 그냥 실행
+            result = await run_step_with_tools(steps[0], tools)
+        else:
+            collection_steps = steps[:-1]   # 데이터 수집 단계 (병렬)
+            synthesis_step   = steps[-1]    # 최종 종합/리포트 단계 (순차)
+
+            logger.info(
+                "App '%s': %d collection steps (parallel) + 1 synthesis step",
+                app_name, len(collection_steps),
+            )
+
+            # 수집 단계 병렬 실행
+            raw_results = await asyncio.gather(
+                *[run_step_with_tools(step, tools) for step in collection_steps],
+                return_exceptions=True,
+            )
+
+            # 결과 취합 (예외 포함)
+            context_parts: list[str] = []
+            for i, (step, res) in enumerate(zip(collection_steps, raw_results)):
+                if isinstance(res, BaseException):
+                    context_parts.append(f"[단계 {i+1}] {step}\n결과: 실행 실패 — {res}")
+                    logger.warning("Parallel step %d failed: %s", i + 1, res)
+                else:
+                    context_parts.append(f"[단계 {i+1}] {step}\n결과: {res}")
+
+            collected_context = "이전 단계 수집 결과:\n\n" + "\n\n".join(context_parts)
+
+            # 종합 단계 실행 (수집 결과 전체를 컨텍스트로 전달)
+            result = await run_step_with_tools(synthesis_step, tools, context=collected_context)
+
     except Exception as e:
         logger.error("App '%s' execution failed: %s", app_name, e, exc_info=True)
         result = f"앱 '{app_name}' 실행 중 오류가 발생했습니다: {e}"
