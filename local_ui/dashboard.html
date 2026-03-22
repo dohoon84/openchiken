@@ -39,9 +39,15 @@ tailwind.config = {
 <!-- Engine Status -->
 <div class="md:col-span-8 bg-surface-container-low rounded-xl p-6 relative overflow-hidden flex flex-col justify-between min-h-[150px]">
 <div class="relative z-10">
-<div class="flex items-center gap-2 mb-4">
-<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span id="engine-pulse" class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
 <h3 class="font-headline text-sm font-bold uppercase tracking-widest text-primary">Engine Status</h3>
+</div>
+<button id="bot-control-btn" onclick="toggleBot()" class="hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wide transition-all">
+<span id="bot-control-icon" class="material-symbols-outlined text-sm"></span>
+<span id="bot-control-label"></span>
+</button>
 </div>
 <div class="flex flex-col gap-3">
 <div class="flex items-center justify-between">
@@ -154,6 +160,55 @@ tailwind.config = {
 
 <script src="/static/shared.js"></script>
 <script>
+let _botRunning = false;
+
+function setBotControlBtn(running) {
+  _botRunning = running;
+  const btn = document.getElementById('bot-control-btn');
+  const icon = document.getElementById('bot-control-icon');
+  const label = document.getElementById('bot-control-label');
+  const pulse = document.getElementById('engine-pulse');
+  btn.classList.remove('hidden');
+  if (running) {
+    btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wide transition-all bg-error/10 text-error border border-error/20 hover:bg-error/20';
+    icon.textContent = 'stop_circle';
+    label.textContent = 'Stop';
+    pulse.className = 'w-2 h-2 rounded-full bg-primary animate-pulse';
+  } else {
+    btn.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wide transition-all bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20';
+    icon.textContent = 'play_circle';
+    label.textContent = 'Start';
+    pulse.className = 'w-2 h-2 rounded-full bg-outline-variant';
+  }
+}
+
+async function toggleBot() {
+  const btn = document.getElementById('bot-control-btn');
+  btn.disabled = true;
+  try {
+    if (_botRunning) {
+      await fetch('/api/system/stop', { method: 'POST' });
+      setBotControlBtn(false);
+      document.getElementById('engine-title').textContent = 'Engine Offline';
+      document.getElementById('engine-badge').textContent = 'Offline';
+      document.getElementById('engine-badge').className = 'bg-outline-variant/20 text-on-surface-variant border border-outline-variant/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase';
+      document.getElementById('engine-log').innerHTML = '<p class="text-on-surface-variant/50">봇이 중지되었습니다.</p>';
+      document.getElementById('ai-core-status').textContent = 'Stopped';
+    } else {
+      await fetch('/api/system/start', { method: 'POST' });
+      setBotControlBtn(true);
+      document.getElementById('engine-title').textContent = '시작 중...';
+      document.getElementById('engine-badge').textContent = 'Starting';
+      document.getElementById('engine-log').innerHTML = '<p class="text-primary/60">main.py 시작 중...</p>';
+      setTimeout(() => location.reload(), 3000);
+    }
+  } catch (e) {
+    console.error('봇 제어 실패:', e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 (async function loadDashboard() {
   const API = '/api/dashboard';
   async function fetchJSON(url) {
@@ -164,16 +219,20 @@ tailwind.config = {
   function $(id) { return document.getElementById(id); }
   function clearSkeleton(ids) { ids.forEach(id => { const el = $(id); if (el) el.classList.remove('skeleton'); }); }
 
-  const [agentRes, weatherRes, calendarRes, gmailRes, memoryRes] = await Promise.allSettled([
+  const [agentRes, weatherRes, calendarRes, gmailRes, memoryRes, botStatusRes] = await Promise.allSettled([
     fetchJSON(`${API}/agent-status`),
     fetchJSON(`${API}/weather?city=Seoul`),
     fetchJSON(`${API}/calendar`),
     fetchJSON(`${API}/gmail?max_results=5`),
     fetchJSON(`${API}/memory?limit=6`),
+    fetchJSON('/api/system/status'),
   ]);
 
   clearSkeleton(['engine-title','engine-badge','ai-model-name','ai-provider','ai-core-status',
     'weather-city','weather-condition','weather-temp','weather-temp-min','weather-humidity','weather-wind','inbox-badge']);
+
+  const botRunning = botStatusRes.status === 'fulfilled' && botStatusRes.value.running;
+  setBotControlBtn(botRunning);
 
   if (agentRes.status === 'fulfilled') {
     const d = agentRes.value;
@@ -194,6 +253,7 @@ tailwind.config = {
   } else {
     $('engine-title').textContent = 'Engine Offline';
     $('engine-badge').textContent = 'Offline';
+    $('engine-badge').className = 'bg-outline-variant/20 text-on-surface-variant border border-outline-variant/20 px-3 py-1 rounded-full text-[10px] font-bold uppercase';
     $('ai-core-status').textContent = 'Disconnected';
   }
 

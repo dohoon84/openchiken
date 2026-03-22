@@ -19,6 +19,7 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -38,10 +39,47 @@ OPENCHIKEN_HOME = Path.home() / ".openchiken"
 ENV_FILE = OPENCHIKEN_HOME / ".env"
 CREDENTIALS_DST = OPENCHIKEN_HOME / "credentials.json"
 
-app = FastAPI(title="OpenChiken Web Server", docs_url=None, redoc_url=None)
-
 # main.py 서브프로세스 핸들 (단일 인스턴스 관리)
 _main_proc: subprocess.Popen | None = None
+
+
+def _try_start_main() -> None:
+    """main.py를 백그라운드 서브프로세스로 실행. 이미 실행 중이면 스킵."""
+    global _main_proc
+    if _main_proc is not None and _main_proc.poll() is None:
+        return
+    try:
+        _main_proc = subprocess.Popen(
+            ["uv", "run", "python", "main.py"],
+            cwd=str(ROOT),
+            stdout=open(ROOT / "openchiken.log", "a", encoding="utf-8"),
+            stderr=subprocess.STDOUT,
+        )
+        logger.info("main.py 자동 시작 완료 (pid=%d)", _main_proc.pid)
+    except FileNotFoundError:
+        _main_proc = subprocess.Popen(
+            [sys.executable, "main.py"],
+            cwd=str(ROOT),
+            stdout=open(ROOT / "openchiken.log", "a", encoding="utf-8"),
+            stderr=subprocess.STDOUT,
+        )
+        logger.info("main.py 자동 시작 완료 (pid=%d)", _main_proc.pid)
+    except Exception as e:
+        logger.warning("main.py 자동 시작 실패: %s", e)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """서버 시작 시 온보딩이 완료된 상태(~/.openchiken/.env 존재)면 main.py 자동 구동."""
+    if ENV_FILE.exists():
+        logger.info("온보딩 완료 상태 확인 — main.py 자동 시작")
+        _try_start_main()
+    else:
+        logger.info("온보딩 미완료 — main.py 자동 시작 건너뜀")
+    yield
+
+
+app = FastAPI(title="OpenChiken Web Server", docs_url=None, redoc_url=None, lifespan=lifespan)
 
 
 # ── Pydantic 모델 ──────────────────────────────────────────────
@@ -233,29 +271,30 @@ def reload_skills():
 def start_main():
     """setup 완료 후 main.py를 백그라운드 서브프로세스로 실행합니다."""
     global _main_proc
-
-    # 이미 실행 중이면 재시작하지 않음
     if _main_proc is not None and _main_proc.poll() is None:
         return {"ok": True, "status": "already_running", "pid": _main_proc.pid}
-
     try:
-        uv = "uv"
-        _main_proc = subprocess.Popen(
-            [uv, "run", "python", "main.py"],
-            cwd=str(ROOT),
-            stdout=open(ROOT / "openchiken.log", "a", encoding="utf-8"),
-            stderr=subprocess.STDOUT,
-        )
-        return {"ok": True, "status": "started", "pid": _main_proc.pid}
-    except FileNotFoundError:
-        # uv 없으면 python 직접 실행 시도
-        _main_proc = subprocess.Popen(
-            [sys.executable, "main.py"],
-            cwd=str(ROOT),
-            stdout=open(ROOT / "openchiken.log", "a", encoding="utf-8"),
-            stderr=subprocess.STDOUT,
-        )
-        return {"ok": True, "status": "started", "pid": _main_proc.pid}
+        _try_start_main()
+        return {"ok": True, "status": "started", "pid": _main_proc.pid if _main_proc else None}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/system/stop")
+def stop_main():
+    """실행 중인 main.py 서브프로세스를 종료합니다."""
+    global _main_proc
+    if _main_proc is None or _main_proc.poll() is not None:
+        return {"ok": True, "status": "not_running"}
+    try:
+        _main_proc.terminate()
+        try:
+            _main_proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            _main_proc.kill()
+        pid = _main_proc.pid
+        _main_proc = None
+        return {"ok": True, "status": "stopped", "pid": pid}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
