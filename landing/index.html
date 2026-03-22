@@ -371,10 +371,15 @@
         모든 채널의 메시지는 <span class="text-primary font-semibold">하나의 AI 코어</span>로 수렴됩니다.
         어떤 플랫폼에서 보내든 동일한 메모리, 동일한 도구, 동일한 Plan-and-Execute 엔진이 응답합니다.
       </p>
-      <div class="flex items-center gap-6 shrink-0 ml-auto">
+      <div class="flex items-center gap-5 shrink-0 ml-auto flex-wrap justify-center md:justify-end">
         <div class="text-center">
-          <p class="text-2xl font-headline font-bold text-primary">19+</p>
+          <p class="text-2xl font-headline font-bold text-primary">50+</p>
           <p class="text-[10px] text-on-surface-variant uppercase tracking-widest">스킬</p>
+        </div>
+        <div class="w-px h-8 bg-outline-variant/40"></div>
+        <div class="text-center">
+          <p class="text-2xl font-headline font-bold text-secondary">5+</p>
+          <p class="text-[10px] text-on-surface-variant uppercase tracking-widest">앱</p>
         </div>
         <div class="w-px h-8 bg-outline-variant/40"></div>
         <div class="text-center">
@@ -398,7 +403,7 @@
         <h2 class="text-4xl md:text-5xl font-headline font-bold tracking-tight text-on-surface mb-4">
           익숙한 메신저에서<br/>모든 것을 제어합니다
         </h2>
-        <p class="text-on-surface-variant max-w-xl mx-auto">슬랙이든, 카카오톡이든, 텔레그램이든 — 평소 쓰는 채널에서 이메일, 일정, Drive · Sheets · Docs, 날씨 조회, 메모, 주식 시세까지 11가지 스킬.</p>
+        <p class="text-on-surface-variant max-w-xl mx-auto">슬랙이든, 카카오톡이든, 텔레그램이든 — 평소 쓰는 채널에서 Gmail · Google Calendar · Drive · Sheets, 날씨, 주식 시세, 뉴스까지 50가지 이상의 스킬로 메이저 서비스를 모두 제어합니다.</p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -848,13 +853,13 @@
       │
       └── 모든 메시지 ──▶ [<span class="text-primary">Autonomous Orchestrator</span>]
                               │
-                         ① <span class="text-secondary">Skill Planner</span>   — 필요 스킬 파악
+                         ① <span class="text-secondary">Skill Planner</span>   — 에이전트 스스로 필요 스킬 파악
                               │
-                         ② <span class="text-secondary">Local Check</span>    — skills/* 확인
+                         ② <span class="text-secondary">Local Check</span>    — skills/* 탐색 및 로드
                               │  없으면 ↓
-                         ③ <span class="text-secondary">Skill Hub</span>      — GitHub dohoon84/skill-hub
+                         ③ <span class="text-secondary">Skill Hub</span>      — GitHub dohoon84/skill-hub 자동 탐색·설치
                               │  없으면 ↓
-                         ④ <span class="text-secondary">Auto Generate</span>  — LLM이 직접 생성
+                         ④ <span class="text-tertiary">자율 스킬 생성</span>  — 에이전트가 코드 작성 후 즉시 등록
                               │
                          ⑤ <span class="text-primary">Plan-and-Execute</span> — 스킬 실행
                               ├── Planner → Executor → Replanner
@@ -884,12 +889,84 @@
           <span class="font-label text-xs font-bold text-secondary uppercase tracking-widest">Skill Hub</span>
         </div>
         <h2 class="text-4xl md:text-5xl font-headline font-bold tracking-tight text-on-surface mb-4">
-          스킬 생태계 — 무한 확장
+          스킬 생태계 — 누구나 앱을 만든다
         </h2>
         <p class="text-on-surface-variant max-w-2xl mx-auto text-lg leading-relaxed">
-          스킬 하나하나가 AI의 능력이 됩니다. 스킬을 조합하면 앱이 되고,<br/>
-          필요한 스킬이 없으면 허브에서 찾거나 AI가 직접 만듭니다.
+          스킬을 조합하면 앱이 됩니다. 개발자가 아니어도 스킬 몇 줄로<br/>
+          나만의 AI 앱을 만들고, 공유하고, 즉시 사용할 수 있습니다.
         </p>
+      </div>
+
+      <!-- 메이저 서비스 연동 배지 -->
+      <div class="reveal-on-scroll mb-16">
+        <p class="text-center text-[11px] text-on-surface-variant/50 uppercase tracking-widest font-label mb-5">연동 가능한 메이저 서비스</p>
+        <div class="flex flex-wrap justify-center gap-3">
+          <!-- Google Gmail -->
+          <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full ghost-border">
+            <svg width="14" height="14" viewBox="0 0 256 193"><path fill="#4285F4" d="M58.182 192.05V93.14L27.507 65.077 0 49.419v125.934c0 9.22 7.474 16.697 16.697 16.697"/><path fill="#34A853" d="M197.818 192.05h39.484c9.22 0 16.698-7.477 16.698-16.697V49.419l-32.054 23.21"/><path fill="#FBBC05" d="M197.818 17.504V93.14L256 49.419V26.181C256 3.658 235.015-9.068 215.738 5.653"/><path fill="#EA4335" d="M0 49.419l26.759 20.07L58.182 93.14V17.504L40.297 5.654C21.01-9.068 0 3.657 0 26.18"/><path fill="#C5221F" d="M58.182 93.14l-4.174-38.647 4.174-36.989 99.818 74.864 99.818-74.864 4.69 33.302-4.69 42.334L158 167.998"/></svg>
+            <span class="font-label text-xs text-on-surface-variant">Gmail</span>
+          </div>
+          <!-- Google Calendar -->
+          <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full ghost-border">
+            <svg width="14" height="14" viewBox="0 0 48 48"><rect width="48" height="48" rx="4" fill="white"/><rect y="0" width="48" height="14" rx="4" fill="#1a73e8"/><rect y="10" width="48" height="4" fill="#1a73e8"/><text x="24" y="38" font-family="Arial" font-size="16" font-weight="700" fill="#1a73e8" text-anchor="middle">31</text></svg>
+            <span class="font-label text-xs text-on-surface-variant">Calendar</span>
+          </div>
+          <!-- Google Drive -->
+          <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full ghost-border">
+            <svg width="14" height="14" viewBox="0 0 87.3 78"><path fill="#0066da" d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0c0 1.55.4 3.1 1.2 4.5z"/><path fill="#00ac47" d="M43.65 25L29.9 1.2C28.55 2 27.4 3.1 26.6 4.5L1.2 49.5c-.8 1.4-1.2 2.95-1.2 4.5h27.5z"/><path fill="#ea4335" d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.8l5.85 11.5z"/><path fill="#00832d" d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2z"/><path fill="#2684fc" d="M59.8 53H27.5L13.75 76.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z"/><path fill="#ffba00" d="M73.4 26.5l-12.6-21.8C60 3.3 58.85 2.2 57.5 1.4L43.75 25 59.9 53h27.45c0-1.55-.4-3.1-1.2-4.5z"/></svg>
+            <span class="font-label text-xs text-on-surface-variant">Drive</span>
+          </div>
+          <!-- Google Sheets -->
+          <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full ghost-border">
+            <svg width="14" height="14" viewBox="0 0 48 48"><rect width="48" height="48" rx="4" fill="#0F9D58"/><rect x="10" y="14" width="28" height="3" rx="1" fill="white" opacity="0.9"/><rect x="10" y="20" width="28" height="3" rx="1" fill="white" opacity="0.7"/><rect x="10" y="26" width="18" height="3" rx="1" fill="white" opacity="0.7"/><rect x="10" y="32" width="22" height="3" rx="1" fill="white" opacity="0.5"/></svg>
+            <span class="font-label text-xs text-on-surface-variant">Sheets</span>
+          </div>
+          <!-- GitHub -->
+          <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full ghost-border">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" class="text-on-surface-variant"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+            <span class="font-label text-xs text-on-surface-variant">GitHub</span>
+          </div>
+          <!-- Notion -->
+          <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full ghost-border">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" class="text-on-surface-variant"><path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.14c-.093-.514.28-.887.747-.933zM1.936 1.035l13.31-.98c1.634-.14 2.055-.047 3.082.7l4.249 2.986c.7.513.934.653.934 1.213v16.378c0 1.026-.373 1.634-1.68 1.726l-15.458.934c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.667c0-.839.374-1.54 1.447-1.632z"/></svg>
+            <span class="font-label text-xs text-on-surface-variant">Notion</span>
+          </div>
+          <!-- Slack -->
+          <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full ghost-border">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313z" fill="#E01E5A"/><path d="M8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312z" fill="#36C5F0"/><path d="M18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.271 0a2.528 2.528 0 0 1-2.52 2.521 2.528 2.528 0 0 1-2.521-2.521V2.522A2.528 2.528 0 0 1 15.165 0a2.528 2.528 0 0 1 2.52 2.522v6.312z" fill="#2EB67D"/><path d="M15.165 18.956a2.528 2.528 0 0 1 2.52 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.521-2.522v-2.522h2.521zm0-1.271a2.527 2.527 0 0 1-2.521-2.52 2.528 2.528 0 0 1 2.521-2.521h6.313A2.528 2.528 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.52h-6.313z" fill="#ECB22E"/></svg>
+            <span class="font-label text-xs text-on-surface-variant">Slack</span>
+          </div>
+          <!-- Telegram -->
+          <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full ghost-border">
+            <div class="w-4 h-4 rounded-sm flex items-center justify-center" style="background:#26A5E4"><img src="https://cdn.simpleicons.org/telegram/ffffff" width="10" height="10" alt="Telegram" loading="lazy"></div>
+            <span class="font-label text-xs text-on-surface-variant">Telegram</span>
+          </div>
+          <!-- KakaoTalk -->
+          <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full ghost-border">
+            <div class="w-4 h-4 rounded-sm flex items-center justify-center" style="background:#FEE500"><img src="https://cdn.simpleicons.org/kakaotalk/3c1e1e" width="10" height="10" alt="KakaoTalk" loading="lazy"></div>
+            <span class="font-label text-xs text-on-surface-variant">KakaoTalk</span>
+          </div>
+          <!-- Discord -->
+          <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full ghost-border">
+            <div class="w-4 h-4 rounded-sm flex items-center justify-center" style="background:#5865F2"><img src="https://cdn.simpleicons.org/discord/ffffff" width="10" height="10" alt="Discord" loading="lazy"></div>
+            <span class="font-label text-xs text-on-surface-variant">Discord</span>
+          </div>
+          <!-- Binance / 크립토 -->
+          <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full ghost-border">
+            <div class="w-4 h-4 rounded-sm flex items-center justify-center" style="background:#F3BA2F"><svg width="10" height="10" viewBox="0 0 32 32" fill="white"><path d="M16 0L19.6 3.6L8.8 14.4L5.2 10.8L16 0ZM26.4 5.6L30 9.2L14.4 24.8L10.8 21.2L26.4 5.6ZM2 10.8L5.6 14.4L2 18L-1.6 14.4L2 10.8ZM30 14.4L33.6 18L18 33.6L14.4 30L30 14.4Z" transform="scale(0.85) translate(2,2)"/></svg></div>
+            <span class="font-label text-xs text-on-surface-variant">Binance</span>
+          </div>
+          <!-- OpenWeather -->
+          <div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full ghost-border">
+            <div class="w-4 h-4 rounded-sm flex items-center justify-center" style="background:#EB6E4B"><svg width="10" height="10" viewBox="0 0 24 24" fill="white"><path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.79zM4 10.5H1v2h3zm9-9.95h-2V3.5h2zm7.45 3.91l-1.41-1.41-1.79 1.79 1.41 1.41zm-3.21 13.7l1.79 1.8 1.41-1.41-1.8-1.79zM20 10.5v2h3v-2zm-8-5c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm-1 16.95h2V19.5h-2zm-7.45-3.91l1.41 1.41 1.79-1.8-1.41-1.41z"/></svg></div>
+            <span class="font-label text-xs text-on-surface-variant">Weather</span>
+          </div>
+          <!-- + more -->
+          <div class="flex items-center gap-2 bg-surface-container-low/50 px-4 py-2 rounded-full ghost-border">
+            <span class="material-symbols-outlined text-on-surface-variant/40 text-sm">more_horiz</span>
+            <span class="font-label text-xs text-on-surface-variant/50">20개 이상 서비스</span>
+          </div>
+        </div>
       </div>
 
       <!-- 스킬 & 앱 관계 -->
@@ -909,8 +986,8 @@
               </div>
             </div>
             <p class="text-sm text-on-surface-variant leading-relaxed mb-6">
-              스킬은 AI가 할 수 있는 <strong class="text-on-surface">하나의 구체적 능력</strong>입니다.
-              각 스킬은 두 파일로 구성됩니다.
+              스킬은 AI 에이전트가 보유하는 <strong class="text-on-surface">하나의 구체적 능력</strong>입니다.
+              두 파일만 있으면 누구나 새로운 스킬을 추가할 수 있습니다.
             </p>
             <div class="bg-surface-container-lowest rounded-lg p-4 font-mono text-xs border border-outline-variant/10 mb-6">
               <div class="text-on-surface-variant/40 mb-2">skills/crypto_price/</div>
@@ -930,7 +1007,7 @@
               <span class="px-2 py-0.5 bg-primary/10 text-primary text-[9px] rounded uppercase font-bold">news_rss</span>
               <span class="px-2 py-0.5 bg-primary/10 text-primary text-[9px] rounded uppercase font-bold">geocoding</span>
               <span class="px-2 py-0.5 bg-primary/10 text-primary text-[9px] rounded uppercase font-bold">quickchart</span>
-              <span class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant text-[9px] rounded uppercase font-bold">+ 15개</span>
+              <span class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant text-[9px] rounded uppercase font-bold">+ 46개</span>
             </div>
           </div>
         </div>
@@ -945,12 +1022,12 @@
               </div>
               <div>
                 <h3 class="font-headline text-xl font-bold text-on-surface">앱 (App)</h3>
-                <p class="font-label text-[10px] text-secondary uppercase tracking-widest">스킬들의 조합</p>
+                <p class="font-label text-[10px] text-secondary uppercase tracking-widest">누구나 만들고 즉시 사용</p>
               </div>
             </div>
             <p class="text-sm text-on-surface-variant leading-relaxed mb-6">
-              앱은 <strong class="text-on-surface">여러 스킬을 묶어 하나의 도메인 목적</strong>을 수행하는 상위 스킬입니다.
-              <code class="text-secondary bg-surface-container px-1 rounded text-xs">APP.md</code>로 정의됩니다.
+              앱은 <strong class="text-on-surface">여러 스킬을 묶어 특정 목적을 수행</strong>하는 상위 스킬입니다.
+              <code class="text-secondary bg-surface-container px-1 rounded text-xs">APP.md</code> 파일 하나로 누구나 바로 만들 수 있습니다.
             </p>
             <div class="bg-surface-container-lowest rounded-lg p-4 font-mono text-xs border border-outline-variant/10 mb-6">
               <div class="text-on-surface-variant/40 mb-2"># btc_daily_advisor/APP.md</div>
@@ -966,7 +1043,8 @@
             <div class="flex flex-wrap gap-2">
               <span class="px-2 py-0.5 bg-secondary/10 text-secondary text-[9px] rounded uppercase font-bold">btc_daily_advisor</span>
               <span class="px-2 py-0.5 bg-secondary/10 text-secondary text-[9px] rounded uppercase font-bold">real_estate_scout</span>
-              <span class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant text-[9px] rounded uppercase font-bold">무한 확장 가능</span>
+              <span class="px-2 py-0.5 bg-primary/10 text-primary text-[9px] rounded uppercase font-bold">누구나 제작 가능</span>
+              <span class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant text-[9px] rounded uppercase font-bold">무한 확장</span>
             </div>
           </div>
         </div>
@@ -977,10 +1055,10 @@
         <div class="absolute top-0 left-0 w-80 h-80 bg-primary/4 blur-[120px] rounded-full -ml-20 -mt-20"></div>
         <div class="relative z-10">
           <div class="flex items-center gap-3 mb-10">
-            <span class="material-symbols-outlined text-primary">auto_fix_high</span>
+            <span class="material-symbols-outlined text-primary">smart_toy</span>
             <div>
-              <h3 class="font-headline text-xl font-bold text-on-surface">자율 스킬 발견 플로우</h3>
-              <p class="font-label text-[10px] text-primary uppercase tracking-widest mt-0.5">메시지 한 번으로 자동 실행</p>
+              <h3 class="font-headline text-xl font-bold text-on-surface">에이전트 자율 스킬 생성 플로우</h3>
+              <p class="font-label text-[10px] text-primary uppercase tracking-widest mt-0.5">없는 스킬은 에이전트가 스스로 만든다</p>
             </div>
           </div>
 
@@ -991,8 +1069,8 @@
               <div class="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-3">
                 <span class="material-symbols-outlined text-primary text-xl">chat_bubble</span>
               </div>
-              <p class="font-headline text-sm font-bold text-on-surface mb-1">① 메시지</p>
-              <p class="text-[11px] text-on-surface-variant leading-relaxed">"비트코인 오늘 시세 분석해줘"</p>
+              <p class="font-headline text-sm font-bold text-on-surface mb-1">① 요청</p>
+              <p class="text-[11px] text-on-surface-variant leading-relaxed">사용자가 자연어로 목표만 전달</p>
             </div>
 
             <!-- Arrow -->
@@ -1005,8 +1083,8 @@
               <div class="w-12 h-12 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center mb-3">
                 <span class="material-symbols-outlined text-secondary text-xl">psychology</span>
               </div>
-              <p class="font-headline text-sm font-bold text-on-surface mb-1">② 스킬 분석</p>
-              <p class="text-[11px] text-on-surface-variant leading-relaxed">Skill Planner가 필요 스킬 목록 추출</p>
+              <p class="font-headline text-sm font-bold text-on-surface mb-1">② 자율 판단</p>
+              <p class="text-[11px] text-on-surface-variant leading-relaxed">에이전트가 필요한 스킬을 스스로 파악</p>
             </div>
 
             <!-- Arrow -->
@@ -1014,13 +1092,13 @@
               <span class="material-symbols-outlined text-outline text-2xl">arrow_forward</span>
             </div>
 
-            <!-- Step 3+4 -->
+            <!-- Step 3 -->
             <div class="flex flex-col items-center text-center md:px-2">
               <div class="w-12 h-12 rounded-xl bg-tertiary/10 border border-tertiary/20 flex items-center justify-center mb-3">
-                <span class="material-symbols-outlined text-tertiary text-xl">hub</span>
+                <span class="material-symbols-outlined text-tertiary text-xl">build</span>
               </div>
-              <p class="font-headline text-sm font-bold text-on-surface mb-1">③ 스킬 확보</p>
-              <p class="text-[11px] text-on-surface-variant leading-relaxed">로컬 → 허브 → LLM 자동생성 순서로 확보</p>
+              <p class="font-headline text-sm font-bold text-on-surface mb-1">③ 자율 생성</p>
+              <p class="text-[11px] text-on-surface-variant leading-relaxed">없는 스킬은 에이전트가 직접 코드 생성 후 즉시 등록</p>
             </div>
 
           </div>
@@ -1030,31 +1108,34 @@
             <div class="bg-surface-container rounded-lg p-4 border border-primary/10">
               <div class="flex items-center gap-2 mb-2">
                 <span class="material-symbols-outlined text-primary text-base">folder</span>
-                <span class="font-label text-xs font-bold text-primary">1차: 로컬 확인</span>
+                <span class="font-label text-xs font-bold text-primary">1단계: 로컬 스킬 탐색</span>
               </div>
               <p class="text-[11px] text-on-surface-variant leading-relaxed">
-                <code class="text-primary text-[10px]">skills/*/</code> 및
-                <code class="text-primary text-[10px]">~/.openchiken/skills/</code> 에서 탐색
+                에이전트가 <code class="text-primary text-[10px]">skills/*/</code> 폴더를 먼저 확인해 즉시 활용 가능한 스킬을 로드
               </p>
             </div>
             <div class="bg-surface-container rounded-lg p-4 border border-secondary/10">
               <div class="flex items-center gap-2 mb-2">
                 <span class="material-symbols-outlined text-secondary text-base">cloud_download</span>
-                <span class="font-label text-xs font-bold text-secondary">2차: 허브 다운로드</span>
+                <span class="font-label text-xs font-bold text-secondary">2단계: 허브에서 자동 설치</span>
               </div>
               <p class="text-[11px] text-on-surface-variant leading-relaxed">
-                <a href="https://github.com/dohoon84/skill-hub" target="_blank" class="text-secondary hover:underline">dohoon84/skill-hub</a> 에서
-                <code class="text-secondary text-[10px]">SKILL.md</code> + <code class="text-secondary text-[10px]">tool.py</code> 자동 설치
+                없으면 <a href="https://github.com/dohoon84/skill-hub" target="_blank" class="text-secondary hover:underline">skill-hub</a>에서
+                에이전트가 직접 탐색·다운로드 후 즉시 등록
               </p>
             </div>
-            <div class="bg-surface-container rounded-lg p-4 border border-tertiary/10">
-              <div class="flex items-center gap-2 mb-2">
-                <span class="material-symbols-outlined text-tertiary text-base">auto_fix_high</span>
-                <span class="font-label text-xs font-bold text-tertiary">3차: LLM 자동 생성</span>
+            <div class="bg-surface-container rounded-lg p-4 border border-tertiary/15 relative overflow-hidden">
+              <div class="absolute inset-0 bg-tertiary/5 rounded-lg"></div>
+              <div class="relative z-10">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="material-symbols-outlined text-tertiary text-base">auto_fix_high</span>
+                  <span class="font-label text-xs font-bold text-tertiary">3단계: 에이전트 자율 생성</span>
+                  <span class="px-1.5 py-0.5 bg-tertiary/15 text-tertiary text-[8px] rounded uppercase font-bold ml-auto">핵심</span>
+                </div>
+                <p class="text-[11px] text-on-surface-variant leading-relaxed">
+                  허브에도 없으면 에이전트가 <strong class="text-on-surface">스킬 코드를 스스로 작성</strong>하고 등록해 즉시 실행
+                </p>
               </div>
-              <p class="text-[11px] text-on-surface-variant leading-relaxed">
-                허브에도 없으면 LLM이 스킬 코드를 직접 생성하여 등록 후 즉시 실행
-              </p>
             </div>
           </div>
         </div>
@@ -1076,20 +1157,25 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
           dohoon84/skill-hub 바로가기
         </a>
-        <div class="flex items-center justify-center gap-8 mt-6 pt-6 border-t border-outline-variant/10">
+        <div class="flex items-center justify-center gap-8 mt-6 pt-6 border-t border-outline-variant/10 flex-wrap">
           <div class="text-center">
-            <p class="font-headline text-2xl font-bold text-secondary">15+</p>
-            <p class="text-[10px] text-on-surface-variant uppercase tracking-widest mt-0.5">허브 스킬</p>
+            <p class="font-headline text-2xl font-bold text-secondary">50+</p>
+            <p class="text-[10px] text-on-surface-variant uppercase tracking-widest mt-0.5">누적 스킬</p>
           </div>
           <div class="w-px h-8 bg-outline-variant/30"></div>
           <div class="text-center">
-            <p class="font-headline text-2xl font-bold text-secondary">2</p>
+            <p class="font-headline text-2xl font-bold text-secondary">5+</p>
             <p class="text-[10px] text-on-surface-variant uppercase tracking-widest mt-0.5">기본 앱</p>
           </div>
           <div class="w-px h-8 bg-outline-variant/30"></div>
           <div class="text-center">
+            <p class="font-headline text-2xl font-bold text-secondary">20+</p>
+            <p class="text-[10px] text-on-surface-variant uppercase tracking-widest mt-0.5">연동 서비스</p>
+          </div>
+          <div class="w-px h-8 bg-outline-variant/30"></div>
+          <div class="text-center">
             <p class="font-headline text-2xl font-bold text-secondary">∞</p>
-            <p class="text-[10px] text-on-surface-variant uppercase tracking-widest mt-0.5">가능성</p>
+            <p class="text-[10px] text-on-surface-variant uppercase tracking-widest mt-0.5">확장 가능</p>
           </div>
         </div>
       </div>
