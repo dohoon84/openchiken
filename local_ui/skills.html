@@ -60,7 +60,7 @@ tailwind.config = {
 <h2 class="font-headline text-xl font-bold text-on-surface">요약</h2>
 <div class="h-[1px] flex-grow bg-outline-variant/20"></div>
 </div>
-<div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+<div class="grid grid-cols-2 sm:grid-cols-6 gap-4">
 <div class="bg-surface-container-low rounded-xl p-5 text-center">
 <p id="cnt-total" class="font-headline text-3xl font-bold text-primary">0</p>
 <p class="font-label text-[10px] uppercase tracking-wider text-on-surface-variant mt-1">전체</p>
@@ -72,6 +72,10 @@ tailwind.config = {
 <div class="bg-surface-container-low rounded-xl p-5 text-center ring-1 ring-secondary/20">
 <p id="cnt-hub" class="font-headline text-3xl font-bold text-secondary">0</p>
 <p class="font-label text-[10px] uppercase tracking-wider text-on-surface-variant mt-1">허브 설치</p>
+</div>
+<div class="bg-surface-container-low rounded-xl p-5 text-center ring-1 ring-tertiary/20">
+<p id="cnt-ai" class="font-headline text-3xl font-bold text-tertiary">0</p>
+<p class="font-label text-[10px] uppercase tracking-wider text-on-surface-variant mt-1">AI 자동생성</p>
 </div>
 <div class="bg-surface-container-low rounded-xl p-5 text-center">
 <p id="cnt-auth" class="font-headline text-3xl font-bold text-error">0</p>
@@ -91,10 +95,11 @@ tailwind.config = {
   const $ = id => document.getElementById(id);
 
   const STATUS_CFG = {
-    connected:      { label:'연결됨',       badge:'bg-primary/10 text-primary',                 syncIcon:'sync' },
-    auth_required:  { label:'인증 필요',    badge:'bg-error-container/20 text-error',            syncIcon:'sync_disabled' },
+    connected:      { label:'연결됨',       badge:'bg-primary/10 text-primary',                  syncIcon:'sync' },
+    auth_required:  { label:'인증 필요',    badge:'bg-error-container/20 text-error',             syncIcon:'sync_disabled' },
     disabled:       { label:'비활성',       badge:'bg-surface-container-highest text-outline',    syncIcon:'sync_disabled' },
-    hub_installed:  { label:'허브 설치됨',  badge:'bg-secondary/10 text-secondary',              syncIcon:'cloud_done' },
+    hub_installed:  { label:'허브 설치',    badge:'bg-secondary/10 text-secondary',               syncIcon:'cloud_done' },
+    ai_generated:   { label:'AI 자동생성',  badge:'bg-tertiary/10 text-tertiary',                 syncIcon:'auto_awesome' },
   };
 
   const FRIENDLY = {
@@ -225,10 +230,14 @@ tailwind.config = {
     const f = FRIENDLY[skill.id] || { name: skill.name, desc: skill.description };
     const googleNote = skill.requires_google && skill.status === 'auth_required'
       ? '<p class="font-label text-[10px] text-error mt-2">Google credentials 또는 token 필요</p>' : '';
-    const hubNote = skill.source === 'hub_installed'
-      ? '<p class="font-label text-[10px] text-secondary mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">cloud_done</span>허브에서 자동 설치됨</p>' : '';
-    const isActive = skill.status === 'connected' || skill.status === 'hub_installed';
-    return `<div class="bg-surface-container-low p-5 rounded-xl flex flex-col justify-between group hover:scale-[1.01] transition-transform${skill.source === 'hub_installed' ? ' ring-1 ring-secondary/20' : ''}">
+    const hubNote = skill.source === 'hub'
+      ? '<p class="font-label text-[10px] text-secondary mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">cloud_done</span>허브에서 설치됨</p>'
+      : skill.source === 'ai_generated'
+      ? '<p class="font-label text-[10px] text-tertiary mt-2 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">auto_awesome</span>AI가 자동 생성한 스킬</p>'
+      : '';
+    const isActive = skill.status === 'connected' || skill.status === 'hub_installed' || skill.status === 'ai_generated';
+    const ringClass = skill.source === 'hub' ? ' ring-1 ring-secondary/20' : skill.source === 'ai_generated' ? ' ring-1 ring-tertiary/20' : '';
+    return `<div class="bg-surface-container-low p-5 rounded-xl flex flex-col justify-between group hover:scale-[1.01] transition-transform${ringClass}">
       <div class="flex justify-between items-start mb-5">
         ${renderIconCell(skill)}
         <span class="font-label text-[10px] font-bold uppercase tracking-tighter ${cfg.badge} px-2 py-1 rounded">${cfg.label}</span>
@@ -260,7 +269,9 @@ tailwind.config = {
       $('cnt-auth').textContent = skills.filter(s=>s.status==='auth_required').length;
       $('cnt-disabled').textContent = skills.filter(s=>s.status==='disabled').length;
       const hubEl = $('cnt-hub');
-      if (hubEl) hubEl.textContent = skills.filter(s=>s.source==='hub_installed').length;
+      if (hubEl) hubEl.textContent = skills.filter(s=>s.source==='hub').length;
+      const aiEl = $('cnt-ai');
+      if (aiEl) aiEl.textContent = skills.filter(s=>s.source==='ai_generated').length;
       $('skills-summary').classList.remove('hidden');
     } catch(e) {
       $('skills-grid').innerHTML = `<div class="col-span-full text-center py-12"><span class="material-symbols-outlined text-error text-5xl mb-4">error</span><p class="font-headline text-lg text-error">로드 실패</p><p class="font-body text-sm text-on-surface-variant mt-2">${e.message}</p></div>`;

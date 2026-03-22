@@ -21,6 +21,7 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import create_react_agent
 from pydantic import BaseModel, Field
+from typing_extensions import TypedDict
 
 from config.settings import settings
 
@@ -47,11 +48,11 @@ class Act(BaseModel):
 
 # ── LangGraph state ───────────────────────────────────────────────────────────
 
-class PlanExecuteState(dict):
-    """TypedDict-style state for the Plan-and-Execute graph."""
+class PlanExecuteState(TypedDict, total=False):
+    """LangGraph state for the Plan-and-Execute graph."""
     input: str
     plan: List[str]
-    past_steps: List[Tuple[str, str]]
+    past_steps: Annotated[List[Tuple[str, str]], operator.add]
     response: str
 
 
@@ -95,7 +96,7 @@ async def _plan_node(state: dict) -> dict:
     ])
 
     logger.info("Plan generated (%d steps): %s", len(result.steps), result.steps)
-    return {"plan": result.steps, "past_steps": []}
+    return {"plan": result.steps}
 
 
 async def _execute_node(state: dict, tools: list) -> dict:
@@ -126,7 +127,8 @@ async def _execute_node(state: dict, tools: list) -> dict:
         step_result = f"실행 실패: {e} – 다음 단계에서 재시도 가능"
 
     logger.info("Step done: %s → %s", current_step, step_result[:80])
-    return {"past_steps": [(current_step, step_result)]}
+    remaining_plan = state.get("plan", [])[1:]
+    return {"plan": remaining_plan, "past_steps": [(current_step, step_result)]}
 
 
 async def _replan_node(state: dict) -> dict:
@@ -137,7 +139,7 @@ async def _replan_node(state: dict) -> dict:
     ).with_structured_output(Act)
 
     past_text = "\n".join(f"  - {s}: {r}" for s, r in state.get("past_steps", []))
-    remaining = state["plan"][1:]
+    remaining = state.get("plan", [])
     remaining_text = "\n".join(f"  - {s}" for s in remaining) if remaining else "  (없음)"
 
     prompt = (
@@ -180,7 +182,7 @@ def build_plan_execute_graph(tools: list):
     Returns:
         A compiled LangGraph runnable.
     """
-    graph = StateGraph(dict)
+    graph = StateGraph(PlanExecuteState)
 
     graph.add_node("planner", _plan_node)
     graph.add_node("executor", partial(_execute_node, tools=tools))

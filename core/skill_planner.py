@@ -15,7 +15,6 @@ from typing import List
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
-from config.settings import settings
 from core.provider import get_provider
 from skills import get_skill_loader
 
@@ -42,16 +41,15 @@ class SkillPlanResult(BaseModel):
     missing_skills: list[str]
 
 
-_PLANNER_SYSTEM = """당신은 사용자 요청을 분석하여 필요한 소프트웨어 스킬(도구) 목록을 추출하는 전문가입니다.
+_PLANNER_SYSTEM_TEMPLATE = """당신은 사용자 요청을 분석하여 필요한 소프트웨어 스킬(도구) 목록을 추출하는 전문가입니다.
 
-규칙:
-- 각 스킬은 하나의 원자적 기능을 담당합니다 (예: web_search, crypto_price, weather 등).
-- 스킬 이름은 snake_case로 작성하세요.
-- 이미 존재할 수 있는 일반적인 스킬 이름을 먼저 사용하세요:
-  weather, web_search, finance, memo, task, calendar, gmail, drive, sheets, docs, workflow,
-  crypto_price, exchange_rate, news_rss, geocoding, hacker_news, wikipedia, quickchart,
-  air_quality, earthquake, quality_of_life, wallstreetbets, world_bank, sec_edgar
-- 존재하지 않을 것 같은 특수한 기능은 새로운 이름을 만드세요.
+## 현재 설치된 스킬 목록 (정확한 ID):
+{installed_skills}
+
+## 규칙:
+- 위 목록에 있는 스킬은 반드시 **목록에 있는 정확한 ID 그대로** 사용하세요. 절대 변형하지 마세요.
+- 위 목록에 없는 기능이 필요할 때만 새로운 snake_case 이름을 만드세요.
+- 각 스킬은 하나의 원자적 기능을 담당합니다.
 - 실행 순서(priority)를 고려하여 데이터 수집 → 분석 → 출력 순으로 배치하세요.
 - app_name은 전체 워크플로우를 설명하는 간결한 이름이어야 합니다."""
 
@@ -60,15 +58,18 @@ async def plan_skills(query: str) -> SkillPlanResult:
     """사용자 쿼리를 분석하여 필요한 스킬 목록과 로컬 존재 여부를 반환합니다."""
     llm = get_provider().get_model().with_structured_output(SkillPlan)
 
+    loader = get_skill_loader()
+    all_local = loader.get_all_skill_names()
+    installed_skills_str = ", ".join(sorted(all_local)) if all_local else "(없음)"
+
+    system_prompt = _PLANNER_SYSTEM_TEMPLATE.format(installed_skills=installed_skills_str)
+
     result: SkillPlan = await llm.ainvoke([
-        SystemMessage(content=_PLANNER_SYSTEM),
+        SystemMessage(content=system_prompt),
         HumanMessage(content=f"사용자 요청: {query}"),
     ])
 
     result.skills.sort(key=lambda s: s.priority)
-
-    loader = get_skill_loader()
-    all_local = loader.get_all_skill_names()
 
     existing = [s.name for s in result.skills if s.name in all_local]
     missing = [s.name for s in result.skills if s.name not in all_local]

@@ -55,18 +55,18 @@ async def _ensure_skills(plan_result: SkillPlanResult) -> list[str]:
             try:
                 download_skill(skill_name)
                 installed.append(skill_name)
-                logger.info("Skill '%s' downloaded from hub", skill_name)
+                logger.info("[허브 설치] 스킬 '%s' 허브에서 다운로드 완료", skill_name)
                 continue
             except Exception as e:
-                logger.warning("Hub download failed for '%s': %s", skill_name, e)
+                logger.warning("[허브 설치 실패] 스킬 '%s': %s → AI 자동 생성으로 전환", skill_name, e)
 
-        # 2차: LLM 자동 생성
+        # 2차: LLM 자동 생성 (허브에 없는 스킬)
         try:
             await generate_skill(skill_name, purpose)
             installed.append(skill_name)
-            logger.info("Skill '%s' auto-generated", skill_name)
+            logger.info("[AI 자동생성] 스킬 '%s' LLM이 코드를 생성했습니다 (허브 미등록 스킬)", skill_name)
         except Exception as e:
-            logger.error("Failed to generate skill '%s': %s", skill_name, e)
+            logger.error("[AI 자동생성 실패] 스킬 '%s': %s", skill_name, e)
 
     return installed
 
@@ -100,7 +100,7 @@ async def run_autonomous(query: str, session_id: str) -> str:
         newly_installed = await _ensure_skills(plan_result)
         if newly_installed:
             _reload_skill_cache()
-            logger.info("Newly installed skills: %s", newly_installed)
+            logger.info("새로 설치된 스킬: %s", newly_installed)
 
     # Step 3: Plan-and-Execute 에이전트로 실행
     from core.agent import chat_plan
