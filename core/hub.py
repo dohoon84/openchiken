@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import logging
 import urllib.request
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -92,7 +93,12 @@ def download_skill(name: str) -> Path:
     if not init_file.exists():
         init_file.write_text("", encoding="utf-8")
 
-    logger.info("Skill '%s' installed to %s", name, dest)
+    (dest / "source.json").write_text(
+        json.dumps({"source": "hub", "installed_at": datetime.now().isoformat()}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    logger.info("[허브 설치] 스킬 '%s' 설치 완료 → %s", name, dest)
     return dest
 
 

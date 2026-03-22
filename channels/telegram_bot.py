@@ -9,6 +9,7 @@ python-telegram-bot 기반 채널 어댑터.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from telegram import Update
@@ -29,6 +30,17 @@ from scheduler.jobs import job_morning_briefing, job_weekly_briefing
 logger = logging.getLogger(__name__)
 
 MAX_LEN = 4096
+
+_STATUS_MESSAGES = [
+    "⏳ 처리 중이에요...",
+    "🔍 스킬을 확인하고 있어요...",
+    "⚙️ 조금만 기다려 주세요...",
+    "📡 데이터를 가져오고 있어요...",
+    "🧠 답변을 작성하고 있어요...",
+    "✍️ 거의 다 됐어요...",
+]
+
+_SLOW_RESPONSE_THRESHOLD = 3  # 이 시간(초) 이내 완료되면 상태 메시지 표시 안 함
 
 
 class TelegramAdapter(ChannelAdapter):
@@ -84,14 +96,43 @@ class TelegramAdapter(ChannelAdapter):
         context: ContextTypes.DEFAULT_TYPE,
         event: InboundEvent,
     ) -> None:
-        await context.bot.send_chat_action(
-            chat_id=update.effective_chat.id, action=ChatAction.TYPING
-        )
+        chat_id = update.effective_chat.id
+        status_msg = None
+
+        async def _keep_alive() -> None:
+            """_SLOW_RESPONSE_THRESHOLD 초 후에도 완료 안 되면 상태 메시지 표시 및 갱신."""
+            nonlocal status_msg
+            try:
+                await asyncio.sleep(_SLOW_RESPONSE_THRESHOLD)
+                status_msg = await update.message.reply_text(_STATUS_MESSAGES[0])
+                idx = 0
+                while True:
+                    await asyncio.sleep(6)
+                    await context.bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
+                    idx += 1
+                    label = _STATUS_MESSAGES[min(idx, len(_STATUS_MESSAGES) - 1)]
+                    try:
+                        await status_msg.edit_text(label)
+                    except Exception:
+                        pass
+            except asyncio.CancelledError:
+                pass
+
+        keep_alive_task = asyncio.create_task(_keep_alive())
+
         try:
             reply = await route_message(event)
         except Exception:
             logger.exception("route_message error for user %s", event.user_id)
             reply = "처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
+        finally:
+            keep_alive_task.cancel()
+            if status_msg:
+                try:
+                    await status_msg.delete()
+                except Exception:
+                    pass
+
         for chunk in self.split_message(reply, MAX_LEN):
             await update.message.reply_text(chunk)
 

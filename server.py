@@ -1138,16 +1138,18 @@ def api_skills_list():
         "public_holidays": "event",
     }
 
-    # 내장 스킬 디렉토리 + 허브/자동생성으로 설치된 사용자 스킬 디렉토리
+    import json as _json
+
+    # 내장 스킬 디렉토리 + 사용자 스킬 디렉토리 (허브 설치 / AI 자동생성 혼재)
     skill_roots = [
         (ROOT / "skills", "bundled"),
-        (OPENCHIKEN_HOME / "skills", "hub_installed"),
+        (OPENCHIKEN_HOME / "skills", "user"),
     ]
 
     skills = []
     seen: set[str] = set()
 
-    for skills_dir, source in skill_roots:
+    for skills_dir, base_source in skill_roots:
         if not skills_dir.exists():
             continue
 
@@ -1178,12 +1180,25 @@ def api_skills_list():
                     elif "requires_google_auth: true" in line:
                         requires_google = True
 
+            # source.json 에서 실제 출처를 읽음
+            source_file = entry / "source.json"
+            if base_source == "user" and source_file.exists():
+                try:
+                    source_data = _json.loads(source_file.read_text(encoding="utf-8"))
+                    source = source_data.get("source", "hub_installed")
+                except Exception:
+                    source = "hub_installed"
+            else:
+                source = base_source  # bundled
+
             is_enabled = enabled_raw == "all" or skill_id in enabled_raw.split(",")
 
             if requires_google:
                 status = "connected" if (has_google and has_google_token) else "auth_required"
-            elif source == "hub_installed":
+            elif source == "hub":
                 status = "hub_installed"
+            elif source == "ai_generated":
+                status = "ai_generated"
             else:
                 status = "connected" if is_enabled else "disabled"
 

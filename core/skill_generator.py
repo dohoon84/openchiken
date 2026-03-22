@@ -125,5 +125,12 @@ async def generate_skill(name: str, purpose: str) -> Path:
     (dest / "tool.py").write_text(result.tool_py, encoding="utf-8")
     (dest / "__init__.py").touch()
 
-    logger.info("Skill '%s' auto-generated and saved to %s", name, dest)
+    import json as _json
+    from datetime import datetime as _dt
+    (dest / "source.json").write_text(
+        _json.dumps({"source": "ai_generated", "generated_at": _dt.now().isoformat()}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    logger.info("[AI 자동생성] 스킬 '%s' 코드 생성 완료 → 저장 경로: %s", name, dest)
     return dest
