@@ -180,25 +180,40 @@ async function loadHubSkills() {
   grid.innerHTML = '';
 
   try {
-    const res = await fetch('/api/hub/skills');
-    const data = await res.json();
+    // 허브 스킬 목록 + 로컬 설치 스킬 목록을 병렬로 조회
+    const [hubRes, localRes] = await Promise.all([
+      fetch('/api/hub/skills'),
+      fetch('/api/skills'),
+    ]);
+    const hubData = await hubRes.json();
+    const localData = await localRes.json();
     loading.classList.add('hidden');
 
-    if (!data.ok || !data.skills.length) {
-      error.textContent = data.error || '허브에 등록된 스킬이 없거나 연결할 수 없습니다.';
+    if (!hubData.ok || !hubData.skills.length) {
+      error.textContent = hubData.error || '허브에 등록된 스킬이 없거나 연결할 수 없습니다.';
       error.classList.remove('hidden');
       return;
     }
 
-    data.skills.forEach(skill => {
+    // 로컬에 설치된 스킬 이름 집합
+    const installedNames = new Set((localData.skills || []).map(s => s.id));
+
+    hubData.skills.forEach(skill => {
+      const isInstalled = installedNames.has(skill.name);
+      const actionBtn = isInstalled
+        ? `<span class="text-[10px] font-label font-bold text-primary uppercase tracking-wide flex items-center gap-0.5 cursor-default">
+             <span class="material-symbols-outlined text-xs">check_circle</span>설치됨
+           </span>`
+        : `<button data-install-skill="${skill.name}"
+             class="text-[10px] font-label font-bold text-secondary hover:text-secondary/80 uppercase tracking-wide flex items-center gap-0.5 transition-colors">
+             <span class="material-symbols-outlined text-xs">download</span>설치
+           </button>`;
+
       grid.innerHTML += `
-        <div class="bg-surface-container rounded-lg p-3 border border-outline-variant/15 hover:border-secondary/30 transition">
+        <div class="bg-surface-container rounded-lg p-3 border ${isInstalled ? 'border-primary/20' : 'border-outline-variant/15 hover:border-secondary/30'} transition">
           <div class="flex items-center justify-between mb-1.5">
             <span class="font-headline text-xs font-bold text-on-surface">${skill.name}</span>
-            <button onclick="installSkill('${skill.name}')"
-              class="text-[10px] font-label font-bold text-secondary hover:text-secondary/80 uppercase tracking-wide flex items-center gap-0.5">
-              <span class="material-symbols-outlined text-xs">download</span>설치
-            </button>
+            ${actionBtn}
           </div>
           <p class="text-on-surface-variant text-[11px] leading-relaxed">${skill.description || ''}</p>
         </div>`;
@@ -211,6 +226,12 @@ async function loadHubSkills() {
 }
 
 async function installSkill(name) {
+  // 설치 버튼을 로딩 상태로 변경
+  const btn = document.querySelector(`[data-install-skill="${name}"]`);
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="material-symbols-outlined text-xs animate-spin">progress_activity</span>설치 중...`;
+  }
   try {
     const res = await fetch('/api/hub/install', {
       method: 'POST',
@@ -219,14 +240,42 @@ async function installSkill(name) {
     });
     const data = await res.json();
     if (data.ok) {
-      alert(`✅ ${name} 설치 완료`);
+      // 설치 완료 후 버튼을 "설치됨"으로 즉시 교체
+      if (btn) {
+        const cell = btn.closest('[data-install-skill]')?.parentElement || btn.parentElement;
+        btn.outerHTML = `<span class="text-[10px] font-label font-bold text-primary uppercase tracking-wide flex items-center gap-0.5 cursor-default">
+          <span class="material-symbols-outlined text-xs">check_circle</span>설치됨
+        </span>`;
+        // 카드 테두리도 업데이트
+        const card = cell.closest('.bg-surface-container');
+        if (card) {
+          card.classList.remove('border-outline-variant/15', 'hover:border-secondary/30');
+          card.classList.add('border-primary/20');
+        }
+      }
     } else {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<span class="material-symbols-outlined text-xs">download</span>설치`;
+      }
       alert(`❌ 설치 실패: ${data.detail || 'unknown'}`);
     }
   } catch (e) {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<span class="material-symbols-outlined text-xs">download</span>설치`;
+    }
     alert(`❌ 설치 실패: ${e.message}`);
   }
 }
+
+// 이벤트 위임 — 동적으로 생성된 설치 버튼 처리
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-install-skill]');
+  if (btn && !btn.disabled) {
+    installSkill(btn.dataset.installSkill);
+  }
+});
 
 let currentPlan = null;
 

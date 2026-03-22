@@ -357,6 +357,68 @@ def reload_skills():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class EnvKeyRequest(BaseModel):
+    env_key: str
+    env_value: str
+
+
+def _update_env_file(env_path: Path, key: str, value: str) -> None:
+    """~/.openchiken/.env 파일에서 key를 업데이트하거나 새로 추가합니다."""
+    env_path.parent.mkdir(parents=True, exist_ok=True)
+    lines: list[str] = []
+    updated = False
+    if env_path.exists():
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if stripped.startswith(f"{key}=") or stripped.startswith(f"{key} ="):
+                lines.append(f"{key}={value}")
+                updated = True
+            else:
+                lines.append(line)
+    if not updated:
+        lines.append(f"{key}={value}")
+    env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+@app.post("/api/skills/{skill_id}/env")
+def save_skill_env(skill_id: str, req: EnvKeyRequest):
+    """스킬에 필요한 API 키(환경변수)를 ~/.openchiken/.env에 저장하고 즉시 적용합니다."""
+    key = req.env_key.strip()
+    value = req.env_value.strip()
+
+    if not key or not key.replace("_", "").isalnum():
+        raise HTTPException(status_code=400, detail="유효하지 않은 환경변수 이름입니다.")
+    if not value:
+        raise HTTPException(status_code=400, detail="값이 비어있습니다.")
+
+    try:
+        _update_env_file(ENV_FILE, key, value)
+        os.environ[key] = value
+
+        # 스킬 캐시 리로드 (새 환경변수 반영)
+        try:
+            import core.agent as ag
+            import skills as sk
+            ag._tools_cache = None
+            ag._skill_instructions_cache = None
+            ag._agent = None
+            ag._plan_graph = None
+            sk._loader = None
+        except ImportError:
+            pass
+
+        logger.info("Skill env saved: skill=%s, key=%s", skill_id, key)
+        return {
+            "ok": True,
+            "message": f"{key} 가 저장되었습니다. 스킬 '{skill_id}'이(가) 활성화됩니다.",
+            "skill_id": skill_id,
+            "env_key": key,
+        }
+    except Exception as e:
+        logger.error("save_skill_env failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/system/start")
 def start_main():
     """setup 완료 후 main.py를 백그라운드 서브프로세스로 실행합니다."""
@@ -1193,8 +1255,23 @@ def api_skills_list():
 
             is_enabled = enabled_raw == "all" or skill_id in enabled_raw.split(",")
 
+            # requires_env 파싱
+            requires_env: list[str] = []
+            if md_path.exists():
+                for line in md_path.read_text(encoding="utf-8").split("\n"):
+                    line = line.strip()
+                    if line.startswith("requires_env:"):
+                        raw_env = line.split(":", 1)[1].strip()
+                        requires_env = [e.strip() for e in raw_env.split(",") if e.strip()]
+                        break
+
+            env_status = {env: bool(os.getenv(env, "").strip()) for env in requires_env}
+            has_missing_env = requires_env and not all(env_status.values())
+
             if requires_google:
                 status = "connected" if (has_google and has_google_token) else "auth_required"
+            elif has_missing_env:
+                status = "env_required"
             elif source == "hub":
                 status = "hub_installed"
             elif source == "ai_generated":
@@ -1211,6 +1288,8 @@ def api_skills_list():
                 "status": status,
                 "source": source,
                 "requires_google": requires_google,
+                "requires_env": requires_env,
+                "env_status": env_status,
             })
 
     return {"skills": skills}

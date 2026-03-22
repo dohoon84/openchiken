@@ -26,6 +26,9 @@ ALL_SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
     # Docs
     "https://www.googleapis.com/auth/documents",
+    # YouTube
+    "https://www.googleapis.com/auth/youtube.readonly",
+    "https://www.googleapis.com/auth/youtube.force-ssl",
 ]
 
 
