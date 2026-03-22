@@ -11,6 +11,7 @@ Flow:
               updates the remaining plan (→ next executor round).
 """
 
+import asyncio
 import logging
 import operator
 from functools import partial
@@ -82,7 +83,13 @@ _EXECUTOR_SYSTEM = """당신은 주어진 단 하나의 단계를 실행하는 �
 - 실행 결과를 간결하게 보고하세요.
 - 도구 호출이 실패하면, 대안적인 방법을 시도하고 그 결과를 보고하세요.
 - 도구에서 반환된 메시지 ID, URL, 고유 식별자 등의 값은 결과에 **정확히 그대로** 포함하세요. 후속 단계에서 필요할 수 있습니다.
-- 특히 이메일 목록 조회 시, 각 메시지의 실제 ID를 결과에 반드시 나열하세요. (예: ID: 18d1234abcdef567)"""
+- 특히 이메일 목록 조회 시, 각 메시지의 실제 ID를 결과에 반드시 나열하세요. (예: ID: 18d1234abcdef567)
+
+⚠️ 중요 — 민감 작업 금지 규칙:
+- 이메일 전송(gmail_send), 일정 삭제(calendar_delete), 파일 삭제(drive_delete) 등
+  되돌릴 수 없는 작업은 단계 지시에 **명시적으로** 해당 작업을 수행하라고 적혀 있을 때만 실행하세요.
+- 단계 지시가 모호하거나 해당 작업이 명시되지 않은 경우, 실행하지 말고
+  "확인 필요: [수행하려는 작업 요약] — 진행할까요?" 형태로 보고하세요."""
 
 _REPLANNER_SYSTEM = """당신은 진행 중인 계획을 검토하고 다음 행동을 결정하는 전문가입니다.
 
@@ -271,6 +278,49 @@ def build_app_execute_graph(tools: list):
     )
 
     return graph.compile()
+
+
+# ── Standalone step runner (병렬 실행용) ─────────────────────────────────────
+
+async def run_step_with_tools(step: str, tools: list, context: str = "") -> str:
+    """단일 단계를 ReAct 에이전트로 독립 실행합니다.
+
+    LangGraph 상태 머신 없이 단일 단계만 실행하므로
+    asyncio.gather()로 병렬 호출이 가능합니다.
+
+    Args:
+        step:    실행할 단계 설명 (APP.md 한 줄)
+        tools:   사용할 LangChain 툴 목록 (필터링된 것)
+        context: 이전 단계 결과를 담은 컨텍스트 문자열 (선택)
+    """
+    task = (
+        f"{context}\n\n지금 실행할 단계: {step}"
+        if context
+        else f"지금 실행할 단계: {step}"
+    )
+    executor = create_react_agent(
+        ChatOpenAI(
+            model=settings.openai_model,
+            api_key=settings.openai_api_key,
+            temperature=0,
+        ),
+        tools,
+    )
+    try:
+        result = await executor.ainvoke({
+            "messages": [
+                SystemMessage(content=_EXECUTOR_SYSTEM),
+                HumanMessage(content=task),
+            ]
+        })
+        ai_msgs = [m for m in result["messages"] if isinstance(m, AIMessage) and m.content]
+        step_result = ai_msgs[-1].content if ai_msgs else "(결과 없음)"
+    except Exception as e:
+        logger.warning("run_step_with_tools failed: %s | step: %.60s", e, step)
+        step_result = f"실행 실패: {e}"
+
+    logger.info("Step done: %.60s → %.80s", step, step_result)
+    return step_result
 
 
 # ── Singleton ─────────────────────────────────────────────────────────────────

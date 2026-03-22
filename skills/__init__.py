@@ -125,6 +125,41 @@ class SkillLoader:
             tools.extend(skill.tools)
         return tools
 
+    def get_tools_for_skills(self, skill_names: list[str]) -> list:
+        """지정된 스킬 이름 목록에 해당하는 툴만 로드합니다.
+
+        전체 스킬을 로드하지 않고 지정된 스킬만 선택적으로 로드하여
+        LLM 컨텍스트 크기와 실행 오버헤드를 줄입니다.
+        """
+        tools: list = []
+        seen_tool_names: set[str] = set()
+        seen_skill_names: set[str] = set()
+
+        for skills_root in (_BUNDLED_SKILLS_DIR, _USER_SKILLS_DIR):
+            if not skills_root.exists():
+                continue
+            for skill_name in skill_names:
+                if skill_name in seen_skill_names:
+                    continue
+                skill_dir = skills_root / skill_name
+                if not skill_dir.is_dir() or not (skill_dir / "SKILL.md").exists():
+                    continue
+                skill = self._load_skill(skill_dir)
+                if skill is None:
+                    continue
+                seen_skill_names.add(skill_name)
+                for t in skill.tools:
+                    if t.name not in seen_tool_names:
+                        seen_tool_names.add(t.name)
+                        tools.append(t)
+
+        logger.info(
+            "Filtered tools for skills %s: %d tools",
+            skill_names,
+            len(tools),
+        )
+        return tools
+
     def build_skill_instructions(self) -> str:
         """모든 활성 스킬의 AI 지시 텍스트를 합쳐서 반환합니다."""
         parts: list[str] = []

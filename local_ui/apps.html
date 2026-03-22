@@ -111,21 +111,9 @@ tailwind.config = {
 <div id="hub-apps-error" class="hidden text-center py-6 text-error/80 text-xs"></div>
 </section>
 
-<!-- Installed Apps -->
-<section class="bg-surface-container-low rounded-xl p-6 mb-6">
-<div class="flex items-center justify-between mb-4">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-primary text-xl">apps</span>
-<h2 class="font-headline text-sm font-bold uppercase tracking-widest text-primary">Installed Apps</h2>
-</div>
-<span id="app-count" class="text-on-surface-variant text-xs font-label">로딩 중...</span>
-</div>
-<div id="apps-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-<div id="apps-empty" class="hidden text-center py-8 text-on-surface-variant text-sm">설치된 앱이 없습니다.</div>
-
-<!-- App Run Result (inline) -->
-<div id="app-run-result" class="hidden mt-4 fade-in">
-<div class="bg-surface-container rounded-xl p-5 border border-primary/30">
+<!-- App Run Result -->
+<div id="app-run-result" class="hidden mb-6 fade-in">
+<div class="bg-surface-container-low rounded-xl p-5 border border-primary/30">
 <div class="flex items-center justify-between mb-3">
 <div class="flex items-center gap-2">
 <span class="material-symbols-outlined text-primary">check_circle</span>
@@ -137,7 +125,6 @@ tailwind.config = {
 <pre id="app-run-output" class="text-xs text-on-surface-variant whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto"></pre>
 </div>
 </div>
-</section>
 
 <!-- Skill Hub -->
 <section class="bg-surface-container-low rounded-xl p-6">
@@ -160,84 +147,6 @@ tailwind.config = {
 
 <script src="/static/shared.js"></script>
 <script>
-// ── Installed Apps ────────────────────────────────────────────────────────────
-let installedAppNames = new Set();
-
-async function loadApps() {
-  try {
-    const res = await fetch('/api/apps');
-    const data = await res.json();
-    const grid = document.getElementById('apps-grid');
-    const empty = document.getElementById('apps-empty');
-    const count = document.getElementById('app-count');
-    grid.innerHTML = '';
-
-    if (!data.ok || !data.apps.length) {
-      empty.classList.remove('hidden');
-      count.textContent = '0개';
-      installedAppNames = new Set();
-      return;
-    }
-
-    empty.classList.add('hidden');
-    count.textContent = data.apps.length + '개';
-    installedAppNames = new Set(data.apps.map(a => a.name));
-
-    data.apps.forEach(app => {
-      const scheduleText = app.schedule
-        ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">schedule</span>${app.schedule}</span>`
-        : '';
-      const kwText = app.trigger_keywords?.length
-        ? `<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[11px]">key</span>${app.trigger_keywords.slice(0,3).join(', ')}</span>`
-        : '';
-      const sourceBadge = app.source === 'hub_installed'
-        ? `<span class="text-[10px] font-label font-bold text-secondary uppercase">HUB</span>`
-        : `<span class="text-[10px] font-label font-bold text-on-surface-variant/50 uppercase">내장</span>`;
-
-      const skillChips = (app.sub_skills || []).map(s =>
-        `<span class="skill-chip skill-exists">${s}</span>`
-      ).join(' ');
-
-      const stepsCount = (app.steps || []).length;
-      const stepsInfo = stepsCount > 0
-        ? `<span class="text-[10px] text-primary font-label">${stepsCount}단계 명세</span>`
-        : `<span class="text-[10px] text-on-surface-variant/40 font-label">명세 없음</span>`;
-
-      grid.innerHTML += `
-        <div class="bg-surface-container rounded-xl p-4 border border-outline-variant/15 hover:border-primary/30 transition fade-in">
-          <div class="flex items-start justify-between mb-2">
-            <div class="flex-1">
-              <div class="flex items-center gap-2 mb-0.5">
-                <h3 class="font-headline text-sm font-bold text-on-surface">${app.name}</h3>
-                ${sourceBadge}
-              </div>
-              <p class="text-on-surface-variant text-xs">${app.description}</p>
-            </div>
-            <span class="text-[10px] font-label text-on-surface-variant/40 ml-2">${app.version}</span>
-          </div>
-          <div class="flex flex-wrap gap-1.5 mb-2">${skillChips}</div>
-          <div class="flex items-center gap-3 text-[11px] text-on-surface-variant/60 font-label mb-3">
-            ${stepsInfo}
-            ${scheduleText}
-            ${kwText}
-          </div>
-          <div class="flex gap-2">
-            <button data-run-app="${app.name}"
-              class="flex-1 py-2 bg-primary/10 text-primary font-label font-bold text-xs rounded-lg hover:bg-primary/20 transition flex items-center justify-center gap-1">
-              <span class="material-symbols-outlined text-sm">play_arrow</span>실행
-            </button>
-            <button data-run-app-ctx="${app.name}"
-              class="py-2 px-3 bg-surface-container-high text-on-surface-variant font-label text-xs rounded-lg hover:bg-outline-variant/30 transition flex items-center gap-1"
-              title="컨텍스트 지정 실행">
-              <span class="material-symbols-outlined text-sm">tune</span>
-            </button>
-          </div>
-        </div>`;
-    });
-  } catch (e) {
-    console.error('Failed to load apps:', e);
-  }
-}
 
 async function runApp(appName, context = '') {
   const resultDiv = document.getElementById('app-run-result');
@@ -318,30 +227,52 @@ async function loadHubApps() {
         `<span class="skill-chip skill-hub text-[10px]">${s}</span>`
       ).join(' ');
 
-      const actionBtn = isInstalled
-        ? `<span class="text-[10px] font-label font-bold text-primary uppercase tracking-wide flex items-center gap-0.5 cursor-default">
-             <span class="material-symbols-outlined text-xs">check_circle</span>설치됨
-           </span>`
+      const schedTag = app.schedule
+        ? `<span class="text-[10px] text-on-surface-variant/60 font-label flex items-center gap-0.5"><span class="material-symbols-outlined text-[11px]">schedule</span>${app.schedule}</span>`
+        : '';
+
+      const kwTag = (app.trigger_keywords || []).length
+        ? `<span class="text-[10px] text-on-surface-variant/50 font-label">${app.trigger_keywords.slice(0,2).join(', ')}</span>`
+        : '';
+
+      const actionArea = isInstalled
+        ? `<div class="flex items-center gap-1">
+             <span class="text-[10px] font-label font-bold text-primary uppercase tracking-wide flex items-center gap-0.5 cursor-default">
+               <span class="material-symbols-outlined text-xs">check_circle</span>설치됨
+             </span>
+             <button data-run-app="${app.name}"
+               class="text-primary/70 hover:text-primary transition-colors p-0.5"
+               title="실행">
+               <span class="material-symbols-outlined text-sm leading-none">play_arrow</span>
+             </button>
+             <button data-run-app-ctx="${app.name}"
+               class="text-on-surface-variant/40 hover:text-on-surface-variant transition-colors p-0.5"
+               title="컨텍스트 지정 실행">
+               <span class="material-symbols-outlined text-sm leading-none">tune</span>
+             </button>
+             <button data-delete-app="${app.name}"
+               class="text-error/50 hover:text-error transition-colors p-0.5"
+               title="앱 삭제 (연관 스킬 포함)">
+               <span class="material-symbols-outlined text-sm leading-none">delete</span>
+             </button>
+           </div>`
         : `<button data-install-app="${app.name}"
-             class="text-[10px] font-label font-bold text-secondary hover:text-secondary/80 uppercase tracking-wide flex items-center gap-0.5 transition-colors">
+             class="text-[10px] font-label font-bold text-secondary hover:text-secondary/80 uppercase tracking-wide flex items-center gap-0.5 transition-colors whitespace-nowrap">
              <span class="material-symbols-outlined text-xs">download</span>설치
            </button>`;
 
-      const schedTag = app.schedule
-        ? `<span class="text-[10px] text-on-surface-variant/60 font-label">⏰ ${app.schedule}</span>`
-        : '';
-
       grid.innerHTML += `
         <div class="bg-surface-container rounded-xl p-4 border ${isInstalled ? 'border-primary/20' : 'border-outline-variant/15 hover:border-secondary/30'} transition">
-          <div class="flex items-start justify-between mb-2">
-            <div class="flex-1">
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="flex-1 min-w-0">
               <span class="font-headline text-xs font-bold text-on-surface">${app.name}</span>
               ${schedTag ? `<div class="mt-0.5">${schedTag}</div>` : ''}
             </div>
-            ${actionBtn}
+            ${actionArea}
           </div>
           <p class="text-on-surface-variant text-[11px] leading-relaxed mb-2">${app.description || ''}</p>
-          <div class="flex flex-wrap gap-1">${skillChips}</div>
+          <div class="flex flex-wrap gap-1 mb-1">${skillChips}</div>
+          ${kwTag ? `<div class="text-[10px] text-on-surface-variant/40 font-label mt-1">트리거: ${kwTag}</div>` : ''}
         </div>`;
     });
   } catch (e) {
@@ -365,26 +296,13 @@ async function installApp(name) {
     });
     const data = await res.json();
     if (data.ok) {
-      // 설치 완료 UI 업데이트
-      if (btn) {
-        btn.outerHTML = `<span class="text-[10px] font-label font-bold text-primary uppercase tracking-wide flex items-center gap-0.5 cursor-default">
-          <span class="material-symbols-outlined text-xs">check_circle</span>설치됨
-        </span>`;
-        const card = document.querySelector(`[data-install-app="${name}"]`)?.closest('.bg-surface-container');
-        if (card) {
-          card.classList.remove('border-outline-variant/15', 'hover:border-secondary/30');
-          card.classList.add('border-primary/20');
-        }
-      }
-      // 설치된 앱 목록 & 스킬 허브 새로고침
-      loadApps();
+      // 허브 전체 새로고침 (카드가 설치됨+실행버튼 상태로 전환됨)
+      await loadHubApps();
       loadHubSkills();
 
-      // 설치된 스킬 요약 표시
       const installedSkills = data.installed_skills || [];
       if (installedSkills.length) {
-        const msg = `✅ 앱 '${name}' 설치 완료\n새로 설치된 스킬: ${installedSkills.join(', ')}`;
-        alert(msg);
+        alert(`✅ 앱 '${name}' 설치 완료\n새로 설치된 스킬: ${installedSkills.join(', ')}`);
       }
     } else {
       if (btn) {
@@ -406,6 +324,35 @@ async function installApp(name) {
 document.addEventListener('click', e => {
   const btn = e.target.closest('[data-install-app]');
   if (btn && !btn.disabled) installApp(btn.dataset.installApp);
+});
+
+async function deleteApp(name) {
+  if (!confirm(`앱 '${name}'을 삭제하시겠습니까?\n이 앱에만 사용되는 스킬도 함께 삭제됩니다.`)) return;
+  const btn = document.querySelector(`[data-delete-app="${name}"]`);
+  if (btn) { btn.disabled = true; btn.innerHTML = `<span class="material-symbols-outlined text-sm leading-none animate-spin">progress_activity</span>`; }
+  try {
+    const res = await fetch(`/api/apps/${encodeURIComponent(name)}?delete_skills=true`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.ok) {
+      const info = data.deleted_skills?.length
+        ? `\n함께 삭제된 스킬: ${data.deleted_skills.join(', ')}`
+        : '';
+      if (info) alert(`✅ 앱 '${name}' 삭제 완료${info}`);
+      loadHubApps();
+      loadHubSkills();
+    } else {
+      alert(`❌ 삭제 실패: ${data.detail || 'unknown'}`);
+      if (btn) { btn.disabled = false; btn.innerHTML = `<span class="material-symbols-outlined text-sm leading-none">delete</span>`; }
+    }
+  } catch (e) {
+    alert(`❌ 삭제 실패: ${e.message}`);
+    if (btn) { btn.disabled = false; btn.innerHTML = `<span class="material-symbols-outlined text-sm leading-none">delete</span>`; }
+  }
+}
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-delete-app]');
+  if (btn && !btn.disabled) deleteApp(btn.dataset.deleteApp);
 });
 
 // ── Skill Hub ─────────────────────────────────────────────────────────────────
@@ -438,9 +385,16 @@ async function loadHubSkills() {
     hubData.skills.forEach(skill => {
       const isInstalled = installedNames.has(skill.name);
       const actionBtn = isInstalled
-        ? `<span class="text-[10px] font-label font-bold text-primary uppercase tracking-wide flex items-center gap-0.5 cursor-default">
-             <span class="material-symbols-outlined text-xs">check_circle</span>설치됨
-           </span>`
+        ? `<div class="flex items-center gap-1">
+             <span class="text-[10px] font-label font-bold text-primary uppercase tracking-wide flex items-center gap-0.5 cursor-default">
+               <span class="material-symbols-outlined text-xs">check_circle</span>설치됨
+             </span>
+             <button data-delete-skill="${skill.name}"
+               class="text-error/50 hover:text-error transition-colors p-0.5"
+               title="스킬 삭제">
+               <span class="material-symbols-outlined text-sm leading-none">delete</span>
+             </button>
+           </div>`
         : `<button data-install-skill="${skill.name}"
              class="text-[10px] font-label font-bold text-secondary hover:text-secondary/80 uppercase tracking-wide flex items-center gap-0.5 transition-colors">
              <span class="material-symbols-outlined text-xs">download</span>설치
@@ -499,6 +453,30 @@ async function installSkill(name) {
 document.addEventListener('click', e => {
   const btn = e.target.closest('[data-install-skill]');
   if (btn && !btn.disabled) installSkill(btn.dataset.installSkill);
+});
+
+async function deleteSkill(name) {
+  if (!confirm(`스킬 '${name}'을 삭제하시겠습니까?\n내장 스킬은 삭제되지 않습니다.`)) return;
+  const btn = document.querySelector(`[data-delete-skill="${name}"]`);
+  if (btn) { btn.disabled = true; btn.innerHTML = `<span class="material-symbols-outlined text-sm leading-none animate-spin">progress_activity</span>`; }
+  try {
+    const res = await fetch(`/api/skills/${encodeURIComponent(name)}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.ok) {
+      loadHubSkills();
+    } else {
+      alert(`❌ 삭제 실패: ${data.detail || 'unknown'}`);
+      if (btn) { btn.disabled = false; btn.innerHTML = `<span class="material-symbols-outlined text-sm leading-none">delete</span>`; }
+    }
+  } catch (e) {
+    alert(`❌ 삭제 실패: ${e.message}`);
+    if (btn) { btn.disabled = false; btn.innerHTML = `<span class="material-symbols-outlined text-sm leading-none">delete</span>`; }
+  }
+}
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-delete-skill]');
+  if (btn && !btn.disabled) deleteSkill(btn.dataset.deleteSkill);
 });
 
 // ── App Generator ─────────────────────────────────────────────────────────────
@@ -571,7 +549,6 @@ async function executeApp() {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-loadApps();
 loadHubApps();
 loadHubSkills();
 </script>
