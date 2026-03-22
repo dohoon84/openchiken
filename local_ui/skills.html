@@ -102,19 +102,27 @@ tailwind.config = {
     ai_generated:   { label:'AI 자동생성',  badge:'bg-tertiary/10 text-tertiary',                 syncIcon:'auto_awesome' },
   };
 
-  const FRIENDLY = {
-    gmail:      { name:'Gmail',        desc:'이메일 검색, 읽기, 전송' },
-    calendar:   { name:'Calendar',     desc:'일정 조회, 생성, 삭제' },
-    drive:      { name:'Google Drive', desc:'파일 검색, 읽기, 업로드, 폴더 관리' },
-    sheets:     { name:'Google Sheets',desc:'스프레드시트 읽기, 쓰기, 행 추가' },
-    docs:       { name:'Google Docs',  desc:'문서 읽기, 생성, 텍스트 편집' },
-    weather:    { name:'Weather',      desc:'현재 날씨 및 예보 조회' },
-    web_search: { name:'Web Search',   desc:'실시간 웹 검색' },
-    memo:       { name:'Memo',         desc:'메모 저장, 조회, 삭제' },
-    task:       { name:'Task',         desc:'태스크 생성 및 진행 관리' },
-    finance:    { name:'Finance',      desc:'주식, 암호화폐, 지수 시세 조회' },
-    workflow:   { name:'Workflow',     desc:'Gmail·Calendar·Drive 복합 자동화' },
+  // 특수한 표시명이 필요한 스킬만 여기에 등록 (나머지는 SKILL.md 데이터로 자동 처리)
+  const FRIENDLY_OVERRIDE = {
+    gmail:      { name:'Gmail' },
+    drive:      { name:'Google Drive' },
+    sheets:     { name:'Google Sheets' },
+    docs:       { name:'Google Docs' },
+    web_search: { name:'Web Search' },
   };
+
+  // skill_id → 표시용 이름 자동 변환 (예: hacker_news → Hacker News)
+  function toDisplayName(id) {
+    return id.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+
+  function getFriendly(skill) {
+    const override = FRIENDLY_OVERRIDE[skill.id] || {};
+    return {
+      name: override.name || (skill.name && skill.name !== skill.id ? skill.name : toDisplayName(skill.id)),
+      desc: skill.description || '',
+    };
+  }
 
   const ICON_SVG = {
     gmail: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 193" width="36" height="27">
@@ -227,7 +235,7 @@ tailwind.config = {
 
   function renderCard(skill) {
     const cfg = STATUS_CFG[skill.status] || STATUS_CFG.connected;
-    const f = FRIENDLY[skill.id] || { name: skill.name, desc: skill.description };
+    const f = getFriendly(skill);
     const googleNote = skill.requires_google && skill.status === 'auth_required'
       ? '<p class="font-label text-[10px] text-error mt-2">Google credentials 또는 token 필요</p>' : '';
     const hubNote = skill.source === 'hub'
