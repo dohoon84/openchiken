@@ -164,6 +164,45 @@ async def job_event_reminder(bot) -> None:
         logger.error("job_event_reminder 실패: %s", e, exc_info=True)
 
 
+async def run_app_job(app_name: str, bot) -> None:
+    """스케줄러가 앱을 주기적으로 실행하고 결과를 채널로 전송합니다."""
+    from core.orchestrator import run_app
+    from skills import get_skill_loader
+
+    logger.info("=== Scheduled app job start: %s ===", app_name)
+
+    try:
+        result = await run_app(app_name, session_id=f"scheduled_{app_name}")
+    except Exception as e:
+        logger.error("Scheduled app '%s' failed: %s", app_name, e, exc_info=True)
+        result = f"⚠️ 앱 '{app_name}' 실행 중 오류: {e}"
+
+    # output_channel 확인
+    loader = get_skill_loader()
+    apps = loader.load_apps()
+    app = next((a for a in apps if a.name == app_name), None)
+    output_channel = app.output_channel if app else "telegram"
+
+    if output_channel == "none":
+        logger.info("App '%s' output_channel=none — result not sent to any channel", app_name)
+        return
+
+    users = settings.allowed_user_ids
+    if not users:
+        logger.warning("run_app_job: ALLOWED_USER_IDS가 설정되지 않아 결과를 전송하지 않습니다.")
+        return
+
+    header = f"🤖 [{app_name}] 자동 실행 완료\n\n"
+    message = header + result
+
+    for user_id in users:
+        try:
+            await _send(bot, user_id, message)
+            logger.info("App '%s' result sent → user %s", app_name, user_id)
+        except Exception as e:
+            logger.error("App '%s' result send failed (user %s): %s", app_name, user_id, e)
+
+
 async def job_weekly_briefing(bot) -> None:
     """매주 월요일 아침 이번 주 일정 전체를 전송합니다."""
     users = settings.allowed_user_ids

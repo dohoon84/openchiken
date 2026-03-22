@@ -28,6 +28,7 @@ import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from pydantic import ValidationError
 
@@ -61,6 +62,9 @@ class App:
     description: str
     instructions: str
     sub_skills: list[str] = field(default_factory=list)
+    steps: list[str] = field(default_factory=list)       # 실행 단계 목록 (플래너 우회용)
+    trigger_keywords: list[str] = field(default_factory=list)  # 자동 트리거 키워드
+    output_channel: str = "telegram"                     # 결과 전송 채널
     schedule: str = ""
     enabled: bool = True
     version: str = "1.0.0"
@@ -191,11 +195,16 @@ class SkillLoader:
             if not manifest.enabled:
                 return None
 
+            steps = _parse_steps_from_instructions(instructions)
+
             return App(
                 name=manifest.name,
                 description=manifest.description,
                 instructions=instructions,
                 sub_skills=manifest.skills,
+                steps=steps,
+                trigger_keywords=manifest.trigger_keywords,
+                output_channel=manifest.output_channel,
                 schedule=manifest.schedule,
                 enabled=manifest.enabled,
                 version=manifest.version,
@@ -262,8 +271,14 @@ class SkillLoader:
 # ── 모듈 수준 헬퍼 ─────────────────────────────────────────────────────────────
 
 
-def _parse_skill_md(text: str) -> tuple[dict[str, str], str]:
-    """SKILL.md를 프런트매터 dict와 지시 텍스트로 분리합니다."""
+def _parse_skill_md(text: str) -> tuple[dict[str, Any], str]:
+    """SKILL.md를 프런트매터 dict와 지시 텍스트로 분리합니다.
+
+    다중 라인 YAML 리스트 형식을 지원합니다:
+      key:
+        - item1
+        - item2
+    """
     if not text.lstrip().startswith("---"):
         return {}, text.strip()
 
@@ -272,13 +287,64 @@ def _parse_skill_md(text: str) -> tuple[dict[str, str], str]:
         return {}, text.strip()
 
     frontmatter_text, instructions = match.group(1), match.group(2).strip()
-    frontmatter: dict[str, str] = {}
+    frontmatter: dict[str, Any] = {}
+    current_key: str | None = None
+
     for line in frontmatter_text.splitlines():
-        if ":" in line:
-            key, _, value = line.partition(":")
-            frontmatter[key.strip()] = value.strip()
+        # YAML 리스트 항목
+        list_match = re.match(r"^(\s+)-\s+(.+)$", line)
+        if list_match and current_key:
+            item = list_match.group(2).strip()
+            if isinstance(frontmatter.get(current_key), list):
+                frontmatter[current_key].append(item)
+            else:
+                frontmatter[current_key] = [item]
+            continue
+
+        if ":" in line and not line.startswith(" "):
+            key, _, raw_value = line.partition(":")
+            key = key.strip()
+            raw_stripped = raw_value.strip()
+            current_key = key
+
+            # 따옴표로 감싼 값: 빈 문자열("") 포함 — 항상 문자열로 저장
+            if raw_stripped.startswith('"') or raw_stripped.startswith("'"):
+                frontmatter[key] = raw_stripped.strip('"').strip("'")
+            elif raw_stripped:
+                frontmatter[key] = raw_stripped
+            else:
+                # 값 없음 → 다음 줄에 YAML 리스트가 올 수 있음
+                frontmatter[key] = []
 
     return frontmatter, instructions
+
+
+def _parse_steps_from_instructions(instructions: str) -> list[str]:
+    """APP.md 본문에서 번호 매긴 실행 단계를 추출합니다.
+
+    "## 실행 단계" 또는 "### 실행 흐름" 섹션 아래의
+    `1. ... 2. ...` 형식 항목을 순서대로 반환합니다.
+    마크다운 굵은체(**...**)와 코드 인라인(`.`)은 그대로 포함해 executor가 활용합니다.
+    """
+    steps: list[str] = []
+    in_steps_section = False
+
+    for line in instructions.splitlines():
+        stripped = line.strip()
+        # 실행 단계 섹션 진입 감지
+        if re.match(r"^#+\s*(실행\s*(단계|흐름|순서)|Steps?|Execution)", stripped, re.IGNORECASE):
+            in_steps_section = True
+            continue
+        # 다른 섹션 헤더 만나면 종료
+        if in_steps_section and re.match(r"^#+\s+", stripped):
+            in_steps_section = False
+            continue
+        if in_steps_section:
+            m = re.match(r"^(\d+)\.\s+(.+)", stripped)
+            if m:
+                steps.append(m.group(2).strip())
+
+    return steps
 
 
 def _google_credentials_available() -> bool:

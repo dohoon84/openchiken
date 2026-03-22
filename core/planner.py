@@ -241,9 +241,42 @@ def build_plan_execute_graph(tools: list):
     return graph.compile()
 
 
+# ── App Execute Graph (LLM 플래너 우회) ──────────────────────────────────────
+#
+# APP.md의 steps가 미리 채워진 상태에서 시작 → executor → replanner → end
+# planner 노드를 완전히 건너뜁니다.
+
+def build_app_execute_graph(tools: list):
+    """APP.md steps를 plan에 직접 주입하여 LLM 플래너를 우회하는 그래프.
+
+    graph.ainvoke() 시 반드시 plan 필드를 미리 채워서 호출해야 합니다:
+        state = {"input": app.description, "plan": app.steps, ...}
+    """
+    graph = StateGraph(PlanExecuteState)
+
+    graph.add_node("executor", partial(_execute_node, tools=tools))
+    graph.add_node("replanner", _replan_node)
+
+    # planner를 거치지 않고 executor부터 시작
+    graph.set_entry_point("executor")
+    graph.add_conditional_edges(
+        "executor",
+        _after_executor,
+        {"end": END, "replan": "replanner"},
+    )
+    graph.add_conditional_edges(
+        "replanner",
+        _should_end,
+        {"end": END, "execute": "executor"},
+    )
+
+    return graph.compile()
+
+
 # ── Singleton ─────────────────────────────────────────────────────────────────
 
 _plan_graph = None
+_app_graph = None
 
 
 def get_plan_execute_graph(tools: list):
@@ -251,3 +284,11 @@ def get_plan_execute_graph(tools: list):
     if _plan_graph is None:
         _plan_graph = build_plan_execute_graph(tools)
     return _plan_graph
+
+
+def get_app_execute_graph(tools: list):
+    """앱 실행 전용 그래프 싱글턴 (플래너 우회)."""
+    global _app_graph
+    if _app_graph is None:
+        _app_graph = build_app_execute_graph(tools)
+    return _app_graph

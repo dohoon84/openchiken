@@ -202,6 +202,99 @@ async def run_autonomous(query: str, session_id: str) -> str:
     return result
 
 
+async def run_app(app_name: str, session_id: str, extra_context: str = "") -> str:
+    """APP.md steps를 LLM 플래너 없이 직접 실행합니다 (결정론적 앱 실행).
+
+    Args:
+        app_name:      설치된 앱의 name (APP.md의 name 필드)
+        session_id:    대화 세션 ID
+        extra_context: 사용자가 전달한 추가 컨텍스트 (예: 조회 지역, 파라미터)
+
+    Returns:
+        최종 실행 결과 텍스트.
+
+    Raises:
+        ValueError: 앱을 찾을 수 없을 때
+    """
+    from skills import get_skill_loader
+
+    loader = get_skill_loader()
+    apps = loader.load_apps()
+    app = next((a for a in apps if a.name == app_name), None)
+    if app is None:
+        raise ValueError(f"앱 '{app_name}'을 찾을 수 없습니다. 설치 여부를 확인하세요.")
+
+    logger.info("=== App execution start: %s ===", app_name)
+
+    # steps가 없으면 instructions 전체를 일반 run_autonomous로 처리
+    if not app.steps:
+        logger.warning(
+            "App '%s' has no structured steps — falling back to run_autonomous", app_name
+        )
+        query = app.instructions
+        if extra_context:
+            query = f"{extra_context}\n\n{app.instructions}"
+        return await run_autonomous(query, session_id)
+
+    # steps를 plan으로 직접 주입 (LLM 플래너 완전 우회)
+    from core.agent import get_tools
+
+    try:
+        from core.planner import get_app_execute_graph
+        graph = get_app_execute_graph(get_tools())
+    except Exception as e:
+        logger.warning("App graph build failed (%s), fallback to run_autonomous", e)
+        return await run_autonomous(app.instructions, session_id)
+
+    # extra_context가 있으면 첫 번째 단계에 컨텍스트를 주입
+    steps = list(app.steps)
+    if extra_context and steps:
+        steps[0] = f"[컨텍스트: {extra_context}] {steps[0]}"
+
+    input_summary = f"{app.description}"
+    if extra_context:
+        input_summary += f" (요청: {extra_context})"
+
+    logger.info("App '%s' steps (%d): %s", app_name, len(steps), steps)
+
+    try:
+        state = await graph.ainvoke({
+            "input": input_summary,
+            "plan": steps,
+            "past_steps": [],
+            "response": "",
+        })
+        result = state.get("response") or "앱 실행이 완료되었지만 최종 응답이 없습니다."
+    except Exception as e:
+        logger.error("App '%s' execution failed: %s", app_name, e, exc_info=True)
+        result = f"앱 '{app_name}' 실행 중 오류가 발생했습니다: {e}"
+
+    logger.info("=== App execution complete: %s ===", app_name)
+    return result
+
+
+async def find_matching_app(query: str) -> str | None:
+    """쿼리가 trigger_keywords와 매칭되는 설치된 앱 이름을 반환합니다.
+
+    매칭되는 앱이 없으면 None을 반환합니다.
+    """
+    from skills import get_skill_loader
+
+    loader = get_skill_loader()
+    apps = loader.load_apps()
+
+    query_lower = query.lower()
+    for app in apps:
+        if not app.trigger_keywords:
+            continue
+        for kw in app.trigger_keywords:
+            if kw.strip().lower() in query_lower:
+                logger.info("App trigger matched: app=%s, keyword=%s", app.name, kw)
+                return app.name
+
+    return None
+
+
 async def get_orchestration_plan(query: str) -> dict:
     """스킬 플래닝만 수행하고 실행하지 않습니다 (미리보기용).
 

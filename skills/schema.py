@@ -53,6 +53,9 @@ class AppManifest(BaseModel):
     version: str = "1.0.0"
     author: str = ""
     tags: list[str] = []
+    # 앱 실행 제어 필드
+    trigger_keywords: list[str] = []   # 자동 트리거 키워드 (텔레그램 등 채널)
+    output_channel: str = "telegram"   # 결과 전송 채널 (telegram | none)
 
     @field_validator("enabled", mode="before")
     @classmethod
@@ -63,7 +66,7 @@ class AppManifest(BaseModel):
             return v.strip().lower() not in {"false", "0", "no", ""}
         return bool(v)
 
-    @field_validator("skills", "tags", mode="before")
+    @field_validator("skills", "tags", "trigger_keywords", mode="before")
     @classmethod
     def coerce_list(cls, v: object) -> list[str]:
         if isinstance(v, list):
