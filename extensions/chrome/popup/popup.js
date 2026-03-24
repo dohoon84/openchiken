@@ -1,6 +1,7 @@
 const $ = (id) => document.getElementById(id);
 
 let currentRequestId = null;
+let settingsServerUrl = 'http://localhost:8000';
 
 // ─────────────── 초기화 ───────────────
 
@@ -9,6 +10,109 @@ async function init() {
   await loadActivityLog();
   bindButtons();
   listenBackground();
+}
+
+// ─────────────── 뷰 전환 ───────────────
+
+function showSettingsView() {
+  $('mainView').classList.add('hidden');
+  $('settingsView').classList.remove('hidden');
+  loadSettingsData();
+}
+
+function showMainView() {
+  $('settingsView').classList.add('hidden');
+  $('mainView').classList.remove('hidden');
+}
+
+// ─────────────── 설정 데이터 로드 ───────────────
+
+async function loadSettingsData() {
+  const cfg = await chrome.storage.local.get(['serverUrl', 'tokenId', 'agentId', 'agentAddress']);
+  if (cfg.serverUrl) settingsServerUrl = cfg.serverUrl;
+
+  $('sServerUrl').value = settingsServerUrl;
+  $('sDashboardLink').href = `${settingsServerUrl}/dashboard.html`;
+
+  if (cfg.tokenId) $('sTokenIdInput').value = cfg.tokenId;
+
+  $('sWalletAddr').textContent = cfg.agentAddress || '지갑 없음';
+  $('sAgentId').textContent    = cfg.agentId || '—';
+
+  chrome.runtime.sendMessage({ type: 'GET_STATUS' }, (res) => {
+    if (res) {
+      $('sRelayStatus').textContent = res.relayConnected ? '연결됨' : '연결 안됨';
+      $('sRelayStatus').style.color = res.relayConnected ? 'var(--green)' : 'var(--red)';
+      if (res.tokenId) $('sTokenId').textContent = res.tokenId;
+    }
+  });
+
+  fetchSettingsProviderStatus();
+}
+
+async function fetchSettingsProviderStatus() {
+  try {
+    const res = await fetch(`${settingsServerUrl}/api/dashboard/agent-status`, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) throw new Error('non-ok');
+    const data = await res.json();
+    $('sPvProvider').textContent = data.provider || '—';
+    $('sPvModel').textContent    = data.model    || '—';
+    $('sPvName').textContent     = data.assistant_name || '—';
+  } catch {
+    $('sPvProvider').textContent = '서버 미연결';
+    $('sPvModel').textContent    = '—';
+    $('sPvName').textContent     = '—';
+  }
+}
+
+// ─────────────── 설정: 연결 테스트 ───────────────
+
+async function testSettingsConnection() {
+  const url = $('sServerUrl').value.trim();
+  const result = $('sTestResult');
+  result.className = 's-result';
+  result.textContent = '연결 테스트 중...';
+
+  try {
+    const res = await fetch(`${url}/api/dashboard/agent-status`, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    result.classList.add('ok');
+    result.textContent = `연결 성공 — ${data.provider} / ${data.model}`;
+    $('sPvProvider').textContent = data.provider || '—';
+    $('sPvModel').textContent    = data.model    || '—';
+    $('sPvName').textContent     = data.assistant_name || '—';
+    $('sDashboardLink').href     = `${url}/dashboard.html`;
+  } catch (e) {
+    result.classList.add('err');
+    result.textContent = `연결 실패 — ${e.message}`;
+  }
+}
+
+// ─────────────── 설정: 저장 ───────────────
+
+async function savePopupSettings() {
+  settingsServerUrl = $('sServerUrl').value.trim();
+  const tokenIdVal = $('sTokenIdInput').value.trim();
+
+  const settings = { serverUrl: settingsServerUrl };
+  if (tokenIdVal) settings.tokenId = tokenIdVal;
+
+  await chrome.storage.local.set(settings);
+  chrome.runtime.sendMessage({ type: 'UPDATE_SETTINGS', settings });
+
+  $('sSaveMsg').classList.remove('hidden');
+  setTimeout(() => $('sSaveMsg').classList.add('hidden'), 2500);
+}
+
+// ─────────────── 설정: 지갑 주소 복사 ───────────────
+
+async function copyWalletAddress() {
+  const addr = $('sWalletAddr').textContent;
+  if (!addr || addr.startsWith('지갑')) return;
+  await navigator.clipboard.writeText(addr);
+  $('sCopyMsg').classList.remove('hidden');
+  setTimeout(() => $('sCopyMsg').classList.add('hidden'), 2000);
 }
 
 async function loadStatus() {
@@ -150,11 +254,20 @@ function bindButtons() {
     hideApprovalPanel();
   });
 
-  $('btnSettings').addEventListener('click', () => chrome.runtime.openOptionsPage());
+  $('btnSettings').addEventListener('click', showSettingsView);
 
   $('btnClearLog').addEventListener('click', async () => {
     await chrome.storage.local.set({ activityLog: [] });
     $('logList').innerHTML = '<li class="log-empty">아직 활동 없음</li>';
+  });
+
+  $('btnBack').addEventListener('click', showMainView);
+  $('btnTestConn').addEventListener('click', testSettingsConnection);
+  $('btnSaveSettings').addEventListener('click', savePopupSettings);
+  $('btnCopyAddr').addEventListener('click', copyWalletAddress);
+
+  $('sServerUrl').addEventListener('input', () => {
+    $('sTestResult').className = 's-result hidden';
   });
 }
 
