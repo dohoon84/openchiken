@@ -997,16 +997,25 @@ def collect_extension(cfg: dict):
         warn("Extension 설치 건너뜀 — 외부 에이전트 연동 기능을 사용할 수 없습니다.")
         return
 
-    ext_path = ROOT / "extensions" / "chrome"
-    if not (ext_path / "manifest.json").exists():
-        warn(f"Extension 파일을 찾을 수 없습니다: {ext_path}")
+    src_path = ROOT / "extensions" / "chrome"
+    if not (src_path / "manifest.json").exists():
+        warn(f"Extension 파일을 찾을 수 없습니다: {src_path}")
         warn("openchiken/extensions/chrome/ 디렉토리를 확인하세요.")
         return
+
+    # __init__.py 를 제외하고 ~/.openchiken/extensions/chrome/ 에 복사
+    ext_path = OPENCHIKEN_HOME / "extensions" / "chrome"
+    if ext_path.exists():
+        shutil.rmtree(ext_path)
+    shutil.copytree(
+        src_path, ext_path,
+        ignore=shutil.ignore_patterns("__init__.py", "__pycache__", "*.pyc"),
+    )
 
     # 아이콘이 없으면 생성
     icons_dir = ext_path / "icons"
     if not (icons_dir / "icon48.png").exists():
-        gen_script = ext_path / "scripts" / "generate-icons.js"
+        gen_script = src_path / "scripts" / "generate-icons.js"
         if gen_script.exists() and shutil.which("node"):
             info("아이콘 생성 중...")
             subprocess.run(["node", str(gen_script)], capture_output=True)
