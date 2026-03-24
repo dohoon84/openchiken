@@ -839,27 +839,97 @@
           </div>
           <p class="font-body text-sm text-on-surface-variant mb-6">브라우저와 에이전트를 연결하는 Extension을 설치합니다. 건너뛰어도 나중에 수동으로 설치할 수 있습니다.</p>
 
-          <!-- Extension 경로 카드 -->
-          <div class="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/20 mb-4">
-            <div class="flex items-center gap-2 mb-3">
-              <span class="material-symbols-outlined text-primary text-lg">folder_open</span>
-              <p class="font-label text-sm font-bold">Extension 경로</p>
+          <!-- 활성화 토글 -->
+          <label id="ext-toggle-label" class="flex items-center gap-4 mb-6 cursor-pointer group select-none">
+            <div class="relative">
+              <input type="checkbox" id="ext-toggle" class="sr-only peer"/>
+              <div class="w-11 h-6 bg-outline-variant/40 rounded-full peer-checked:bg-primary transition-colors"></div>
+              <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow peer-checked:translate-x-5 transition-transform"></div>
             </div>
-            <code id="ext-path" class="font-mono text-xs text-primary break-all bg-surface-container p-2 rounded-lg block mb-4">확인 중...</code>
-            <div class="space-y-2 font-body text-xs text-on-surface-variant mb-4">
-              <p><span class="font-label font-bold text-on-surface">1.</span> Chrome 주소창에 <code class="bg-surface-container px-1.5 py-0.5 rounded">chrome://extensions</code> 입력</p>
-              <p><span class="font-label font-bold text-on-surface">2.</span> 우상단 <span class="text-primary font-semibold">개발자 모드</span> 토글 ON</p>
-              <p><span class="font-label font-bold text-on-surface">3.</span> <span class="text-primary font-semibold">압축해제된 확장 프로그램을 로드합니다</span> 클릭 → 위 경로 선택</p>
+            <div>
+              <span class="font-label text-sm font-bold text-on-surface group-hover:text-primary transition-colors">Extension 활성화</span>
+              <p class="font-label text-[11px] text-outline mt-0.5">Chrome을 자동 재시작하여 Extension을 로드합니다.</p>
             </div>
-            <div id="ext-not-found" class="hidden bg-error-container/30 border border-error/30 rounded-xl p-3 mb-3">
-              <p class="font-label text-xs text-error font-bold">Extension 파일을 찾을 수 없습니다</p>
-              <p class="font-body text-xs text-on-surface-variant mt-1">설치가 완료된 후 다시 시도하거나, openchiken-extension 레포에서 직접 로드하세요.</p>
+          </label>
+
+          <!-- 토글 ON: 자동 설치 영역 -->
+          <div id="ext-auto-section" class="hidden space-y-4 mb-6">
+            <!-- 경로 표시 -->
+            <div class="bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/20">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="material-symbols-outlined text-primary text-base">folder_open</span>
+                <p class="font-label text-xs font-bold text-on-surface-variant">Extension 경로</p>
+              </div>
+              <code id="ext-path" class="font-mono text-xs text-primary break-all bg-surface-container p-2 rounded-lg block">확인 중...</code>
             </div>
-            <button id="btn-copy-ext-path" type="button"
-              class="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl font-label text-sm font-bold transition-colors">
-              <span class="material-symbols-outlined text-base">content_copy</span>
-              경로 복사
+
+            <!-- 자동 설치 버튼 -->
+            <button id="btn-ext-install" type="button"
+              class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary text-on-primary rounded-xl font-label text-sm font-bold hover:bg-primary/90 transition-colors">
+              <span class="material-symbols-outlined text-base">download</span>
+              자동 설치 (Chrome 재시작)
             </button>
+
+            <!-- 설치 진행 상태 -->
+            <div id="ext-status" class="hidden bg-surface-container-lowest rounded-xl p-4 border border-outline-variant/20">
+              <div id="ext-status-loading" class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-primary text-lg animate-spin">progress_activity</span>
+                <div>
+                  <p id="ext-status-msg" class="font-label text-sm font-bold text-on-surface">Chrome을 재시작하는 중...</p>
+                  <p class="font-body text-xs text-outline mt-0.5">Relay 서버 연결을 확인 중입니다 (최대 30초)</p>
+                </div>
+              </div>
+              <div id="ext-status-ok" class="hidden flex items-center gap-3">
+                <span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+                <div>
+                  <p class="font-label text-sm font-bold text-primary">Extension 연결 완료!</p>
+                  <p id="ext-agent-id" class="font-mono text-xs text-on-surface-variant mt-0.5"></p>
+                </div>
+              </div>
+              <div id="ext-status-fail" class="hidden">
+                <div class="flex items-center gap-3 mb-3">
+                  <span class="material-symbols-outlined text-outline text-lg">info</span>
+                  <p id="ext-fail-msg" class="font-label text-sm font-bold text-on-surface-variant">Relay 연결 시간 초과</p>
+                </div>
+                <p class="font-body text-xs text-outline">Extension 팝업에서 직접 연결 상태를 확인하세요.</p>
+              </div>
+            </div>
+
+            <!-- 영구 등록 안내 -->
+            <div class="bg-surface-container rounded-xl p-4 border border-outline-variant/20">
+              <div class="flex items-start gap-2">
+                <span class="material-symbols-outlined text-yellow-500 text-base mt-0.5">warning</span>
+                <div>
+                  <p class="font-label text-xs font-bold text-on-surface">영구 등록 안내</p>
+                  <p class="font-body text-xs text-on-surface-variant mt-1">
+                    --load-extension 으로 로드한 Extension은 Chrome 재시작 시 해제됩니다.<br/>
+                    영구 등록: <code class="bg-surface-container-lowest px-1 rounded">chrome://extensions</code> → 개발자 모드 ON
+                    → <span class="text-primary">압축해제된 확장 프로그램을 로드합니다</span> → 경로 선택 (1회만 필요)
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 토글 OFF: 수동 설치 가이드 -->
+          <div id="ext-manual-section" class="mb-6">
+            <div class="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/20">
+              <div class="flex items-center gap-2 mb-3">
+                <span class="material-symbols-outlined text-primary text-lg">folder_open</span>
+                <p class="font-label text-sm font-bold">수동 설치 가이드</p>
+              </div>
+              <code id="ext-path-manual" class="font-mono text-xs text-primary break-all bg-surface-container p-2 rounded-lg block mb-4">확인 중...</code>
+              <div class="space-y-2 font-body text-xs text-on-surface-variant mb-4">
+                <p><span class="font-label font-bold text-on-surface">1.</span> Chrome 주소창에 <code class="bg-surface-container px-1.5 py-0.5 rounded">chrome://extensions</code> 입력</p>
+                <p><span class="font-label font-bold text-on-surface">2.</span> 우상단 <span class="text-primary font-semibold">개발자 모드</span> 토글 ON</p>
+                <p><span class="font-label font-bold text-on-surface">3.</span> <span class="text-primary font-semibold">압축해제된 확장 프로그램을 로드합니다</span> 클릭 → 위 경로 선택</p>
+              </div>
+              <button id="btn-copy-ext-path" type="button"
+                class="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl font-label text-sm font-bold transition-colors">
+                <span class="material-symbols-outlined text-base">content_copy</span>
+                경로 복사
+              </button>
+            </div>
           </div>
 
           <!-- 설정 요약 -->
@@ -1481,6 +1551,7 @@ function buildSummary() {
     ['리마인더', `${cfg.REMINDER_MINUTES_BEFORE}분 전`],
     ['활성 스킬', cfg.ENABLED_SKILLS === 'all' ? '전체 (all)' : cfg.ENABLED_SKILLS],
     ['Google 연동', pendingCredentialsFile ? pendingCredentialsFile.name : skipGoogle ? '건너뜀' : '미설정'],
+    ['Extension', document.getElementById('ext-toggle').checked ? '활성화' : '건너뜀'],
   ];
 
   const table = document.getElementById('summary-table');
@@ -1492,29 +1563,82 @@ function buildSummary() {
   `).join('');
 }
 
-// ── Step 6: Extension 경로 조회 ───────────────────────
+// ── Step 6: Extension ─────────────────────────────────
+let extPath = '';
+
 async function loadExtensionInfo() {
   try {
     const res = await fetch('/api/extension/info');
     const data = await res.json();
-    const pathEl = document.getElementById('ext-path');
-    const notFoundEl = document.getElementById('ext-not-found');
-    if (data.exists) {
-      pathEl.textContent = data.path;
-      notFoundEl.classList.add('hidden');
-    } else {
-      pathEl.textContent = data.path + '  (manifest.json 없음)';
-      notFoundEl.classList.remove('hidden');
-    }
+    extPath = data.path || '';
+    document.getElementById('ext-path').textContent = extPath || '경로를 확인할 수 없습니다';
+    document.getElementById('ext-path-manual').textContent = extPath || '경로를 확인할 수 없습니다';
   } catch (_) {
-    document.getElementById('ext-path').textContent = '서버 연결 실패 — 서버 재시작 후 다시 시도하세요.';
+    const msg = '서버 연결 실패';
+    document.getElementById('ext-path').textContent = msg;
+    document.getElementById('ext-path-manual').textContent = msg;
   }
 }
 
-document.getElementById('btn-copy-ext-path').addEventListener('click', async () => {
-  const path = document.getElementById('ext-path').textContent;
+// 토글: 자동 설치 / 수동 가이드 전환
+document.getElementById('ext-toggle').addEventListener('change', (e) => {
+  const on = e.target.checked;
+  document.getElementById('ext-auto-section').classList.toggle('hidden', !on);
+  document.getElementById('ext-manual-section').classList.toggle('hidden', on);
+});
+
+// 자동 설치 버튼
+document.getElementById('btn-ext-install').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-ext-install');
+  const statusEl = document.getElementById('ext-status');
+  const loadingEl = document.getElementById('ext-status-loading');
+  const okEl = document.getElementById('ext-status-ok');
+  const failEl = document.getElementById('ext-status-fail');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-base animate-spin">progress_activity</span> 설치 중...';
+  statusEl.classList.remove('hidden');
+  loadingEl.classList.remove('hidden');
+  okEl.classList.add('hidden');
+  failEl.classList.add('hidden');
+
   try {
-    await navigator.clipboard.writeText(path);
+    const res = await fetch('/api/extension/install', { method: 'POST' });
+    const data = await res.json();
+    loadingEl.classList.add('hidden');
+
+    if (data.status === 'connected') {
+      okEl.classList.remove('hidden');
+      document.getElementById('ext-agent-id').textContent = 'agentId: ' + data.agentId;
+      showToast('Extension 연결 완료!', 'success');
+    } else if (data.status === 'no_chrome') {
+      failEl.classList.remove('hidden');
+      document.getElementById('ext-fail-msg').textContent = 'Chrome 브라우저를 찾을 수 없습니다';
+    } else if (data.status === 'no_extension') {
+      failEl.classList.remove('hidden');
+      document.getElementById('ext-fail-msg').textContent = 'Extension 파일을 찾을 수 없습니다';
+    } else if (data.status === 'launch_failed') {
+      failEl.classList.remove('hidden');
+      document.getElementById('ext-fail-msg').textContent = 'Chrome 시작 실패: ' + (data.error || '');
+    } else {
+      failEl.classList.remove('hidden');
+      document.getElementById('ext-fail-msg').textContent = 'Relay 연결 시간 초과 — Extension 팝업에서 확인하세요';
+    }
+    if (data.path) extPath = data.path;
+  } catch (e) {
+    loadingEl.classList.add('hidden');
+    failEl.classList.remove('hidden');
+    document.getElementById('ext-fail-msg').textContent = '요청 실패: ' + e.message;
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-symbols-outlined text-base">download</span> 자동 설치 (Chrome 재시작)';
+});
+
+// 경로 복사 버튼
+document.getElementById('btn-copy-ext-path').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(extPath);
     showToast('경로가 클립보드에 복사되었습니다.', 'success');
   } catch (_) {
     showToast('복사 실패 — 경로를 직접 선택하세요.', 'error');
