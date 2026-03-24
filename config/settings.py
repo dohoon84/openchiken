@@ -135,8 +135,18 @@ class Settings:
 
     @property
     def llm_provider(self) -> str:
-        """LLM 공급자. 'openai' | 'anthropic' | 'gemini'. 기본값 'openai'."""
+        """LLM 공급자. 'openai' | 'anthropic' | 'gemini' | 'ollama'. 기본값 'openai'."""
         return os.getenv("LLM_PROVIDER", "openai").strip().lower()
+
+    @property
+    def ollama_base_url(self) -> str:
+        """Ollama 서버 URL. 기본값 'http://localhost:11434'."""
+        return os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+
+    @property
+    def ollama_model(self) -> str:
+        """Ollama 모델. 기본값 'llama3.2'."""
+        return os.getenv("OLLAMA_MODEL", "llama3.2")
 
     @property
     def anthropic_api_key(self) -> str:

@@ -7,6 +7,7 @@ LLM 공급자 추상화. settings.llm_provider 값으로 실제 모델을 선택
   openai    — ChatOpenAI (기본값, langchain-openai)
   anthropic — ChatAnthropic (langchain-anthropic 필요)
   gemini    — ChatGoogleGenerativeAI (langchain-google-genai 필요)
+  ollama    — ChatOllama (langchain-ollama 필요, 로컬 실행)
 
 추가 공급자:
   LLMProvider를 상속받아 get_model()을 구현하고,
@@ -68,10 +69,26 @@ class GeminiProvider(LLMProvider):
         )
 
 
+class OllamaProvider(LLMProvider):
+    def get_model(self) -> BaseChatModel:
+        try:
+            from langchain_ollama import ChatOllama
+        except ImportError as exc:
+            raise ImportError(
+                "langchain-ollama 패키지가 필요합니다: uv add langchain-ollama"
+            ) from exc
+        return ChatOllama(
+            model=settings.ollama_model,
+            base_url=settings.ollama_base_url,
+            temperature=0.3,
+        )
+
+
 _PROVIDERS: dict[str, type[LLMProvider]] = {
-    "openai": OpenAIProvider,
-    "anthropic": AnthropicProvider,
-    "gemini": GeminiProvider,
+    "openai":     OpenAIProvider,
+    "anthropic":  AnthropicProvider,
+    "gemini":     GeminiProvider,
+    "ollama":     OllamaProvider,
 }
 
 _provider_instance: LLMProvider | None = None

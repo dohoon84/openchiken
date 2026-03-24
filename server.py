@@ -24,6 +24,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -81,6 +82,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="OpenChiken Web Server", docs_url=None, redoc_url=None, lifespan=lifespan)  # v2.0
 
+# Chrome Extension (chrome-extension://*) 및 localhost UI 허용
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
+
 
 # ── Pydantic 모델 ──────────────────────────────────────────────
 class SetupConfig(BaseModel):
@@ -97,6 +107,8 @@ class SetupConfig(BaseModel):
     ANTHROPIC_MODEL: str = "claude-3-5-sonnet-latest"
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-2.0-flash"
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3.2"
     # Step 3 — Telegram
     TELEGRAM_BOT_TOKEN: str = ""
     ALLOWED_USER_IDS: str = ""
@@ -117,6 +129,67 @@ class SetupConfig(BaseModel):
 
 
 # ── API 라우터 ─────────────────────────────────────────────────
+
+# ── Browser Channel (Chrome Extension) ────────────────────────
+
+class ChatRequest(BaseModel):
+    message: str
+    session_id: str = "extension"
+
+
+class ChatResponse(BaseModel):
+    ok: bool
+    reply: str = ""
+    error: str = ""
+
+
+@app.post("/api/chat", response_model=ChatResponse)
+async def api_chat(req: ChatRequest):
+    """Chrome Extension 등 브라우저 채널에서 에이전트에게 메시지를 전송합니다."""
+    try:
+        from core.agent import chat as agent_chat
+
+        reply = await agent_chat(req.session_id, req.message)
+        return ChatResponse(ok=True, reply=reply)
+    except EnvironmentError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"LLM 공급자 설정이 필요합니다: {e}",
+        )
+    except Exception as e:
+        logger.error("api_chat failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/chat/history")
+def api_chat_history(session_id: str = "extension", limit: int = 20):
+    """브라우저 채널 대화 기록 조회."""
+    try:
+        conn = sqlite3.connect(_db_path())
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, message FROM message_store "
+            "WHERE session_id = ? ORDER BY id DESC LIMIT ?",
+            (session_id, limit),
+        )
+        rows = cursor.fetchall()
+        conn.close()
+
+        messages = []
+        for row_id, msg_json in reversed(rows):
+            try:
+                data = json.loads(msg_json)
+                content = data.get("data", {}).get("content", "")
+                msg_type = data.get("type", "")
+                if content.strip():
+                    messages.append({"id": row_id, "type": msg_type, "content": content})
+            except (json.JSONDecodeError, KeyError):
+                continue
+        return {"ok": True, "messages": messages}
+    except Exception as e:
+        logger.warning("api_chat_history failed: %s", e)
+        return {"ok": False, "messages": [], "error": str(e)}
+
 
 @app.get("/")
 def root_redirect():
@@ -168,6 +241,8 @@ def save_setup(config: SetupConfig):
         f"ANTHROPIC_MODEL={config.ANTHROPIC_MODEL}",
         f"GEMINI_API_KEY={keep(config.GEMINI_API_KEY, 'GEMINI_API_KEY')}",
         f"GEMINI_MODEL={config.GEMINI_MODEL}",
+        f"OLLAMA_BASE_URL={config.OLLAMA_BASE_URL}",
+        f"OLLAMA_MODEL={config.OLLAMA_MODEL}",
         "",
         "# ── Telegram ─────────────────────────────",
         f"TELEGRAM_BOT_TOKEN={keep(config.TELEGRAM_BOT_TOKEN, 'TELEGRAM_BOT_TOKEN')}",
