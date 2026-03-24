@@ -3,11 +3,32 @@ const $ = (id) => document.getElementById(id);
 let serverUrl = 'http://localhost:8000';
 
 async function init() {
-  const cfg = await chrome.storage.local.get(['serverUrl']);
+  const cfg = await chrome.storage.local.get(['serverUrl', 'tokenId', 'agentId', 'agentAddress']);
   if (cfg.serverUrl) serverUrl = cfg.serverUrl;
 
   $('serverUrl').value = serverUrl;
   $('dashboardLink').href = `${serverUrl}/dashboard.html`;
+
+  if (cfg.tokenId) $('tokenId').value = cfg.tokenId;
+
+  // 지갑 주소 표시
+  const addr = cfg.agentAddress;
+  if (addr) {
+    $('agentAddressDisplay').textContent = addr;
+  } else {
+    $('agentAddressDisplay').textContent = '지갑 없음 (Extension 재설치 필요)';
+  }
+
+  $('agentIdDisplay').textContent = cfg.agentId || '—';
+
+  // 릴레이 연결 상태 + tokenId 조회
+  chrome.runtime.sendMessage({ type: 'GET_STATUS' }, (res) => {
+    if (res) {
+      $('relayStatus').textContent = res.relayConnected ? '연결됨' : '연결 안됨';
+      $('relayStatus').style.color = res.relayConnected ? 'var(--green)' : 'var(--red)';
+      if (res.tokenId) $('tokenIdDisplay').textContent = res.tokenId;
+    }
+  });
 
   await fetchProviderStatus();
   bindEvents();
@@ -52,7 +73,16 @@ async function testConnection() {
 
 async function saveSettings() {
   serverUrl = $('serverUrl').value.trim();
-  await chrome.storage.local.set({ serverUrl });
+  const tokenIdVal = $('tokenId').value.trim();
+
+  const settings = { serverUrl };
+  if (tokenIdVal) settings.tokenId = tokenIdVal;
+
+  await chrome.storage.local.set(settings);
+
+  // 런타임 상태에도 즉시 반영 (relay 재연결 없이 tokenId만 갱신)
+  chrome.runtime.sendMessage({ type: 'UPDATE_SETTINGS', settings });
+
   $('saveMsg').classList.remove('hidden');
   setTimeout(() => $('saveMsg').classList.add('hidden'), 2500);
 }
@@ -62,6 +92,15 @@ function bindEvents() {
   $('btnSave').addEventListener('click', saveSettings);
   $('serverUrl').addEventListener('input', () => {
     $('testResult').className = 'test-result hidden';
+  });
+
+  // 지갑 주소 복사
+  $('btnCopyAddress').addEventListener('click', async () => {
+    const addr = $('agentAddressDisplay').textContent;
+    if (!addr || addr.startsWith('지갑')) return;
+    await navigator.clipboard.writeText(addr);
+    $('copyMsg').classList.remove('hidden');
+    setTimeout(() => $('copyMsg').classList.add('hidden'), 2000);
   });
 }
 
