@@ -1,0 +1,189 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0D0D0D;
+  --bg2:     #1A1A1A;
+  --bg3:     #222;
+  --border:  #2D2D2D;
+  --text:    #F3F4F6;
+  --text2:   #9CA3AF;
+  --text3:   #4B5563;
+  --accent:  #F97316;
+  --green:   #22C55E;
+  --red:     #EF4444;
+  --yellow:  #EAB308;
+  --r-sm:    6px;
+  --r-md:    10px;
+}
+
+body {
+  width: 340px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app { display: flex; flex-direction: column; }
+
+/* ── Header ── */
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 14px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo { display: flex; align-items: center; gap: 8px; }
+.logo-mark {
+  width: 26px; height: 26px; background: var(--accent);
+  border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: #fff;
+}
+.logo-text { font-size: 13px; font-weight: 600; }
+
+.header-right { display: flex; align-items: center; gap: 6px; }
+
+.relay-badge {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 100px; padding: 2px 8px 2px 6px;
+}
+.relay-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text3); transition: background .3s;
+}
+.relay-dot.connected    { background: var(--green); }
+.relay-dot.disconnected { background: var(--red); }
+.relay-dot.connecting   { background: var(--accent); animation: pulse 1.2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+.relay-label { font-size: 10px; color: var(--text2); font-weight: 500; }
+
+.icon-btn {
+  width: 26px; height: 26px; background: none; border: none; cursor: pointer;
+  color: var(--text3); border-radius: var(--r-sm);
+  display: flex; align-items: center; justify-content: center;
+  transition: color .15s, background .15s;
+}
+.icon-btn:hover { color: var(--text2); background: var(--bg2); }
+
+/* ── ID bar ── */
+.id-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+}
+.id-label { font-size: 9px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .8px; flex-shrink: 0; }
+.id-value {
+  font-size: 10px; color: var(--text2);
+  font-family: 'SF Mono','Fira Code', monospace;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── Approval panel ── */
+.approval-panel {
+  margin: 12px 12px 0;
+  background: var(--bg2);
+  border: 1px solid rgba(249,115,22,.4);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.approval-panel.hidden { display: none; }
+
+.approval-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px 8px;
+  background: rgba(249,115,22,.08);
+  border-bottom: 1px solid rgba(249,115,22,.2);
+}
+.approval-icon { flex-shrink: 0; }
+.approval-title { font-size: 12px; font-weight: 600; color: var(--accent); }
+
+.approval-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+
+.approval-row { display: flex; gap: 8px; align-items: flex-start; }
+.ak { font-size: 10px; color: var(--text3); width: 70px; flex-shrink: 0; padding-top: 1px;
+  font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+.av { font-size: 11px; color: var(--text); }
+
+.trust-badge {
+  padding: 1px 7px; border-radius: 100px; font-size: 10px; font-weight: 600;
+  border: 1px solid;
+}
+.trust-badge.platform_verified  { color: var(--green);  border-color: var(--green);  background: rgba(34,197,94,.1); }
+.trust-badge.community_verified { color: var(--yellow); border-color: var(--yellow); background: rgba(234,179,8,.1); }
+.trust-badge.unverified         { color: var(--red);    border-color: var(--red);    background: rgba(239,68,68,.1); }
+
+.ap-params {
+  font-family: 'SF Mono','Fira Code', monospace; font-size: 10px;
+  color: var(--text2); word-break: break-all;
+}
+
+.approval-actions {
+  display: flex; gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.btn {
+  flex: 1; height: 34px; border-radius: var(--r-sm); border: none;
+  cursor: pointer; font-size: 12px; font-weight: 600;
+  transition: opacity .15s, transform .1s;
+}
+.btn:active { transform: scale(.96); }
+.btn-reject  { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); }
+.btn-reject:hover  { border-color: var(--red); color: var(--red); }
+.btn-approve { background: var(--accent); color: #fff; }
+.btn-approve:hover { opacity: .88; }
+
+/* ── Idle panel ── */
+.idle-panel {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 22px 16px 16px; gap: 8px;
+}
+.idle-icon { opacity: .4; margin-bottom: 2px; }
+.idle-title { font-size: 12px; font-weight: 600; color: var(--text3); }
+.idle-sub   { font-size: 11px; color: var(--text3); text-align: center; line-height: 1.6; }
+
+/* ── Log ── */
+.log-section {
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+.log-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 14px 5px;
+}
+.log-title { font-size: 10px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: .7px; }
+.log-clear { background: none; border: none; cursor: pointer;
+  font-size: 10px; color: var(--text3); padding: 2px 4px; border-radius: 3px; }
+.log-clear:hover { color: var(--text2); }
+
+.log-list { list-style: none; max-height: 130px; overflow-y: auto; padding: 0 14px 10px; }
+.log-list::-webkit-scrollbar { width: 3px; }
+.log-list::-webkit-scrollbar-thumb { background: var(--border); }
+
+.log-empty { font-size: 11px; color: var(--text3); padding: 6px 0; }
+
+.log-item {
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+}
+.log-item:last-child { border-bottom: none; }
+
+.log-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+}
+.log-dot.approved { background: var(--green); }
+.log-dot.rejected { background: var(--red); }
+.log-dot.error    { background: var(--yellow); }
+.log-dot.timeout  { background: var(--text3); }
+
+.log-text { flex: 1; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.log-meta { color: var(--text3); font-size: 10px; flex-shrink: 0; }
