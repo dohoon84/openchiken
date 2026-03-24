@@ -7,12 +7,15 @@
  *   3. 자동 승인: localhost:8000 에 즉시 전달
  *   4. 수동 승인 필요 시: chrome.storage.session 에 저장 → 팝업 열면 복원
  *   5. 결과를 Relay Server로 반환
+ *   6. 설치 시 에이전트 전용 Ethereum 지갑 자동 생성
  *
  * MV3 서비스 워커 생명주기 대응:
  *   - 승인 대기 요청은 chrome.storage.session 에 영속화
  *   - 서비스 워커 재시작 시 session storage 에서 복원
  *   - badge 는 Chrome 이 직접 관리하므로 재시작 후에도 유지됨
  */
+
+import { Wallet } from './ethers.min.js';
 
 // ─────────────── 설정 기본값 ───────────────
 
@@ -34,6 +37,8 @@ const DEFAULTS = {
 
 let ws             = null;
 let agentId        = null;
+let agentAddress   = null;  // 에이전트 Ethereum 지갑 주소 (공개)
+let tokenId        = null;
 let relayUrl       = DEFAULTS.relayUrl;
 let serverUrl      = DEFAULTS.serverUrl;
 let policy         = DEFAULTS.policy;
@@ -69,7 +74,7 @@ async function sessionFirstPending() {
 // ─────────────── 초기화 ───────────────
 
 async function init() {
-  const cfg = await chrome.storage.local.get(['agentId', 'relayUrl', 'serverUrl', 'policy']);
+  const cfg = await chrome.storage.local.get(['agentId', 'agentAddress', 'tokenId', 'relayUrl', 'serverUrl', 'policy']);
 
   if (!cfg.agentId) {
     agentId = `oc_ext_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
@@ -78,9 +83,11 @@ async function init() {
     agentId = cfg.agentId;
   }
 
-  if (cfg.relayUrl)  relayUrl  = cfg.relayUrl;
-  if (cfg.serverUrl) serverUrl = cfg.serverUrl;
-  if (cfg.policy)    policy    = { ...DEFAULTS.policy, ...cfg.policy };
+  if (cfg.agentAddress) agentAddress = cfg.agentAddress;
+  if (cfg.tokenId)      tokenId      = cfg.tokenId;
+  if (cfg.relayUrl)     relayUrl     = cfg.relayUrl;
+  if (cfg.serverUrl)    serverUrl    = cfg.serverUrl;
+  if (cfg.policy)       policy       = { ...DEFAULTS.policy, ...cfg.policy };
 
   // 서비스 워커 재시작 후 대기 중인 승인이 있으면 badge 복원
   const firstPending = await sessionFirstPending();
@@ -104,7 +111,10 @@ function connectRelay() {
   ws.onopen = async () => {
     console.log('[Relay] 연결됨');
     clearTimeout(reconnectTimer);
-    send({ type: 'REGISTER', agentId, capabilities: ['browser_context', 'local_agent'], version: '0.2.0' });
+    const registerMsg = { type: 'REGISTER', agentId, capabilities: ['browser_context', 'local_agent'], version: '0.2.0' };
+    if (tokenId)      registerMsg.tokenId      = tokenId;
+    if (agentAddress) registerMsg.agentAddress = agentAddress;
+    send(registerMsg);
     notifyPopup({ type: 'RELAY_STATUS', status: 'connected', agentId });
 
     // 대기 중인 승인이 없을 때만 badge 초기화
@@ -134,10 +144,28 @@ function send(msg) {
 
 async function handleRelayMessage(msg) {
   switch (msg.type) {
-    case 'REGISTERED': console.log('[Relay] 등록 확인:', msg.agentId); break;
-    case 'INVOKE':     await handleInvoke(msg); break;
-    case 'PING':       send({ type: 'PONG' }); break;
-    default:           console.warn('[Relay] 알 수 없는 타입:', msg.type);
+    case 'REGISTERED':
+      console.log('[Relay] 등록 확인:', msg.agentId);
+      break;
+
+    case 'ONCHAIN_REGISTERED':
+      // Relay 서버가 플랫폼 키로 on-chain 자동 등록 완료 — tokenId 저장
+      tokenId = msg.tokenId;
+      await chrome.storage.local.set({ tokenId: msg.tokenId });
+      console.log(`[Relay] on-chain 자동 등록 완료 — tokenId: ${msg.tokenId} tx: ${msg.txHash}`);
+      notifyPopup({ type: 'ONCHAIN_REGISTERED', tokenId: msg.tokenId, txHash: msg.txHash });
+      break;
+
+    case 'INVOKE':
+      await handleInvoke(msg);
+      break;
+
+    case 'PING':
+      send({ type: 'PONG' });
+      break;
+
+    default:
+      console.warn('[Relay] 알 수 없는 타입:', msg.type);
   }
 }
 
@@ -240,6 +268,8 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         sendResponse({
           relayConnected:  ws?.readyState === WebSocket.OPEN,
           agentId,
+          agentAddress,
+          tokenId,
           relayUrl,
           pendingApproval: firstPending,  // null 이면 idle 상태
         });
@@ -280,6 +310,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
     case 'UPDATE_SETTINGS':
       chrome.storage.local.set(msg.settings).then(() => {
+        if (msg.settings.tokenId)   tokenId   = msg.settings.tokenId;
         if (msg.settings.relayUrl)  relayUrl  = msg.settings.relayUrl;
         if (msg.settings.serverUrl) serverUrl = msg.settings.serverUrl;
         if (msg.settings.policy)    policy    = { ...policy, ...msg.settings.policy };
@@ -296,20 +327,40 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
 // ─────────────── 설치 이벤트 ───────────────
 
-chrome.runtime.onInstalled.addListener(({ reason }) => {
+chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   if (reason === 'install') {
-    chrome.storage.local.set({ activityLog: [], policy: DEFAULTS.policy });
-    chrome.storage.session.set({ pendingApprovals: {} });
-    console.log('[OpenChiken] Extension 설치됨 v0.2.0');
+    // 에이전트 전용 Ethereum 지갑 생성 (개인키는 chrome.storage에만 보관)
+    const wallet = Wallet.createRandom();
+    agentAddress = wallet.address;
+
+    await chrome.storage.local.set({
+      activityLog:      [],
+      policy:           DEFAULTS.policy,
+      agentAddress:     wallet.address,
+      agentPrivateKey:  wallet.privateKey,  // 로컬에만 저장, 외부 노출 없음
+    });
+    await chrome.storage.session.set({ pendingApprovals: {} });
+    console.log('[OpenChiken] Extension 설치됨 v0.2.0 | 지갑 생성:', wallet.address);
   }
 
   if (reason === 'update') {
-    chrome.storage.local.get(['relayUrl']).then(({ relayUrl: stored }) => {
-      if (!stored || stored === 'ws://localhost:3000/ws') {
-        chrome.storage.local.set({ relayUrl: DEFAULTS.relayUrl });
-        console.log('[OpenChiken] Relay URL 마이그레이션:', DEFAULTS.relayUrl);
-      }
-    });
+    // 기존 설치에 지갑이 없으면 새로 생성
+    const cfg = await chrome.storage.local.get(['relayUrl', 'agentAddress']);
+
+    if (!cfg.agentAddress) {
+      const wallet = Wallet.createRandom();
+      agentAddress = wallet.address;
+      await chrome.storage.local.set({
+        agentAddress:    wallet.address,
+        agentPrivateKey: wallet.privateKey,
+      });
+      console.log('[OpenChiken] 지갑 마이그레이션 완료:', wallet.address);
+    }
+
+    if (!cfg.relayUrl || cfg.relayUrl === 'ws://localhost:3000/ws') {
+      await chrome.storage.local.set({ relayUrl: DEFAULTS.relayUrl });
+      console.log('[OpenChiken] Relay URL 마이그레이션:', DEFAULTS.relayUrl);
+    }
   }
 });
 

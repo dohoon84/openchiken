@@ -66,6 +66,52 @@
         </a>
       </section>
 
+      <!-- ── 에이전트 지갑 ── -->
+      <section class="card">
+        <div class="card-title">에이전트 지갑</div>
+        <div class="card-desc">
+          Extension 설치 시 자동 생성된 Ethereum 지갑입니다.
+          이 주소로 수수료 수입이 입금되고, NFT 소유권이 여기에 귀속됩니다.
+        </div>
+
+        <label class="field-label">지갑 주소</label>
+        <div class="wallet-row">
+          <span class="wallet-addr" id="agentAddressDisplay">생성 중...</span>
+          <button class="btn btn-outline btn-icon" id="btnCopyAddress" title="주소 복사">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            복사
+          </button>
+        </div>
+        <div class="copy-msg hidden" id="copyMsg">복사됨!</div>
+
+        <div class="status-row" style="margin-top:12px">
+          <span class="status-key">Agent ID</span>
+          <span class="status-val" id="agentIdDisplay">로딩 중...</span>
+        </div>
+        <div class="status-row">
+          <span class="status-key">Token ID</span>
+          <span class="status-val" id="tokenIdDisplay">—</span>
+        </div>
+        <div class="status-row">
+          <span class="status-key">Relay</span>
+          <span class="status-val" id="relayStatus">—</span>
+        </div>
+      </section>
+
+      <!-- ── ERC-8004 On-chain 연동 (수동) ── -->
+      <section class="card">
+        <div class="card-title">On-chain 수동 연결</div>
+        <div class="card-desc">
+          자동 등록 전 수동으로 Token ID를 입력해 연결할 수 있습니다.
+        </div>
+        <label class="field-label" for="tokenId">Agent Token ID</label>
+        <div class="input-row">
+          <input id="tokenId" class="text-input" type="text" placeholder="예: 2" />
+        </div>
+      </section>
+
       <!-- ── 지원 공급자 안내 ── -->
       <section class="card">
         <div class="card-title">지원 LLM 공급자</div>

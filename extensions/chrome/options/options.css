@@ -144,3 +144,24 @@ body {
 
 .save-msg { font-size: 12px; color: var(--green); }
 .save-msg.hidden { display: none; }
+
+/* ── Wallet address ── */
+.wallet-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+}
+
+.wallet-addr {
+  flex: 1; font-family: 'SF Mono','Fira Code', monospace; font-size: 11px;
+  color: var(--text); background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 7px 10px;
+  word-break: break-all; line-height: 1.5;
+}
+
+.btn-icon {
+  display: flex; align-items: center; gap: 5px; white-space: nowrap; flex-shrink: 0;
+}
+
+.copy-msg {
+  font-size: 11px; color: var(--green); margin-top: 4px;
+}
+.copy-msg.hidden { display: none; }
