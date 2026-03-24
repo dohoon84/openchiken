@@ -14,9 +14,30 @@ _RELAY_URL = os.getenv(
     "RELAY_URL",
     "https://openchiken-relay-production.up.railway.app",
 )
-
+_SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8000")
 _MY_AGENT_ID = os.getenv("AGENT_ID", "")
 _MY_TRUST_LEVEL = os.getenv("AGENT_TRUST_LEVEL", "platform_verified")
+
+
+def _log_relay_activity(agent_id: str, skill: str, status: str, summary: str = "") -> None:
+    """로컬 서버에 릴레이 송신 활동을 기록합니다 (실패해도 무시)."""
+    try:
+        body = json.dumps({
+            "direction": "sent",
+            "agentId":   agent_id,
+            "skill":     skill,
+            "status":    status,
+            "summary":   summary[:300],
+        }).encode()
+        req = urllib.request.Request(
+            f"{_SERVER_URL.rstrip('/')}/api/relay/activity",
+            data=body,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        urllib.request.urlopen(req, timeout=3)
+    except Exception:
+        pass
 
 
 def _invoke(agent_id: str, skill: str, params: dict) -> dict:
@@ -72,18 +93,25 @@ def invoke_agent(agent_id: str, skill: str, params: str = "{}") -> str:
     try:
         result = _invoke(agent_id, skill, parsed_params)
     except RuntimeError as e:
+        _log_relay_activity(agent_id, skill, "error", str(e))
         return f"외부 에이전트 호출 실패: {e}"
 
     if not result.get("ok"):
-        return f"에이전트가 요청을 거절했습니다: {result.get('error', '알 수 없는 오류')}"
+        err_msg = result.get("error", "알 수 없는 오류")
+        _log_relay_activity(agent_id, skill, "rejected", err_msg)
+        return f"에이전트가 요청을 거절했습니다: {err_msg}"
 
     payload = result.get("result", result)
 
     # reply 필드가 있으면 우선 반환
     if isinstance(payload, dict) and "reply" in payload:
-        return str(payload["reply"])
+        reply_text = str(payload["reply"])
+        _log_relay_activity(agent_id, skill, "approved", reply_text[:200])
+        return reply_text
 
-    return json.dumps(payload, ensure_ascii=False, indent=2)
+    result_str = json.dumps(payload, ensure_ascii=False, indent=2)
+    _log_relay_activity(agent_id, skill, "approved", result_str[:200])
+    return result_str
 
 
 def get_tools() -> list:
