@@ -473,6 +473,85 @@ def extension_info():
     return {"exists": False, "path": str(OPENCHIKEN_HOME / "extensions" / "chrome")}
 
 
+_CHROME_PATHS = {
+    "darwin": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "linux": "google-chrome",
+    "win32": r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+}
+_RELAY_HEALTH_URL = "https://openchiken-relay-production.up.railway.app/api/agents"
+
+
+def _find_chrome() -> str | None:
+    import shutil as _shutil
+    p = _CHROME_PATHS.get(sys.platform)
+    if p and Path(p).exists():
+        return p
+    return _shutil.which("google-chrome") or _shutil.which("chrome") or _shutil.which("chromium")
+
+
+def _poll_relay(timeout_sec: int = 30) -> str | None:
+    """Relay 서버에서 Extension 연결을 폴링. 연결된 agentId 반환."""
+    import urllib.request as _ureq
+    deadline = time.time() + timeout_sec
+    while time.time() < deadline:
+        try:
+            req = _ureq.Request(_RELAY_HEALTH_URL, headers={"Accept": "application/json"})
+            with _ureq.urlopen(req, timeout=3) as resp:
+                data = json.loads(resp.read())
+                agents = data.get("agents", [])
+                if agents:
+                    return agents[0].get("agentId")
+        except Exception:
+            pass
+        time.sleep(2)
+    return None
+
+
+@app.post("/api/extension/install")
+def extension_install():
+    """Chrome Extension 반자동 설치: 파일 준비 → Chrome 종료 → 재시작 → Relay 폴링."""
+    ext_path = _prepare_extension()
+    if not ext_path or not (ext_path / "manifest.json").exists():
+        return {"ok": False, "status": "no_extension", "path": None}
+
+    chrome_bin = _find_chrome()
+    if not chrome_bin:
+        return {"ok": False, "status": "no_chrome", "path": str(ext_path)}
+
+    # Chrome 종료
+    try:
+        if sys.platform == "darwin":
+            subprocess.run(
+                ["osascript", "-e", 'tell application "Google Chrome" to quit'],
+                capture_output=True, timeout=5,
+            )
+        else:
+            subprocess.run(["pkill", "-f", "chrome"], capture_output=True, timeout=5)
+        time.sleep(2)
+    except Exception:
+        pass
+
+    # --load-extension 으로 Chrome 재시작
+    try:
+        if sys.platform == "darwin":
+            subprocess.Popen([
+                "open", "-a", "Google Chrome", "--args",
+                f"--load-extension={ext_path}",
+            ])
+        else:
+            subprocess.Popen([chrome_bin, f"--load-extension={ext_path}"])
+    except Exception as e:
+        return {"ok": False, "status": "launch_failed", "error": str(e), "path": str(ext_path)}
+
+    time.sleep(3)
+
+    # Relay 폴링
+    agent_id = _poll_relay(timeout_sec=30)
+    if agent_id:
+        return {"ok": True, "status": "connected", "agentId": agent_id, "path": str(ext_path)}
+    return {"ok": True, "status": "timeout", "path": str(ext_path)}
+
+
 @app.post("/api/system/open-privacy-prefs")
 def open_privacy_prefs():
     """macOS 전체 디스크 접근 시스템 설정 패널을 엽니다."""

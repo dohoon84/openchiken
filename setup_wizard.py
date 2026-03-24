@@ -986,119 +986,118 @@ def _check_relay_connection(timeout_sec: int = 30) -> str | None:
     return None
 
 
+def _prepare_extension_tui() -> Path | None:
+    """Extension 파일을 ~/.openchiken/extensions/chrome/ 에 __init__.py 없이 복사."""
+    src = ROOT / "extensions" / "chrome"
+    if not (src / "manifest.json").exists():
+        return None
+    dst = OPENCHIKEN_HOME / "extensions" / "chrome"
+    if dst.exists():
+        shutil.rmtree(dst)
+    shutil.copytree(
+        src, dst,
+        ignore=shutil.ignore_patterns("__init__.py", "__pycache__", "*.pyc"),
+    )
+    return dst
+
+
+def _show_manual_guide(ext_path: Path):
+    """수동 설치 가이드를 출력합니다."""
+    console.print()
+    console.print(
+        Panel(
+            Text.from_markup(
+                "\n"
+                "  [bold cyan]수동 설치 가이드[/]\n\n"
+                "  [bold]1.[/] Chrome 주소창에 [bold cyan]chrome://extensions[/] 입력\n"
+                "  [bold]2.[/] 우상단 [bold cyan]개발자 모드[/] 토글 ON\n"
+                "  [bold]3.[/] [bold cyan]압축해제된 확장 프로그램을 로드합니다[/] 클릭\n"
+                f"  [bold]4.[/] 아래 경로 선택:\n"
+                f"     [cyan]{ext_path}[/]\n"
+            ),
+            border_style="cyan dim",
+            padding=(0, 2),
+        )
+    )
+
+
+def _show_permanent_notice(ext_path: Path):
+    """영구 등록 안내를 출력합니다."""
+    console.print()
+    console.print(
+        Panel(
+            Text.from_markup(
+                "\n"
+                "  [bold yellow]⚠  영구 등록 안내[/]\n\n"
+                "  --load-extension 으로 로드한 Extension은 Chrome 재시작 시 해제됩니다.\n"
+                "  영구 등록하려면 아래를 [bold]1회만[/] 수행하세요:\n\n"
+                "  [bold cyan]chrome://extensions[/] → 개발자 모드 ON\n"
+                "  → [bold cyan]압축해제된 확장 프로그램을 로드합니다[/] → 경로 선택\n"
+                f"  [cyan]{ext_path}[/]\n"
+            ),
+            border_style="yellow dim",
+            padding=(0, 2),
+        )
+    )
+
+
 def collect_extension(cfg: dict):
     """Step 6 – Chrome Extension 설치."""
     step(6, TOTAL_STEPS, "Chrome Extension 설치")
-    info("외부 에이전트 연동을 위한 Chrome Extension을 설치합니다.")
-    info("Extension은 브라우저와 Relay 서버를 연결하는 채널 역할을 합니다.")
+    info("브라우저와 에이전트를 연결하는 Chrome Extension을 설치합니다.")
     console.print()
 
-    if not confirm("Chrome Extension을 설치하시겠습니까?", default=True):
-        warn("Extension 설치 건너뜀 — 외부 에이전트 연동 기능을 사용할 수 없습니다.")
+    if not confirm("Chrome Extension을 활성화하시겠습니까?", default=True):
+        warn("Extension 건너뜀 — 나중에 수동 설치 가능합니다.")
         return
 
-    src_path = ROOT / "extensions" / "chrome"
-    if not (src_path / "manifest.json").exists():
-        warn(f"Extension 파일을 찾을 수 없습니다: {src_path}")
+    # Extension 파일 준비
+    ext_path = _prepare_extension_tui()
+    if not ext_path:
+        warn("Extension 파일을 찾을 수 없습니다.")
         warn("openchiken/extensions/chrome/ 디렉토리를 확인하세요.")
         return
 
-    # __init__.py 를 제외하고 ~/.openchiken/extensions/chrome/ 에 복사
-    ext_path = OPENCHIKEN_HOME / "extensions" / "chrome"
-    if ext_path.exists():
-        shutil.rmtree(ext_path)
-    shutil.copytree(
-        src_path, ext_path,
-        ignore=shutil.ignore_patterns("__init__.py", "__pycache__", "*.pyc"),
-    )
-
-    # 아이콘이 없으면 생성
-    icons_dir = ext_path / "icons"
-    if not (icons_dir / "icon48.png").exists():
-        gen_script = src_path / "scripts" / "generate-icons.js"
-        if gen_script.exists() and shutil.which("node"):
-            info("아이콘 생성 중...")
-            subprocess.run(["node", str(gen_script)], capture_output=True)
-
-    console.print()
     ok(f"Extension 경로: {ext_path}")
-    console.print()
 
+    # Chrome 감지
     chrome_bin = _find_chrome()
     if not chrome_bin:
         warn("Chrome 브라우저를 찾을 수 없습니다.")
-        console.print(f"  수동으로 chrome://extensions 에서 아래 폴더를 로드하세요:")
-        console.print(f"  [cyan]{ext_path}[/]")
+        _show_manual_guide(ext_path)
         return
 
-    # Chrome이 실행 중인지 확인
-    chrome_running = False
+    # Chrome 종료 (실행 중이면)
     try:
-        result = subprocess.run(["pgrep", "-x", "Google Chrome"], capture_output=True)
-        chrome_running = result.returncode == 0
-    except FileNotFoundError:
-        pass
-
-    if chrome_running:
-        console.print(
-            Panel(
-                Text.from_markup(
-                    "\n"
-                    "  [bold yellow]Chrome이 실행 중입니다[/]\n\n"
-                    "  자동 로드를 위해 Chrome을 잠시 종료해야 합니다.\n"
-                    "  또는 수동으로 설치할 수 있습니다.\n"
-                ),
-                border_style="yellow dim",
-                padding=(0, 2),
-            )
-        )
-        choice = select(
-            "설치 방법을 선택하세요",
-            choices=[
-                questionary.Choice("Chrome 종료 후 Extension과 함께 재시작 (권장)", value="restart"),
-                questionary.Choice("수동 설치 안내 (chrome://extensions)", value="manual"),
-                questionary.Choice("건너뛰기", value="skip"),
-            ],
-            default="restart",
-        )
-
-        if choice == "skip":
-            warn("Extension 설치를 건너뜁니다.")
-            return
-        elif choice == "manual":
-            if sys.platform == "darwin":
-                subprocess.Popen(["open", "-a", "Google Chrome", "chrome://extensions"])
-            console.print()
-            console.print("  [bold]1.[/] 우상단 [bold cyan]개발자 모드[/] 토글 ON")
-            console.print(f"  [bold]2.[/] [bold cyan]압축해제된 확장 프로그램을 로드합니다[/] 클릭")
-            console.print(f"  [bold]3.[/] 아래 경로 선택:")
-            console.print(f"     [cyan]{ext_path}[/]")
-            console.print()
-            confirm("  Extension을 로드했나요?", default=True)
-            ok("수동 설치 완료")
-            return
-        else:
-            # Chrome 종료
+        r = subprocess.run(["pgrep", "-x", "Google Chrome"], capture_output=True)
+        if r.returncode == 0:
             info("Chrome을 종료합니다...")
             if sys.platform == "darwin":
-                subprocess.run(["osascript", "-e", 'tell application "Google Chrome" to quit'], capture_output=True)
+                subprocess.run(
+                    ["osascript", "-e", 'tell application "Google Chrome" to quit'],
+                    capture_output=True, timeout=5,
+                )
             else:
-                subprocess.run(["pkill", "-f", "chrome"], capture_output=True)
+                subprocess.run(["pkill", "-f", "chrome"], capture_output=True, timeout=5)
             time.sleep(2)
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
 
-    # Chrome을 --load-extension 과 함께 시작
+    # --load-extension 으로 Chrome 시작
     info("Chrome을 Extension과 함께 시작합니다...")
-    console.print()
-
-    if sys.platform == "darwin":
-        subprocess.Popen(["open", "-a", "Google Chrome", "--args", f"--load-extension={ext_path}"])
-    else:
-        subprocess.Popen([chrome_bin, f"--load-extension={ext_path}"])
+    try:
+        if sys.platform == "darwin":
+            subprocess.Popen(["open", "-a", "Google Chrome", "--args", f"--load-extension={ext_path}"])
+        else:
+            subprocess.Popen([chrome_bin, f"--load-extension={ext_path}"])
+    except Exception as e:
+        warn(f"Chrome 시작 실패: {e}")
+        _show_manual_guide(ext_path)
+        return
 
     time.sleep(3)
 
-    # Relay 연결 확인
-    console.print()
+    # Relay 연결 폴링
     with Progress(SpinnerColumn(), TextColumn("{task.description}"), transient=True) as progress:
         progress.add_task("Relay 서버 연결 확인 중...", total=None)
         agent_id = _check_relay_connection(timeout_sec=30)
@@ -1107,9 +1106,9 @@ def collect_extension(cfg: dict):
         ok(f"Extension 연결 확인! agentId: {agent_id}")
         cfg["EXTENSION_AGENT_ID"] = agent_id
     else:
-        warn("자동 연결 확인에 실패했습니다.")
-        info("Chrome에서 Extension 아이콘이 보이면 정상 설치된 것입니다.")
-        info("Relay 서버 연결은 Extension 팝업에서 확인할 수 있습니다.")
+        warn("Relay 연결 확인 시간 초과 — Extension 팝업에서 직접 확인하세요.")
+
+    _show_permanent_notice(ext_path)
 
 
 # ── .env 파일 작성 ──────────────────────────────────────────
