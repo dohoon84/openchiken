@@ -829,8 +829,41 @@
             </div>
           </div>
 
-          <!-- ── 설정 요약 (마지막 단계) ── -->
-          <div class="mt-6 bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/20">
+        </div>
+
+        <!-- ─────────────── STEP 6: Chrome Extension ─────────────── -->
+        <div id="step-6" class="step-panel p-8">
+          <div class="flex items-center gap-3 mb-2">
+            <span class="material-symbols-outlined text-primary text-3xl">extension</span>
+            <h2 class="font-headline text-2xl font-bold">Chrome Extension 설치</h2>
+          </div>
+          <p class="font-body text-sm text-on-surface-variant mb-6">브라우저와 에이전트를 연결하는 Extension을 설치합니다. 건너뛰어도 나중에 수동으로 설치할 수 있습니다.</p>
+
+          <!-- Extension 경로 카드 -->
+          <div class="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/20 mb-4">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="material-symbols-outlined text-primary text-lg">folder_open</span>
+              <p class="font-label text-sm font-bold">Extension 경로</p>
+            </div>
+            <code id="ext-path" class="font-mono text-xs text-primary break-all bg-surface-container p-2 rounded-lg block mb-4">확인 중...</code>
+            <div class="space-y-2 font-body text-xs text-on-surface-variant mb-4">
+              <p><span class="font-label font-bold text-on-surface">1.</span> Chrome 주소창에 <code class="bg-surface-container px-1.5 py-0.5 rounded">chrome://extensions</code> 입력</p>
+              <p><span class="font-label font-bold text-on-surface">2.</span> 우상단 <span class="text-primary font-semibold">개발자 모드</span> 토글 ON</p>
+              <p><span class="font-label font-bold text-on-surface">3.</span> <span class="text-primary font-semibold">압축해제된 확장 프로그램을 로드합니다</span> 클릭 → 위 경로 선택</p>
+            </div>
+            <div id="ext-not-found" class="hidden bg-error-container/30 border border-error/30 rounded-xl p-3 mb-3">
+              <p class="font-label text-xs text-error font-bold">Extension 파일을 찾을 수 없습니다</p>
+              <p class="font-body text-xs text-on-surface-variant mt-1">설치가 완료된 후 다시 시도하거나, openchiken-extension 레포에서 직접 로드하세요.</p>
+            </div>
+            <button id="btn-copy-ext-path" type="button"
+              class="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl font-label text-sm font-bold transition-colors">
+              <span class="material-symbols-outlined text-base">content_copy</span>
+              경로 복사
+            </button>
+          </div>
+
+          <!-- 설정 요약 -->
+          <div class="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant/20">
             <div class="flex items-center gap-2 mb-4">
               <span class="material-symbols-outlined text-secondary text-lg">summarize</span>
               <p class="font-label text-sm font-bold">설정 요약</p>
@@ -893,7 +926,7 @@
 
 <script>
 // ── 상태 ─────────────────────────────────────────────────
-const TOTAL = 5;
+const TOTAL = 6;
 let currentStep = 1;
 let goingBack = false;
 let skipGoogle = false;
@@ -934,7 +967,7 @@ if (isMacOS) {
 // ── 진행 표시기 초기화 ──────────────────────────────────
 function initDots() {
   const container = document.getElementById('dots-container');
-  const stepTitles = ['페르소나','LLM','채널','메모리','앱 설정'];
+  const stepTitles = ['페르소나','LLM','채널','메모리','앱 설정','Extension'];
   container.innerHTML = '';
   for (let i = 1; i <= TOTAL; i++) {
     const wrapper = document.createElement('div');
@@ -962,6 +995,7 @@ const stepTitlesMap = {
   3: '채널 설정',
   4: '메모리 설정',
   5: '앱 설정',
+  6: 'Chrome Extension 설치',
 };
 
 function goToStep(n, backward = false) {
@@ -977,6 +1011,7 @@ function goToStep(n, backward = false) {
 
   currentStep = n;
   updateUI();
+  if (n === TOTAL) loadExtensionInfo();
 }
 
 function updateUI() {
@@ -1000,6 +1035,7 @@ function updateUI() {
     3: '채널은 나중에 추가하거나 변경할 수 있습니다.',
     4: '로컬 파일 선택 시 별도 설치 없이 바로 사용됩니다.',
     5: 'Google·스케줄러·스킬은 모두 선택 사항입니다.',
+    6: 'Extension은 나중에 수동으로 로드할 수도 있습니다.',
   };
   document.getElementById('step-hint').textContent = hints[currentStep] || '';
 
@@ -1455,6 +1491,35 @@ function buildSummary() {
     </div>
   `).join('');
 }
+
+// ── Step 6: Extension 경로 조회 ───────────────────────
+async function loadExtensionInfo() {
+  try {
+    const res = await fetch('/api/extension/info');
+    const data = await res.json();
+    const pathEl = document.getElementById('ext-path');
+    const notFoundEl = document.getElementById('ext-not-found');
+    if (data.exists) {
+      pathEl.textContent = data.path;
+      notFoundEl.classList.add('hidden');
+    } else {
+      pathEl.textContent = data.path + '  (manifest.json 없음)';
+      notFoundEl.classList.remove('hidden');
+    }
+  } catch (_) {
+    document.getElementById('ext-path').textContent = '서버 연결 실패 — 서버 재시작 후 다시 시도하세요.';
+  }
+}
+
+document.getElementById('btn-copy-ext-path').addEventListener('click', async () => {
+  const path = document.getElementById('ext-path').textContent;
+  try {
+    await navigator.clipboard.writeText(path);
+    showToast('경로가 클립보드에 복사되었습니다.', 'success');
+  } catch (_) {
+    showToast('복사 실패 — 경로를 직접 선택하세요.', 'error');
+  }
+});
 
 // ── 유효성 검사 ───────────────────────────────────────
 function validateStep(step) {
