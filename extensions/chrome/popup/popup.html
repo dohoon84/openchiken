@@ -18,9 +18,13 @@
           <span class="logo-text">OpenChiken</span>
         </div>
         <div class="header-right">
+          <label class="agent-toggle" title="에이전트 활성화">
+            <input type="checkbox" id="agentToggle"/>
+            <span class="toggle-slider"></span>
+          </label>
           <div class="relay-badge" id="relayBadge">
             <span class="relay-dot" id="relayDot"></span>
-            <span class="relay-label" id="relayLabel">연결 중...</span>
+            <span class="relay-label" id="relayLabel">비활성</span>
           </div>
           <button class="icon-btn" id="btnSettings" title="설정">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -156,6 +160,8 @@
           </div>
           <div class="s-copy-msg hidden" id="sCopyMsg">복사됨!</div>
           <div class="s-status-grid" style="margin-top:8px">
+            <span class="s-key">잔액</span><span class="s-val" id="sBalance">—</span>
+            <span class="s-key">네트워크</span><span class="s-val" id="sChainName">—</span>
             <span class="s-key">Agent ID</span><span class="s-val" id="sAgentId">—</span>
             <span class="s-key">Token ID</span><span class="s-val" id="sTokenId">—</span>
             <span class="s-key">Relay</span><span class="s-val" id="sRelayStatus">—</span>
@@ -167,6 +173,28 @@
           <div class="s-title">On-chain 수동 연결</div>
           <label class="s-label" for="sTokenIdInput">Agent Token ID</label>
           <input id="sTokenIdInput" class="s-input" type="text" placeholder="예: 2"/>
+        </div>
+
+        <!-- ── 에이전트 Identity Export / Import ── -->
+        <div class="s-card">
+          <div class="s-title">에이전트 백업 / 복원</div>
+          <div class="s-warn">프라이빗 키가 포함됩니다. 파일을 안전하게 보관하세요.</div>
+          <div class="s-btn-row">
+            <button class="s-btn-action" id="btnExportId">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Export
+            </button>
+            <button class="s-btn-action" id="btnImportId">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Import
+            </button>
+          </div>
+          <input type="file" id="importFileInput" accept=".json" class="hidden"/>
+          <div class="s-identity-msg hidden" id="sIdentityMsg"></div>
         </div>
 
       </div>

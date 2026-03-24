@@ -41,9 +41,22 @@ async function loadSettingsData() {
 
   chrome.runtime.sendMessage({ type: 'GET_STATUS' }, (res) => {
     if (res) {
-      $('sRelayStatus').textContent = res.relayConnected ? '연결됨' : '연결 안됨';
-      $('sRelayStatus').style.color = res.relayConnected ? 'var(--green)' : 'var(--red)';
+      if (!res.agentEnabled) {
+        $('sRelayStatus').textContent = '비활성';
+        $('sRelayStatus').style.color = 'var(--text3)';
+      } else {
+        $('sRelayStatus').textContent = res.relayConnected ? '연결됨' : '연결 안됨';
+        $('sRelayStatus').style.color = res.relayConnected ? 'var(--green)' : 'var(--red)';
+      }
       if (res.tokenId) $('sTokenId').textContent = res.tokenId;
+    }
+  });
+
+  chrome.runtime.sendMessage({ type: 'GET_BALANCE' }, (info) => {
+    if (info) {
+      const bal = parseFloat(info.balance);
+      $('sBalance').textContent = isNaN(bal) ? info.balance : `${bal.toFixed(4)} ETH`;
+      $('sChainName').textContent = info.chainName || '—';
     }
   });
 
@@ -115,13 +128,89 @@ async function copyWalletAddress() {
   setTimeout(() => $('sCopyMsg').classList.add('hidden'), 2000);
 }
 
+// ─────────────── 설정: Identity Export / Import ───────────────
+
+function showIdentityMsg(text, type) {
+  const el = $('sIdentityMsg');
+  el.className = `s-identity-msg ${type}`;
+  el.textContent = text;
+  if (type === 'ok') setTimeout(() => el.classList.add('hidden'), 4000);
+}
+
+function exportIdentity() {
+  chrome.runtime.sendMessage({ type: 'EXPORT_IDENTITY' }, (res) => {
+    if (!res?.ok || !res.identity) {
+      showIdentityMsg('Export 실패: 데이터를 가져올 수 없습니다', 'err');
+      return;
+    }
+    const json = JSON.stringify(res.identity, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `openchiken-agent-${(res.identity.agentId || 'unknown').slice(0, 16)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showIdentityMsg('에이전트 키 파일이 다운로드되었습니다', 'ok');
+  });
+}
+
+function importIdentity() {
+  $('importFileInput').click();
+}
+
+function handleImportFile(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const identity = JSON.parse(ev.target.result);
+      if (!identity.privateKey) {
+        showIdentityMsg('유효하지 않은 파일: privateKey가 없습니다', 'err');
+        return;
+      }
+
+      const confirmMsg = identity.agentId
+        ? `에이전트 "${identity.agentId}"로 교체합니다. 기존 지갑이 덮어씌워집니다. 계속하시겠습니까?`
+        : '프라이빗 키를 Import합니다. 기존 지갑이 덮어씌워집니다. 계속하시겠습니까?';
+
+      if (!confirm(confirmMsg)) return;
+
+      chrome.runtime.sendMessage({ type: 'IMPORT_IDENTITY', identity }, (res) => {
+        if (res?.ok) {
+          showIdentityMsg(`Import 완료 — ${res.agentAddress}`, 'ok');
+          $('sWalletAddr').textContent  = res.agentAddress;
+          $('sAgentId').textContent     = res.agentId;
+          $('agentIdVal').textContent   = res.agentId;
+        } else {
+          showIdentityMsg(res?.error || 'Import 실패', 'err');
+        }
+      });
+    } catch {
+      showIdentityMsg('JSON 파싱 실패: 올바른 파일인지 확인하세요', 'err');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
 async function loadStatus() {
   chrome.runtime.sendMessage({ type: 'GET_STATUS' }, (res) => {
     if (!res) return;
-    setRelayStatus(res.relayConnected);
+
+    const toggle = $('agentToggle');
+    toggle.checked = res.agentEnabled === true;
+
+    if (!res.agentEnabled) {
+      setRelayStatus('disabled');
+    } else {
+      setRelayStatus(res.relayConnected ? 'connected' : 'disconnected');
+    }
+
     $('agentIdVal').textContent = res.agentId ?? '—';
 
-    // 팝업이 닫혀 있는 동안 쌓인 승인 요청 복원
     if (res.pendingApproval) {
       const { requestId, payload, caller } = res.pendingApproval;
       showApprovalPanel(requestId, payload, caller);
@@ -131,11 +220,37 @@ async function loadStatus() {
 
 // ─────────────── Relay 상태 표시 ───────────────
 
-function setRelayStatus(connected) {
+function setRelayStatus(status) {
   const dot   = $('relayDot');
   const label = $('relayLabel');
-  dot.className   = `relay-dot ${connected ? 'connected' : 'disconnected'}`;
-  label.textContent = connected ? '릴레이 연결됨' : '릴레이 오프라인';
+  const badge = $('relayBadge');
+  const idle  = $('idlePanel');
+
+  badge.classList.remove('disabled');
+
+  if (status === 'disabled') {
+    dot.className = 'relay-dot';
+    label.textContent = '비활성';
+    badge.classList.add('disabled');
+    if (idle) {
+      idle.querySelector('.idle-title').textContent = '에이전트 비활성';
+      idle.querySelector('.idle-sub').innerHTML = '토글을 켜면 릴레이에 연결되어<br/>외부 에이전트 요청을 수신합니다';
+    }
+  } else if (status === 'connected') {
+    dot.className = 'relay-dot connected';
+    label.textContent = '릴레이 연결됨';
+    if (idle) {
+      idle.querySelector('.idle-title').textContent = '에이전트 대기 중';
+      idle.querySelector('.idle-sub').innerHTML = '외부 에이전트 요청을 수신하면<br/>정책 엔진이 자동으로 처리합니다';
+    }
+  } else {
+    dot.className = 'relay-dot disconnected';
+    label.textContent = '릴레이 오프라인';
+    if (idle) {
+      idle.querySelector('.idle-title').textContent = '에이전트 대기 중';
+      idle.querySelector('.idle-sub').innerHTML = '릴레이 서버에 재연결 중입니다...';
+    }
+  }
 }
 
 // ─────────────── 승인 패널 ───────────────
@@ -221,7 +336,7 @@ function listenBackground() {
   chrome.runtime.onMessage.addListener((msg) => {
     switch (msg.type) {
       case 'RELAY_STATUS':
-        setRelayStatus(msg.status === 'connected');
+        setRelayStatus(msg.status);
         if (msg.agentId) $('agentIdVal').textContent = msg.agentId;
         break;
 
@@ -265,9 +380,24 @@ function bindButtons() {
   $('btnTestConn').addEventListener('click', testSettingsConnection);
   $('btnSaveSettings').addEventListener('click', savePopupSettings);
   $('btnCopyAddr').addEventListener('click', copyWalletAddress);
+  $('btnExportId').addEventListener('click', exportIdentity);
+  $('btnImportId').addEventListener('click', importIdentity);
+  $('importFileInput').addEventListener('change', handleImportFile);
 
   $('sServerUrl').addEventListener('input', () => {
     $('sTestResult').className = 's-result hidden';
+  });
+
+  $('agentToggle').addEventListener('change', (e) => {
+    const enabled = e.target.checked;
+    chrome.runtime.sendMessage({ type: 'TOGGLE_AGENT', enabled }, (res) => {
+      if (!res?.ok) return;
+      if (enabled) {
+        setRelayStatus('disconnected');
+      } else {
+        setRelayStatus('disabled');
+      }
+    });
   });
 }
 

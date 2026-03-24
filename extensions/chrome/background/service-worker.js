@@ -15,13 +15,17 @@
  *   - badge 는 Chrome 이 직접 관리하므로 재시작 후에도 유지됨
  */
 
-import { Wallet } from './ethers.min.js';
+import { Wallet, JsonRpcProvider, formatEther } from './ethers.min.js';
 
 // ─────────────── 설정 기본값 ───────────────
 
 const DEFAULTS = {
-  relayUrl:  'wss://openchiken-relay-production.up.railway.app/ws',
-  serverUrl: 'http://localhost:8000',
+  relayUrl:   'wss://openchiken-relay-production.up.railway.app/ws',
+  serverUrl:  'http://localhost:8000',
+  rpcUrl:     'https://ethereum-sepolia-rpc.publicnode.com',
+  chainName:  'Sepolia Testnet',
+  chainId:    11155111,
+  agentEnabled: false,
   policy: {
     trustLevels: {
       platform_verified:  'auto_approve',
@@ -37,8 +41,9 @@ const DEFAULTS = {
 
 let ws             = null;
 let agentId        = null;
-let agentAddress   = null;  // 에이전트 Ethereum 지갑 주소 (공개)
+let agentAddress   = null;
 let tokenId        = null;
+let agentEnabled   = false;
 let relayUrl       = DEFAULTS.relayUrl;
 let serverUrl      = DEFAULTS.serverUrl;
 let policy         = DEFAULTS.policy;
@@ -74,7 +79,7 @@ async function sessionFirstPending() {
 // ─────────────── 초기화 ───────────────
 
 async function init() {
-  const cfg = await chrome.storage.local.get(['agentId', 'agentAddress', 'tokenId', 'relayUrl', 'serverUrl', 'policy']);
+  const cfg = await chrome.storage.local.get(['agentId', 'agentAddress', 'tokenId', 'relayUrl', 'serverUrl', 'policy', 'agentEnabled']);
 
   if (!cfg.agentId) {
     agentId = `oc_ext_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
@@ -88,8 +93,8 @@ async function init() {
   if (cfg.relayUrl)     relayUrl     = cfg.relayUrl;
   if (cfg.serverUrl)    serverUrl    = cfg.serverUrl;
   if (cfg.policy)       policy       = { ...DEFAULTS.policy, ...cfg.policy };
+  agentEnabled = cfg.agentEnabled === true;
 
-  // 서비스 워커 재시작 후 대기 중인 승인이 있으면 badge 복원
   const firstPending = await sessionFirstPending();
   if (firstPending) {
     chrome.action.setBadgeText({ text: '!' });
@@ -97,12 +102,17 @@ async function init() {
     console.log('[Init] 대기 중인 승인 복원:', firstPending.requestId);
   }
 
-  connectRelay();
+  if (agentEnabled) {
+    connectRelay();
+  } else {
+    console.log('[Init] 에이전트 비활성 — 릴레이 연결 건너뜀');
+  }
 }
 
 // ─────────────── WebSocket 연결 ───────────────
 
 function connectRelay() {
+  if (!agentEnabled) return;
   if (ws?.readyState === WebSocket.OPEN || ws?.readyState === WebSocket.CONNECTING) return;
 
   console.log(`[Relay] 연결 시도: ${relayUrl}`);
@@ -117,7 +127,6 @@ function connectRelay() {
     send(registerMsg);
     notifyPopup({ type: 'RELAY_STATUS', status: 'connected', agentId });
 
-    // 대기 중인 승인이 없을 때만 badge 초기화
     const pending = await sessionFirstPending();
     if (!pending) chrome.action.setBadgeText({ text: '' });
   };
@@ -128,12 +137,25 @@ function connectRelay() {
   };
 
   ws.onclose = () => {
+    if (!agentEnabled) return;
     console.warn('[Relay] 연결 끊김 — 5초 후 재연결');
     notifyPopup({ type: 'RELAY_STATUS', status: 'disconnected' });
     reconnectTimer = setTimeout(connectRelay, 5_000);
   };
 
   ws.onerror = (e) => console.error('[Relay] 오류:', e.message ?? e);
+}
+
+function disconnectRelay() {
+  agentEnabled = false;
+  clearTimeout(reconnectTimer);
+  if (ws) {
+    ws.onclose = null;
+    ws.close();
+    ws = null;
+  }
+  notifyPopup({ type: 'RELAY_STATUS', status: 'disabled' });
+  console.log('[Relay] 에이전트 비활성화 — 연결 해제');
 }
 
 function send(msg) {
@@ -248,6 +270,21 @@ function notifyPopup(msg) {
   chrome.runtime.sendMessage(msg).catch(() => { /* 팝업 닫혀 있으면 무시 */ });
 }
 
+// ─────────────── 지갑 잔액 조회 ───────────────
+
+async function getWalletBalance() {
+  if (!agentAddress) return { balance: '0', chainName: DEFAULTS.chainName, chainId: DEFAULTS.chainId };
+  try {
+    const provider = new JsonRpcProvider(DEFAULTS.rpcUrl);
+    const raw = await provider.getBalance(agentAddress);
+    const balance = formatEther(raw);
+    return { balance, chainName: DEFAULTS.chainName, chainId: DEFAULTS.chainId };
+  } catch (e) {
+    console.error('[Wallet] 잔액 조회 실패:', e.message);
+    return { balance: '—', chainName: DEFAULTS.chainName, chainId: DEFAULTS.chainId, error: e.message };
+  }
+}
+
 // ─────────────── 활동 로그 ───────────────
 
 async function logActivity(entry) {
@@ -262,19 +299,84 @@ async function logActivity(entry) {
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   switch (msg.type) {
 
-    // 팝업 열릴 때 현재 상태 + 대기 중인 승인 요청 반환
     case 'GET_STATUS':
       sessionFirstPending().then((firstPending) => {
         sendResponse({
           relayConnected:  ws?.readyState === WebSocket.OPEN,
+          agentEnabled,
           agentId,
           agentAddress,
           tokenId,
           relayUrl,
-          pendingApproval: firstPending,  // null 이면 idle 상태
+          pendingApproval: firstPending,
         });
       });
-      return true; // 비동기 응답
+      return true;
+
+    case 'TOGGLE_AGENT':
+      (async () => {
+        agentEnabled = msg.enabled === true;
+        await chrome.storage.local.set({ agentEnabled });
+        if (agentEnabled) {
+          connectRelay();
+        } else {
+          disconnectRelay();
+        }
+        sendResponse({ ok: true, agentEnabled });
+      })();
+      return true;
+
+    case 'GET_BALANCE':
+      getWalletBalance().then((info) => sendResponse(info));
+      return true;
+
+    case 'EXPORT_IDENTITY':
+      chrome.storage.local.get(['agentId', 'agentAddress', 'agentPrivateKey', 'tokenId']).then((cfg) => {
+        sendResponse({
+          ok: true,
+          identity: {
+            agentId:      cfg.agentId      || null,
+            agentAddress: cfg.agentAddress  || null,
+            privateKey:   cfg.agentPrivateKey || null,
+            tokenId:      cfg.tokenId       || null,
+            exportedAt:   new Date().toISOString(),
+            version:      '0.2.0',
+          },
+        });
+      });
+      return true;
+
+    case 'IMPORT_IDENTITY':
+      (async () => {
+        try {
+          const { privateKey: pk, agentId: importedId, tokenId: importedToken } = msg.identity;
+          if (!pk) { sendResponse({ ok: false, error: '프라이빗 키가 없습니다' }); return; }
+
+          const wallet = new Wallet(pk);
+          agentId      = importedId || agentId;
+          agentAddress = wallet.address;
+          tokenId      = importedToken || null;
+
+          await chrome.storage.local.set({
+            agentId,
+            agentAddress:    wallet.address,
+            agentPrivateKey: wallet.privateKey,
+            ...(tokenId ? { tokenId } : {}),
+          });
+
+          if (agentEnabled && ws) {
+            ws.onclose = null;
+            ws.close();
+            ws = null;
+            connectRelay();
+          }
+
+          sendResponse({ ok: true, agentId, agentAddress: wallet.address });
+        } catch (e) {
+          sendResponse({ ok: false, error: `Import 실패: ${e.message}` });
+        }
+      })();
+      return true;
 
     case 'USER_APPROVED':
       sessionGetPending().then(async (stored) => {
@@ -336,8 +438,9 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
     await chrome.storage.local.set({
       activityLog:      [],
       policy:           DEFAULTS.policy,
+      agentEnabled:     false,
       agentAddress:     wallet.address,
-      agentPrivateKey:  wallet.privateKey,  // 로컬에만 저장, 외부 노출 없음
+      agentPrivateKey:  wallet.privateKey,
     });
     await chrome.storage.session.set({ pendingApprovals: {} });
     console.log('[OpenChiken] Extension 설치됨 v0.2.0 | 지갑 생성:', wallet.address);
