@@ -765,6 +765,70 @@ def dashboard_agent_status():
     }
 
 
+@app.get("/api/chain")
+def api_chain_status():
+    """Relay on-chain 상태 프록시"""
+    relay_url = os.getenv("RELAY_URL", "https://openchiken-relay-production.up.railway.app")
+    try:
+        req = urllib.request.Request(
+            f"{relay_url.rstrip('/')}/api/chain",
+            headers={"Accept": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            return json.loads(resp.read())
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+@app.get("/api/dashboard/agents")
+def dashboard_agents():
+    """Relay에 연결된 에이전트 목록 + on-chain 평판 조회"""
+    relay_url = os.getenv("RELAY_URL", "https://openchiken-relay-production.up.railway.app")
+
+    def relay_get(path: str, timeout: int = 8) -> dict:
+        req = urllib.request.Request(
+            f"{relay_url.rstrip('/')}{path}",
+            headers={"Accept": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read())
+
+    try:
+        data = relay_get("/api/agents")
+        agents: list[dict] = data.get("agents", [])
+    except Exception as e:
+        return {"ok": False, "agents": [], "error": f"Relay 연결 실패: {e}"}
+
+    for agent in agents:
+        # 연결 시각 → 상대 시간
+        connected_ms = agent.get("connectedAt", 0)
+        if connected_ms:
+            elapsed_s = (time.time() * 1000 - connected_ms) / 1000
+            if elapsed_s < 60:
+                agent["connectedAgo"] = "방금 전"
+            elif elapsed_s < 3600:
+                agent["connectedAgo"] = f"{int(elapsed_s // 60)}분 전"
+            else:
+                agent["connectedAgo"] = f"{int(elapsed_s // 3600)}시간 전"
+        else:
+            agent["connectedAgo"] = "—"
+
+        # on-chain 평판
+        if agent.get("tokenId"):
+            try:
+                rep = relay_get(f"/api/agents/{agent['agentId']}/reputation", timeout=5)
+                agent["reputation"] = {
+                    "count":   rep.get("count", 0),
+                    "average": rep.get("average"),
+                }
+            except Exception:
+                agent["reputation"] = {"count": 0, "average": None}
+        else:
+            agent["reputation"] = {"count": 0, "average": None}
+
+    return {"ok": True, "agents": agents, "total": len(agents)}
+
+
 @app.get("/api/dashboard/weather")
 def dashboard_weather(city: str = "Seoul"):
     """실시간 날씨 데이터 (Open-Meteo, 무료)"""
