@@ -44,6 +44,44 @@ CREDENTIALS_DST = OPENCHIKEN_HOME / "credentials.json"
 _main_proc: subprocess.Popen | None = None
 
 
+def _init_db() -> None:
+    """서버 시작 시 DB 테이블이 없으면 생성 (main.py 없이 web만 실행할 때도 동작)."""
+    try:
+        from config.settings import settings
+
+        db_path = settings.database_url.replace("sqlite:///", "")
+        if not db_path.startswith("/"):
+            db_path = str(ROOT / db_path)
+
+        with sqlite3.connect(db_path) as conn:
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS message_store (
+                    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT NOT NULL,
+                    message    TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS memo_store (
+                    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title      TEXT UNIQUE NOT NULL,
+                    content    TEXT,
+                    created_at TEXT,
+                    updated_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS task_store (
+                    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title       TEXT NOT NULL,
+                    description TEXT DEFAULT '',
+                    status      TEXT DEFAULT 'pending',
+                    result      TEXT DEFAULT '',
+                    created_at  TEXT,
+                    updated_at  TEXT
+                );
+            """)
+        logger.info("DB 테이블 초기화 완료: %s", db_path)
+    except Exception as e:
+        logger.warning("DB 초기화 실패 (온보딩 전 정상): %s", e)
+
+
 def _try_start_main() -> None:
     """main.py를 백그라운드 서브프로세스로 실행. 이미 실행 중이면 스킵."""
     global _main_proc
@@ -71,7 +109,8 @@ def _try_start_main() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """서버 시작 시 온보딩이 완료된 상태(~/.openchiken/.env 존재)면 main.py 자동 구동."""
+    """서버 시작 시 DB 초기화 후, 온보딩 완료 상태면 main.py 자동 구동."""
+    _init_db()
     if ENV_FILE.exists():
         logger.info("온보딩 완료 상태 확인 — main.py 자동 시작")
         _try_start_main()
@@ -396,6 +435,16 @@ def fetch_provider_models(provider: str, body: ModelFetchRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
+
+
+@app.get("/api/extension/info")
+def extension_info():
+    """Chrome Extension 경로와 설치 가능 여부를 반환합니다."""
+    ext_path = ROOT / "extensions" / "chrome"
+    return {
+        "exists": (ext_path / "manifest.json").exists(),
+        "path": str(ext_path),
+    }
 
 
 @app.post("/api/system/open-privacy-prefs")
