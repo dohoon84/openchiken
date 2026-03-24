@@ -39,7 +39,7 @@ dependencies = [
 py-modules = ["main", "server", "setup_wizard"]
 
 [tool.setuptools.packages.find]
-include = ["core*", "config*", "skills*", "channels*", "scheduler*", "static*", "local_ui*"]
+include = ["core*", "config*", "skills*", "channels*", "scheduler*", "static*", "local_ui*", "extensions*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.html", "*.css", "*.js", "*.md", "*.json", "*.png", "*.ico", "*.svg"]

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>OpenChiken 설정</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <div class="page">
+
+    <header class="page-header">
+      <div class="logo">
+        <div class="logo-mark">OC</div>
+        <div>
+          <div class="logo-text">OpenChiken</div>
+          <div class="logo-sub">Extension 설정</div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- ── 서버 연결 ── -->
+      <section class="card">
+        <div class="card-title">OpenChiken 서버 연결</div>
+        <div class="card-desc">
+          로컬에서 실행 중인 OpenChiken 서버의 URL을 입력하세요.
+        </div>
+
+        <label class="field-label" for="serverUrl">서버 URL</label>
+        <div class="input-row">
+          <input
+            id="serverUrl"
+            class="text-input"
+            type="url"
+            value="http://localhost:8000"
+            placeholder="http://localhost:8000"
+          />
+          <button class="btn btn-outline" id="btnTest">연결 테스트</button>
+        </div>
+        <div class="test-result hidden" id="testResult"></div>
+      </section>
+
+      <!-- ── LLM 공급자 상태 ── -->
+      <section class="card">
+        <div class="card-title">LLM 공급자</div>
+        <div class="card-desc">
+          LLM 설정은 OpenChiken 서버의 대시보드에서 변경합니다.
+        </div>
+        <div class="provider-status" id="providerStatus">
+          <div class="status-row">
+            <span class="status-key">공급자</span>
+            <span class="status-val" id="pvProvider">—</span>
+          </div>
+          <div class="status-row">
+            <span class="status-key">모델</span>
+            <span class="status-val" id="pvModel">—</span>
+          </div>
+          <div class="status-row">
+            <span class="status-key">어시스턴트</span>
+            <span class="status-val" id="pvName">—</span>
+          </div>
+        </div>
+        <a class="dashboard-link" id="dashboardLink" href="#" target="_blank">
+          서버 대시보드 열기 →
+        </a>
+      </section>
+
+      <!-- ── 지원 공급자 안내 ── -->
+      <section class="card">
+        <div class="card-title">지원 LLM 공급자</div>
+        <div class="provider-list">
+          <div class="provider-chip">OpenAI</div>
+          <div class="provider-chip">Anthropic</div>
+          <div class="provider-chip">Gemini</div>
+          <div class="provider-chip accent">Ollama (로컬)</div>
+        </div>
+        <div class="card-desc" style="margin-top:10px">
+          Ollama 사용 시: <code>LLM_PROVIDER=ollama</code> 로 설정하고
+          <code>ollama run llama3.2</code> 를 먼저 실행하세요.
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="page-footer">
+      <button class="btn btn-primary" id="btnSave">저장</button>
+      <span class="save-msg hidden" id="saveMsg">저장되었습니다</span>
+    </footer>
+
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>

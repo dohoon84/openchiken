@@ -129,7 +129,7 @@ def confirm(prompt: str, default: bool = True) -> bool:
         qmark="›",
     ).unsafe_ask()
 
-TOTAL_STEPS = 5
+TOTAL_STEPS = 6
 
 # ── 섹션 헤더 출력 ────────────────────────────────────────────
 def section(title: str, icon: str = "›"):
@@ -949,6 +949,160 @@ def collect_app_settings(cfg: dict):
             ok(f"선택된 스킬: {', '.join(selected)}")
 
 
+# ── Chrome Extension 설치 ─────────────────────────────────
+CHROME_PATHS = {
+    "darwin": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "linux": "google-chrome",
+    "win32": r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+}
+
+RELAY_HEALTH_URL = "https://openchiken-relay-production.up.railway.app/api/agents"
+
+
+def _find_chrome() -> str | None:
+    path = CHROME_PATHS.get(sys.platform)
+    if path and Path(path).exists():
+        return path
+    return shutil.which("google-chrome") or shutil.which("chrome") or shutil.which("chromium")
+
+
+def _check_relay_connection(timeout_sec: int = 30) -> str | None:
+    """Relay 서버에서 Extension 연결을 폴링. 연결된 agentId 반환."""
+    import urllib.request
+    import json
+
+    deadline = time.time() + timeout_sec
+    while time.time() < deadline:
+        try:
+            req = urllib.request.Request(RELAY_HEALTH_URL, headers={"Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                data = json.loads(resp.read())
+                agents = data.get("agents", [])
+                if agents:
+                    return agents[0].get("agentId")
+        except Exception:
+            pass
+        time.sleep(2)
+    return None
+
+
+def collect_extension(cfg: dict):
+    """Step 6 – Chrome Extension 설치."""
+    step(6, TOTAL_STEPS, "Chrome Extension 설치")
+    info("외부 에이전트 연동을 위한 Chrome Extension을 설치합니다.")
+    info("Extension은 브라우저와 Relay 서버를 연결하는 채널 역할을 합니다.")
+    console.print()
+
+    if not confirm("Chrome Extension을 설치하시겠습니까?", default=True):
+        warn("Extension 설치 건너뜀 — 외부 에이전트 연동 기능을 사용할 수 없습니다.")
+        return
+
+    ext_path = ROOT / "extensions" / "chrome"
+    if not (ext_path / "manifest.json").exists():
+        warn(f"Extension 파일을 찾을 수 없습니다: {ext_path}")
+        warn("openchiken/extensions/chrome/ 디렉토리를 확인하세요.")
+        return
+
+    # 아이콘이 없으면 생성
+    icons_dir = ext_path / "icons"
+    if not (icons_dir / "icon48.png").exists():
+        gen_script = ext_path / "scripts" / "generate-icons.js"
+        if gen_script.exists() and shutil.which("node"):
+            info("아이콘 생성 중...")
+            subprocess.run(["node", str(gen_script)], capture_output=True)
+
+    console.print()
+    ok(f"Extension 경로: {ext_path}")
+    console.print()
+
+    chrome_bin = _find_chrome()
+    if not chrome_bin:
+        warn("Chrome 브라우저를 찾을 수 없습니다.")
+        console.print(f"  수동으로 chrome://extensions 에서 아래 폴더를 로드하세요:")
+        console.print(f"  [cyan]{ext_path}[/]")
+        return
+
+    # Chrome이 실행 중인지 확인
+    chrome_running = False
+    try:
+        result = subprocess.run(["pgrep", "-x", "Google Chrome"], capture_output=True)
+        chrome_running = result.returncode == 0
+    except FileNotFoundError:
+        pass
+
+    if chrome_running:
+        console.print(
+            Panel(
+                Text.from_markup(
+                    "\n"
+                    "  [bold yellow]Chrome이 실행 중입니다[/]\n\n"
+                    "  자동 로드를 위해 Chrome을 잠시 종료해야 합니다.\n"
+                    "  또는 수동으로 설치할 수 있습니다.\n"
+                ),
+                border_style="yellow dim",
+                padding=(0, 2),
+            )
+        )
+        choice = select(
+            "설치 방법을 선택하세요",
+            choices=[
+                questionary.Choice("Chrome 종료 후 Extension과 함께 재시작 (권장)", value="restart"),
+                questionary.Choice("수동 설치 안내 (chrome://extensions)", value="manual"),
+                questionary.Choice("건너뛰기", value="skip"),
+            ],
+            default="restart",
+        )
+
+        if choice == "skip":
+            warn("Extension 설치를 건너뜁니다.")
+            return
+        elif choice == "manual":
+            if sys.platform == "darwin":
+                subprocess.Popen(["open", "-a", "Google Chrome", "chrome://extensions"])
+            console.print()
+            console.print("  [bold]1.[/] 우상단 [bold cyan]개발자 모드[/] 토글 ON")
+            console.print(f"  [bold]2.[/] [bold cyan]압축해제된 확장 프로그램을 로드합니다[/] 클릭")
+            console.print(f"  [bold]3.[/] 아래 경로 선택:")
+            console.print(f"     [cyan]{ext_path}[/]")
+            console.print()
+            confirm("  Extension을 로드했나요?", default=True)
+            ok("수동 설치 완료")
+            return
+        else:
+            # Chrome 종료
+            info("Chrome을 종료합니다...")
+            if sys.platform == "darwin":
+                subprocess.run(["osascript", "-e", 'tell application "Google Chrome" to quit'], capture_output=True)
+            else:
+                subprocess.run(["pkill", "-f", "chrome"], capture_output=True)
+            time.sleep(2)
+
+    # Chrome을 --load-extension 과 함께 시작
+    info("Chrome을 Extension과 함께 시작합니다...")
+    console.print()
+
+    if sys.platform == "darwin":
+        subprocess.Popen(["open", "-a", "Google Chrome", "--args", f"--load-extension={ext_path}"])
+    else:
+        subprocess.Popen([chrome_bin, f"--load-extension={ext_path}"])
+
+    time.sleep(3)
+
+    # Relay 연결 확인
+    console.print()
+    with Progress(SpinnerColumn(), TextColumn("{task.description}"), transient=True) as progress:
+        progress.add_task("Relay 서버 연결 확인 중...", total=None)
+        agent_id = _check_relay_connection(timeout_sec=30)
+
+    if agent_id:
+        ok(f"Extension 연결 확인! agentId: {agent_id}")
+        cfg["EXTENSION_AGENT_ID"] = agent_id
+    else:
+        warn("자동 연결 확인에 실패했습니다.")
+        info("Chrome에서 Extension 아이콘이 보이면 정상 설치된 것입니다.")
+        info("Relay 서버 연결은 Extension 팝업에서 확인할 수 있습니다.")
+
+
 # ── .env 파일 작성 ──────────────────────────────────────────
 def write_env(cfg: dict):
     console.print()
@@ -1131,7 +1285,7 @@ def main():
     )
 
     console.print()
-    console.print("  이 위저드는 [bold cyan]5단계[/]에 걸쳐 [bold].env[/] 설정 파일을 생성합니다.")
+    console.print("  이 위저드는 [bold cyan]6단계[/]에 걸쳐 AI 비서를 세팅합니다.")
     console.print()
     _step_map = [
         ("1", "페르소나"),
@@ -1139,6 +1293,7 @@ def main():
         ("3", "채널 설정"),
         ("4", "메모리"),
         ("5", "앱 설정"),
+        ("6", "Chrome Extension"),
     ]
     for num, title in _step_map:
         console.print(f"  [dim]Step {num}[/]  {title}")
@@ -1165,6 +1320,12 @@ def main():
     saved = write_env(cfg)
     if not saved:
         return
+
+    # .env 저장 후 Extension 설치 (네트워크 연결 확인이 필요하므로 후반에 배치)
+    try:
+        collect_extension(cfg)
+    except (KeyboardInterrupt, EOFError):
+        warn("Extension 설치가 중단되었습니다. 나중에 수동 설치 가능합니다.")
 
     ok_all = verify_setup()
     print_done()
