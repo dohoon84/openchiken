@@ -499,7 +499,7 @@ def _gcloud_auto_setup(project_id: str) -> bool:
                 capture_output=True, text=True, timeout=60,
             )
             if r.returncode != 0 and "already exists" not in r.stderr.lower():
-                logger.debug("gcloud projects create error: %s", r.stderr)
+                console.print(f"  [dim]gcloud projects create: {r.stderr.strip()}[/]")
                 return False
 
             progress.update(task, description="프로젝트 기본값 설정 중...")
@@ -514,11 +514,11 @@ def _gcloud_auto_setup(project_id: str) -> bool:
                 capture_output=True, text=True, timeout=120,
             )
             if r2.returncode != 0:
-                logger.debug("gcloud services enable error: %s", r2.stderr)
+                console.print(f"  [dim]gcloud services enable: {r2.stderr.strip()}[/]")
                 return False
         return True
     except Exception as e:
-        logger.debug("_gcloud_auto_setup failed: %s", e)
+        console.print(f"  [dim]gcloud 자동 설정 실패: {e}[/]")
         return False
 
 
@@ -559,7 +559,7 @@ def _python_auto_setup(project_id: str) -> bool:
 
         return True
     except Exception as e:
-        logger.debug("_python_auto_setup failed: %s", e)
+        console.print(f"  [dim]Python ADC 자동 설정 실패: {e}[/]")
         return False
 
 
@@ -1318,14 +1318,15 @@ def main():
         return
 
     saved = write_env(cfg)
-    if not saved:
-        return
 
-    # .env 저장 후 Extension 설치 (네트워크 연결 확인이 필요하므로 후반에 배치)
+    # .env 저장 성공 여부와 무관하게 Extension 설치 단계는 항상 진행
     try:
         collect_extension(cfg)
     except (KeyboardInterrupt, EOFError):
         warn("Extension 설치가 중단되었습니다. 나중에 수동 설치 가능합니다.")
+
+    if not saved:
+        return
 
     ok_all = verify_setup()
     print_done()
