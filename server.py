@@ -32,6 +32,9 @@ from pydantic import BaseModel
 logger = logging.getLogger(__name__)
 KST = timezone(timedelta(hours=9))
 
+# ── 릴레이 송신 활동 인메모리 로그 (최대 200건) ──────────────────────────────
+_relay_activity_log: list[dict] = []
+
 # ── 경로 설정 ──────────────────────────────────────────────────
 ROOT = Path(__file__).parent
 STATIC_DIR = ROOT / "static"
@@ -180,6 +183,14 @@ class ChatResponse(BaseModel):
     ok: bool
     reply: str = ""
     error: str = ""
+
+
+class RelayActivityEntry(BaseModel):
+    direction: str   # "sent" | "received"
+    agentId: str
+    skill: str
+    status: str      # "approved" | "rejected" | "error"
+    summary: str = ""
 
 
 @app.post("/api/chat", response_model=ChatResponse)
@@ -1141,6 +1152,30 @@ def api_logs(limit: int = 50, offset: int = 0, session_id: str = ""):
         return {"messages": [], "total": 0, "sessions": [], "error": str(e)}
 
 
+@app.post("/api/relay/activity")
+def api_relay_activity_add(entry: RelayActivityEntry):
+    """릴레이 송신 활동 로그 기록 (relay_invoke 스킬이 호출)"""
+    import uuid as _uuid
+    _relay_activity_log.insert(0, {
+        "id": str(_uuid.uuid4())[:8],
+        "direction": entry.direction,
+        "agentId": entry.agentId,
+        "skill": entry.skill,
+        "status": entry.status,
+        "summary": entry.summary[:300],
+        "at": datetime.now(KST).isoformat(),
+    })
+    if len(_relay_activity_log) > 200:
+        _relay_activity_log[:] = _relay_activity_log[:200]
+    return {"ok": True}
+
+
+@app.get("/api/relay/activity")
+def api_relay_activity_list(limit: int = 50):
+    """릴레이 송신 활동 로그 조회"""
+    return {"activities": _relay_activity_log[:limit]}
+
+
 @app.get("/api/memos")
 def api_memos_list():
     """메모 전체 목록"""
@@ -1545,6 +1580,31 @@ def api_skills_list():
     has_google = CREDENTIALS_DST.exists() or (ROOT / "credentials.json").exists()
     has_google_token = (OPENCHIKEN_HOME / "token.json").exists()
 
+    # 도메인 영역 매핑 — SKILL.md에 domain: 필드가 없을 때 기본값으로 사용
+    domain_map = {
+        "gmail":             "Email Management",
+        "calendar":          "Calendar Management",
+        "drive":             "File Management",
+        "sheets":            "Spreadsheet Management",
+        "docs":              "Document Management",
+        "finance":           "Financial Analysis",
+        "crypto_price":      "Cryptocurrency Analysis",
+        "exchange_rate":     "Currency Exchange",
+        "news_rss":          "News & Media",
+        "web_search":        "Web Research",
+        "wikipedia_search":  "Knowledge Research",
+        "hacker_news":       "Tech News",
+        "weather":           "Weather & Environment",
+        "memo":              "Knowledge Management",
+        "task":              "Task Management",
+        "geocoding":         "Location Services",
+        "quality_of_life":   "Location Services",
+        "quickchart":        "Data Visualization",
+        "workflow":          "Workflow Automation",
+        "relay_discover":    "Agent Networking",
+        "relay_invoke":      "Agent Networking",
+    }
+
     icon_map = {
         "gmail": "mail",
         "calendar": "calendar_month",
@@ -1603,6 +1663,7 @@ def api_skills_list():
             md_path = entry / "SKILL.md"
             name = skill_id
             description = ""
+            domain = domain_map.get(skill_id, "")
             requires_google = False
 
             if md_path.exists():
@@ -1611,6 +1672,8 @@ def api_skills_list():
                     line = line.strip()
                     if line.startswith("name:"):
                         name = line.split(":", 1)[1].strip()
+                    elif line.startswith("domain:"):
+                        domain = line.split(":", 1)[1].strip()
                     elif line.startswith("description:"):
                         description = line.split(":", 1)[1].strip()
                     elif "requires_google_auth: true" in line:
@@ -1654,16 +1717,17 @@ def api_skills_list():
                 status = "connected" if is_enabled else "disabled"
 
             skills.append({
-                "id": skill_id,
-                "name": name,
-                "description": description,
-                "icon": icon_map.get(skill_id, "extension"),
-                "enabled": is_enabled,
-                "status": status,
-                "source": source,
+                "id":             skill_id,
+                "name":           name,
+                "description":    description,
+                "domain":         domain,
+                "icon":           icon_map.get(skill_id, "extension"),
+                "enabled":        is_enabled,
+                "status":         status,
+                "source":         source,
                 "requires_google": requires_google,
-                "requires_env": requires_env,
-                "env_status": env_status,
+                "requires_env":   requires_env,
+                "env_status":     env_status,
             })
 
     return {"skills": skills}
