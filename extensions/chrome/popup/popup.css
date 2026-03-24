@@ -6,8 +6,8 @@
   --bg3:     #222;
   --border:  #2D2D2D;
   --text:    #F3F4F6;
-  --text2:   #9CA3AF;
-  --text3:   #4B5563;
+  --text2:   #D1D5DB;
+  --text3:   #9CA3AF;
   --accent:  #F97316;
   --green:   #22C55E;
   --red:     #EF4444;
@@ -188,6 +188,29 @@ body {
 .log-text { flex: 1; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .log-meta { color: var(--text3); font-size: 10px; flex-shrink: 0; }
 
+/* ── Agent toggle switch ── */
+.agent-toggle {
+  position: relative; display: inline-block;
+  width: 28px; height: 16px; cursor: pointer; flex-shrink: 0;
+}
+.agent-toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0;
+  background: var(--text3); border-radius: 100px;
+  transition: background .2s;
+}
+.toggle-slider::before {
+  content: ''; position: absolute;
+  width: 12px; height: 12px; left: 2px; top: 2px;
+  background: #fff; border-radius: 50%;
+  transition: transform .2s;
+}
+.agent-toggle input:checked + .toggle-slider { background: var(--green); }
+.agent-toggle input:checked + .toggle-slider::before { transform: translateX(12px); }
+
+/* 릴레이 배지 비활성 */
+.relay-badge.disabled { opacity: .5; }
+
 /* ── View toggle ── */
 .view.hidden { display: none; }
 
@@ -286,3 +309,28 @@ body {
 .settings-footer .btn { flex: none; padding: 0 20px; }
 .s-save-msg { font-size: 11px; color: var(--green); }
 .s-save-msg.hidden { display: none; }
+
+/* ── Identity Export / Import ── */
+.s-warn {
+  font-size: 10px; color: var(--yellow); line-height: 1.5;
+  margin-bottom: 8px; padding: 5px 8px;
+  background: rgba(234,179,8,.08); border: 1px solid rgba(234,179,8,.2);
+  border-radius: 4px;
+}
+.s-btn-row { display: flex; gap: 8px; }
+.s-btn-action {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px;
+  height: 30px; background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text2); border-radius: 4px; cursor: pointer;
+  font-size: 11px; font-weight: 600;
+  transition: border-color .15s, color .15s;
+}
+.s-btn-action:hover { border-color: var(--accent); color: var(--accent); }
+.s-identity-msg {
+  margin-top: 6px; font-size: 10px; padding: 5px 8px;
+  border-radius: 4px; line-height: 1.4;
+}
+.s-identity-msg.hidden { display: none; }
+.s-identity-msg.ok  { background: rgba(34,197,94,.1); color: #86EFAC; border: 1px solid rgba(34,197,94,.2); }
+.s-identity-msg.err { background: rgba(239,68,68,.1); color: #FCA5A5; border: 1px solid rgba(239,68,68,.2); }
+.hidden { display: none; }
