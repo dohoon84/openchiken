@@ -437,14 +437,40 @@ def fetch_provider_models(provider: str, body: ModelFetchRequest):
         raise HTTPException(status_code=502, detail=str(e))
 
 
+def _prepare_extension() -> Path | None:
+    """Extension 파일을 ~/.openchiken/extensions/chrome/ 에 __init__.py 없이 복사.
+    Chrome은 _ 접두사 파일을 허용하지 않으므로 site-packages 직접 로드 불가."""
+    import shutil
+
+    src = ROOT / "extensions" / "chrome"
+    if not (src / "manifest.json").exists():
+        return None
+
+    dst = OPENCHIKEN_HOME / "extensions" / "chrome"
+    needs_copy = not (dst / "manifest.json").exists()
+
+    if not needs_copy:
+        src_mtime = max(f.stat().st_mtime for f in src.rglob("*") if f.is_file() and f.name != "__init__.py")
+        dst_mtime = (dst / "manifest.json").stat().st_mtime
+        needs_copy = src_mtime > dst_mtime
+
+    if needs_copy:
+        if dst.exists():
+            shutil.rmtree(dst)
+        shutil.copytree(
+            src, dst,
+            ignore=shutil.ignore_patterns("__init__.py", "__pycache__", "*.pyc"),
+        )
+    return dst
+
+
 @app.get("/api/extension/info")
 def extension_info():
     """Chrome Extension 경로와 설치 가능 여부를 반환합니다."""
-    ext_path = ROOT / "extensions" / "chrome"
-    return {
-        "exists": (ext_path / "manifest.json").exists(),
-        "path": str(ext_path),
-    }
+    ext_path = _prepare_extension()
+    if ext_path and (ext_path / "manifest.json").exists():
+        return {"exists": True, "path": str(ext_path)}
+    return {"exists": False, "path": str(OPENCHIKEN_HOME / "extensions" / "chrome")}
 
 
 @app.post("/api/system/open-privacy-prefs")
