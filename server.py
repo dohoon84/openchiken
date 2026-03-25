@@ -47,14 +47,21 @@ CREDENTIALS_DST = OPENCHIKEN_HOME / "credentials.json"
 _main_proc: subprocess.Popen | None = None
 
 
+def _db_path() -> str:
+    """DB 파일 절대 경로. uv 설치 환경이면 ~/.openchiken/, 개발 환경이면 프로젝트 루트."""
+    from config.settings import settings
+    raw = settings.database_url.replace("sqlite:///", "")
+    if raw.startswith("/"):
+        return raw
+    if ENV_FILE.exists():
+        return str(OPENCHIKEN_HOME / raw)
+    return str(ROOT / raw)
+
+
 def _init_db() -> None:
     """서버 시작 시 DB 테이블이 없으면 생성 (main.py 없이 web만 실행할 때도 동작)."""
     try:
-        from config.settings import settings
-
-        db_path = settings.database_url.replace("sqlite:///", "")
-        if not db_path.startswith("/"):
-            db_path = str(ROOT / db_path)
+        db_path = _db_path()
 
         with sqlite3.connect(db_path) as conn:
             conn.executescript("""
@@ -964,10 +971,7 @@ def dashboard_gmail(max_results: int = 5):
 def dashboard_memory(limit: int = 6):
     """최근 대화 기록 + 메모"""
     try:
-        from config.settings import settings
-
-        db_url = settings.database_url
-        db_path = db_url.replace("sqlite:///", "")
+        db_path = _db_path()
 
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
@@ -1022,10 +1026,6 @@ def dashboard_memory(limit: int = 6):
 
 
 # ── Tasks API ─────────────────────────────────────────────────
-
-def _db_path() -> str:
-    from config.settings import settings
-    return settings.database_url.replace("sqlite:///", "")
 
 
 class TaskCreate(BaseModel):
