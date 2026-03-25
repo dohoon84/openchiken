@@ -11,123 +11,135 @@
     <!-- ════════════ 메인 뷰 ════════════ -->
     <div id="mainView" class="view">
 
-      <!-- ── Header ── -->
+      <!-- ── 1. Header ── -->
       <header class="header">
-        <div class="logo">
-          <div class="logo-mark">OC</div>
-          <span class="logo-text">OpenChiken</span>
-        </div>
-        <div class="header-center">
-          <div class="network-pill">
-            <span class="net-dot"></span>
-            <span class="net-name">Sepolia</span>
-          </div>
+        <div class="account-chip" id="accountChip">
+          <div class="avatar" id="agentAvatar">OC</div>
+          <span class="account-name" id="agentIdShort">—</span>
+          <svg class="chevron" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="header-right">
-          <button class="icon-btn" id="btnSettings" title="설정">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
+          <button class="hdr-btn" id="btnCopyId" title="Agent ID 복사">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+          <button class="hdr-btn" id="btnMenu" title="메뉴">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
         </div>
       </header>
-
-      <!-- ── 에이전트 계정 섹션 ── -->
-      <div class="account-section">
-        <div class="account-avatar" id="agentAvatar">OC</div>
-        <div class="account-info">
-          <div class="account-id-row">
-            <code class="account-id" id="agentIdVal">—</code>
-            <button class="icon-btn-xs" id="btnCopyId" title="Agent ID 복사">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <rect x="9" y="9" width="13" height="13" rx="2"/>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-              </svg>
-            </button>
-          </div>
-          <div class="account-status-row">
-            <label class="agent-toggle" title="에이전트 활성화">
-              <input type="checkbox" id="agentToggle"/>
-              <span class="toggle-slider"></span>
-            </label>
-            <div class="relay-badge" id="relayBadge">
-              <span class="relay-dot" id="relayDot"></span>
-              <span class="relay-label" id="relayLabel">비활성</span>
-            </div>
-          </div>
-        </div>
-      </div>
       <div class="copy-toast hidden" id="copyToast">복사됨</div>
 
-      <!-- ── 승인 요청 패널 (기본 숨김) ── -->
-      <section class="approval-panel hidden" id="approvalPanel">
-        <div class="approval-header">
-          <div class="approval-icon">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="#F97316">
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-              <line x1="12" y1="9" x2="12" y2="13" stroke="#fff" stroke-width="2"/>
-              <line x1="12" y1="17" x2="12.01" y2="17" stroke="#fff" stroke-width="2"/>
-            </svg>
-          </div>
-          <span class="approval-title">외부 에이전트 접근 요청</span>
+      <!-- ── 2. Status bar ── -->
+      <div class="status-bar">
+        <label class="agent-toggle" title="에이전트 ON/OFF">
+          <input type="checkbox" id="agentToggle"/>
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+        <div class="relay-badge" id="relayBadge">
+          <span class="relay-dot" id="relayDot"></span>
+          <span class="relay-label" id="relayLabel">비활성</span>
         </div>
+        <div class="flex-spacer"></div>
+        <div class="network-pill">
+          <span class="net-dot"></span>
+          <span class="net-name" id="networkName">Sepolia</span>
+        </div>
+      </div>
 
+      <!-- ── 3. Hero: Balance + Token ── -->
+      <section class="hero">
+        <div class="wallet-addr-row">
+          <code class="wallet-addr" id="walletAddr">0x0000...0000</code>
+        </div>
+        <div class="balance-display" id="balanceDisplay">— ETH</div>
+        <div class="token-row">
+          <span class="token-badge" id="tokenBadge">토큰 미연결</span>
+          <span class="trust-badge" id="trustBadge">—</span>
+        </div>
+      </section>
+
+      <!-- ── 4. Action buttons ── -->
+      <div class="action-grid">
+        <button class="action-btn" id="btnDashboard">
+          <div class="action-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          </div>
+          <span>대시보드</span>
+        </button>
+        <button class="action-btn" id="btnEtherscan">
+          <div class="action-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          </div>
+          <span>Etherscan</span>
+        </button>
+        <button class="action-btn" id="btnExportId">
+          <div class="action-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <span>백업</span>
+        </button>
+        <button class="action-btn" id="btnImportId">
+          <div class="action-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <span>복원</span>
+        </button>
+      </div>
+      <input type="file" id="importFileInput" accept=".json" class="hidden"/>
+      <div class="identity-msg hidden" id="identityMsg"></div>
+
+      <!-- ── 5. Approval card (기본 숨김) ── -->
+      <section class="approval-card hidden" id="approvalPanel">
+        <div class="approval-head">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#F97316"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13" stroke="#fff" stroke-width="2"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="#fff" stroke-width="2"/></svg>
+          <span>외부 에이전트 접근 요청</span>
+        </div>
         <div class="approval-body">
-          <div class="approval-row">
-            <span class="ak">호출 에이전트</span>
-            <span class="av" id="apCaller">—</span>
-          </div>
-          <div class="approval-row">
-            <span class="ak">신뢰 등급</span>
-            <span class="av trust-badge" id="apTrust">—</span>
-          </div>
-          <div class="approval-row">
-            <span class="ak">요청 스킬</span>
-            <span class="av" id="apSkill">—</span>
-          </div>
-          <div class="approval-row">
-            <span class="ak">파라미터</span>
-            <code class="av ap-params" id="apParams">—</code>
-          </div>
+          <div class="ap-row"><span class="ap-k">호출자</span><span class="ap-v" id="apCaller">—</span></div>
+          <div class="ap-row"><span class="ap-k">신뢰</span><span class="ap-v trust-pill" id="apTrust">—</span></div>
+          <div class="ap-row"><span class="ap-k">스킬</span><span class="ap-v" id="apSkill">—</span></div>
+          <div class="ap-row"><span class="ap-k">파라미터</span><code class="ap-v ap-code" id="apParams">—</code></div>
         </div>
-
-        <div class="approval-actions">
-          <button class="btn btn-reject" id="btnReject">거절</button>
-          <button class="btn btn-approve" id="btnApprove">승인</button>
+        <div class="approval-btns">
+          <button class="a-btn reject" id="btnReject">거절</button>
+          <button class="a-btn approve" id="btnApprove">승인</button>
         </div>
       </section>
 
-      <!-- ── 대기 상태 (승인 없을 때) ── -->
-      <section class="idle-panel" id="idlePanel">
-        <div class="idle-icon">
-          <svg width="32" height="32" viewBox="0 0 36 36" fill="none">
-            <circle cx="18" cy="18" r="16" stroke="#2D2D2D" stroke-width="1.5"/>
-            <circle cx="18" cy="18" r="5" fill="#2D2D2D"/>
-            <line x1="18" y1="4"  x2="18" y2="9"  stroke="#2D2D2D" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="18" y1="27" x2="18" y2="32" stroke="#2D2D2D" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="4"  y1="18" x2="9"  y2="18" stroke="#2D2D2D" stroke-width="1.5" stroke-linecap="round"/>
-            <line x1="27" y1="18" x2="32" y2="18" stroke="#2D2D2D" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div class="idle-title">에이전트 대기 중</div>
-        <div class="idle-sub">외부 에이전트 요청을 수신하면<br/>정책 엔진이 자동으로 처리합니다</div>
-      </section>
+      <!-- ── 6. Tabs ── -->
+      <nav class="tabs">
+        <button class="tab active" data-tab="activity">활동</button>
+        <button class="tab" data-tab="onchain">온체인</button>
+      </nav>
 
-      <!-- ── 활동 로그 ── -->
-      <section class="log-section">
-        <div class="log-header">
-          <span class="log-title">활동 로그</span>
-          <div class="log-header-right">
-            <span class="log-legend"><span class="log-dir recv">↓</span>수신</span>
-            <span class="log-legend"><span class="log-dir sent">↑</span>송신</span>
-            <button class="log-clear" id="btnClearLog">지우기</button>
-          </div>
+      <!-- ── 7. Tab: 활동 ── -->
+      <div class="tab-panel" id="tabActivity">
+        <div class="log-controls">
+          <span class="log-legend"><span class="dir-icon recv">↓</span> 수신</span>
+          <span class="log-legend"><span class="dir-icon sent">↑</span> 송신</span>
+          <button class="log-clear-btn" id="btnClearLog">지우기</button>
         </div>
         <ul class="log-list" id="logList">
           <li class="log-empty">아직 활동 없음</li>
         </ul>
-      </section>
+      </div>
+
+      <!-- ── 7. Tab: 온체인 ── -->
+      <div class="tab-panel hidden" id="tabOnchain">
+        <div class="chain-card">
+          <div class="chain-row"><span class="ck">Token ID</span><span class="cv" id="chainTokenId">—</span></div>
+          <div class="chain-row"><span class="ck">Trust Level</span><span class="cv" id="chainTrust">—</span></div>
+          <div class="chain-row"><span class="ck">Owner</span><code class="cv mono" id="chainOwner">—</code></div>
+          <div class="chain-row"><span class="ck">피드백</span><span class="cv" id="chainFeedback">— 건</span></div>
+        </div>
+
+        <div class="tx-section">
+          <div class="tx-title">트랜잭션 내역</div>
+          <ul class="tx-list" id="txList">
+            <li class="tx-empty">기록 없음</li>
+          </ul>
+        </div>
+      </div>
 
     </div>
 
@@ -136,18 +148,15 @@
 
       <header class="header">
         <div class="header-left">
-          <button class="icon-btn" id="btnBack" title="뒤로">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <polyline points="15 18 9 12 15 6"/>
-            </svg>
+          <button class="hdr-btn" id="btnBack" title="뒤로">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
           </button>
-          <span class="logo-text">설정</span>
+          <span class="settings-title">설정</span>
         </div>
       </header>
 
       <div class="settings-body">
 
-        <!-- ── 서버 연결 ── -->
         <div class="s-card">
           <div class="s-title">서버 연결</div>
           <label class="s-label" for="sServerUrl">서버 URL</label>
@@ -158,10 +167,9 @@
           <div class="s-result hidden" id="sTestResult"></div>
         </div>
 
-        <!-- ── LLM 상태 ── -->
         <div class="s-card">
           <div class="s-title">LLM 공급자</div>
-          <div class="s-status-grid">
+          <div class="s-grid">
             <span class="s-key">공급자</span><span class="s-val" id="sPvProvider">—</span>
             <span class="s-key">모델</span><span class="s-val" id="sPvModel">—</span>
             <span class="s-key">어시스턴트</span><span class="s-val" id="sPvName">—</span>
@@ -169,20 +177,17 @@
           <a class="s-link" id="sDashboardLink" href="#" target="_blank">서버 대시보드 열기 →</a>
         </div>
 
-        <!-- ── 에이전트 지갑 ── -->
         <div class="s-card">
           <div class="s-title">에이전트 지갑</div>
           <label class="s-label">지갑 주소</label>
           <div class="s-wallet-row">
             <code class="s-wallet-addr" id="sWalletAddr">—</code>
-            <button class="s-btn-icon" id="btnCopyAddr" title="복사">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-              </svg>
+            <button class="s-icon-btn" id="btnCopyAddr" title="복사">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
             </button>
           </div>
           <div class="s-copy-msg hidden" id="sCopyMsg">복사됨!</div>
-          <div class="s-status-grid" style="margin-top:8px">
+          <div class="s-grid" style="margin-top:8px">
             <span class="s-key">잔액</span><span class="s-val" id="sBalance">—</span>
             <span class="s-key">네트워크</span><span class="s-val" id="sChainName">—</span>
             <span class="s-key">Agent ID</span><span class="s-val" id="sAgentId">—</span>
@@ -191,39 +196,16 @@
           </div>
         </div>
 
-        <!-- ── On-chain 수동 연결 ── -->
         <div class="s-card">
           <div class="s-title">On-chain 수동 연결</div>
           <label class="s-label" for="sTokenIdInput">Agent Token ID</label>
           <input id="sTokenIdInput" class="s-input" type="text" placeholder="예: 2"/>
         </div>
 
-        <!-- ── 에이전트 Identity Export / Import ── -->
-        <div class="s-card">
-          <div class="s-title">에이전트 백업 / 복원</div>
-          <div class="s-warn">프라이빗 키가 포함됩니다. 파일을 안전하게 보관하세요.</div>
-          <div class="s-btn-row">
-            <button class="s-btn-action" id="btnExportId">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Export
-            </button>
-            <button class="s-btn-action" id="btnImportId">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-              </svg>
-              Import
-            </button>
-          </div>
-          <input type="file" id="importFileInput" accept=".json" class="hidden"/>
-          <div class="s-identity-msg hidden" id="sIdentityMsg"></div>
-        </div>
-
       </div>
 
       <footer class="settings-footer">
-        <button class="btn btn-approve" id="btnSaveSettings">저장</button>
+        <button class="a-btn approve wide" id="btnSaveSettings">저장</button>
         <span class="s-save-msg hidden" id="sSaveMsg">저장되었습니다</span>
       </footer>
 
