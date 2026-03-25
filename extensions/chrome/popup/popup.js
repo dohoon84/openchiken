@@ -12,6 +12,27 @@ async function init() {
   listenBackground();
 }
 
+// ─────────────── Agent ID → 아바타 색상 생성 ───────────────
+
+function getAvatarGradient(agentId) {
+  if (!agentId || agentId === '—') return 'background: linear-gradient(135deg, #333, #444)';
+  const hash = agentId.split('').reduce((acc, c) => (acc * 31 + c.charCodeAt(0)) | 0, 0);
+  const h1 = Math.abs(hash) % 360;
+  const h2 = (h1 + 70) % 360;
+  return `background: linear-gradient(135deg, hsl(${h1},65%,50%), hsl(${h2},65%,38%))`;
+}
+
+function updateAvatar(agentId) {
+  const el = $('agentAvatar');
+  if (!el) return;
+  el.style.cssText = getAvatarGradient(agentId);
+  if (agentId && agentId !== '—') {
+    el.textContent = agentId.replace('oc_ext_', '').slice(0, 2).toUpperCase();
+  } else {
+    el.textContent = 'OC';
+  }
+}
+
 // ─────────────── 뷰 전환 ───────────────
 
 function showSettingsView() {
@@ -184,6 +205,7 @@ function handleImportFile(e) {
           $('sWalletAddr').textContent  = res.agentAddress;
           $('sAgentId').textContent     = res.agentId;
           $('agentIdVal').textContent   = res.agentId;
+          updateAvatar(res.agentId);
         } else {
           showIdentityMsg(res?.error || 'Import 실패', 'err');
         }
@@ -195,6 +217,8 @@ function handleImportFile(e) {
   reader.readAsText(file);
   e.target.value = '';
 }
+
+// ─────────────── 상태 로드 ───────────────
 
 async function loadStatus() {
   chrome.runtime.sendMessage({ type: 'GET_STATUS' }, (res) => {
@@ -209,7 +233,9 @@ async function loadStatus() {
       setRelayStatus(res.relayConnected ? 'connected' : 'disconnected');
     }
 
-    $('agentIdVal').textContent = res.agentId ?? '—';
+    const agentId = res.agentId ?? '—';
+    $('agentIdVal').textContent = agentId;
+    updateAvatar(agentId);
 
     if (res.pendingApproval) {
       const { requestId, payload, caller } = res.pendingApproval;
@@ -283,9 +309,87 @@ function trustLevelLabel(level) {
 
 // ─────────────── 활동 로그 ───────────────
 
+const DECISION_LABEL = { approved: '승인', rejected: '거절', error: '오류', timeout: '타임아웃', pending: '처리중' };
+
+/** 로컬 수신 로그(chrome.storage) + 서버 송신 로그를 통합해서 표시 */
 async function loadActivityLog() {
   const { activityLog = [] } = await chrome.storage.local.get('activityLog');
-  renderLog(activityLog.slice(0, 10));
+
+  const received = activityLog.slice(0, 20).map((e) => ({
+    id:        e.id ?? e.requestId,
+    direction: 'recv',
+    agentId:   e.caller?.agentId ?? '?',
+    skill:     e.payload?.skill  ?? '?',
+    status:    e.decision ?? 'error',
+    at:        e.receivedAt ? new Date(e.receivedAt).toISOString() : null,
+    txHash:    e.txHash ?? null,
+    score:     e.score  ?? null,
+  }));
+
+  let sent = [];
+  try {
+    const res = await fetch(`${settingsServerUrl}/api/relay/activity?limit=20`, {
+      signal: AbortSignal.timeout(3000),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      sent = (data.activities || []).map((e) => ({
+        id:        e.id,
+        direction: 'sent',
+        agentId:   e.agentId ?? '?',
+        skill:     e.skill   ?? '?',
+        status:    e.status  ?? 'approved',
+        at:        e.at,
+        summary:   e.summary,
+        txHash:    e.txHash ?? null,
+        score:     e.score  ?? null,
+      }));
+    }
+  } catch { /* 서버 오프라인이면 무시 */ }
+
+  const combined = [...received, ...sent].sort((a, b) => {
+    if (!a.at && !b.at) return 0;
+    if (!a.at) return 1;
+    if (!b.at) return -1;
+    return b.at.localeCompare(a.at);
+  });
+
+  renderLog(combined.slice(0, 15));
+}
+
+function _buildLogItem(e) {
+  const isRecv  = e.direction === 'recv';
+  const dot     = e.status ?? 'error';
+  const dirHtml = `<span class="log-dir ${isRecv ? 'recv' : 'sent'}">${isRecv ? '↓' : '↑'}</span>`;
+  const text    = isRecv
+    ? `${e.agentId} / ${e.skill}`
+    : `→ ${e.agentId} / ${e.skill}`;
+  const label   = DECISION_LABEL[e.status] ?? e.status ?? '?';
+
+  // on-chain txHash 링크 (Sepolia Etherscan)
+  const txHtml = e.txHash
+    ? `<a class="log-tx" data-href="https://sepolia.etherscan.io/tx/${e.txHash}" title="Tx: ${e.txHash.slice(0, 10)}... — Etherscan에서 확인">
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
+      </a>`
+    : '';
+
+  // 점수 배지 (score가 있을 때만)
+  const scoreCls = e.score != null && e.score < 50 ? 'log-score low' : 'log-score';
+  const scoreHtml = e.score != null
+    ? `<span class="${scoreCls}">${e.score}</span>`
+    : '';
+
+  return `<li class="log-item" data-request-id="${e.id ?? ''}">
+    <span class="log-dot ${dot}"></span>
+    ${dirHtml}
+    <span class="log-text">${text}</span>
+    ${scoreHtml}
+    ${txHtml}
+    <span class="log-meta">${label}</span>
+  </li>`;
 }
 
 function renderLog(entries) {
@@ -294,40 +398,73 @@ function renderLog(entries) {
     list.innerHTML = '<li class="log-empty">아직 활동 없음</li>';
     return;
   }
-  list.innerHTML = entries.map((e) => {
-    const dot   = e.decision ?? 'error';
-    const text  = `${e.caller?.agentId ?? '?'} → ${e.payload?.skill ?? '?'}`;
-    const meta  = e.decision ?? '?';
-    const label = { approved: '승인', rejected: '거절', error: '오류', timeout: '타임아웃' }[meta] ?? meta;
-    return `<li class="log-item">
-      <span class="log-dot ${dot}"></span>
-      <span class="log-text">${text}</span>
-      <span class="log-meta">${label}</span>
-    </li>`;
-  }).join('');
+  list.innerHTML = entries.map(_buildLogItem).join('');
 }
 
+/** 수신 이벤트 실시간 추가 (background 메시지) */
 function appendLog(entry) {
   const list = $('logList');
   const empty = list.querySelector('.log-empty');
   if (empty) empty.remove();
 
-  const dot   = entry.decision ?? 'error';
-  const text  = entry.payload
-    ? `${entry.caller?.agentId ?? '?'} → ${entry.payload.skill ?? '?'}`
-    : `요청 ${entry.requestId?.slice(0, 8) ?? '?'}`;
-  const label = { approved: '승인', rejected: '거절', error: '오류', timeout: '타임아웃' }[entry.decision] ?? entry.decision ?? '?';
+  const normalized = {
+    id:        entry.requestId,
+    direction: 'recv',
+    agentId:   entry.caller?.agentId ?? '?',
+    skill:     entry.payload?.skill  ?? (entry.requestId ? `req ${entry.requestId.slice(0, 8)}` : '?'),
+    status:    entry.decision ?? 'error',
+    at:        null,
+    txHash:    entry.txHash ?? null,
+    score:     entry.score  ?? null,
+  };
 
   const li = document.createElement('li');
-  li.className = 'log-item';
-  li.innerHTML = `<span class="log-dot ${dot}"></span>
-    <span class="log-text">${text}</span>
-    <span class="log-meta">${label}</span>`;
+  li.innerHTML = _buildLogItem(normalized);
+  list.prepend(li.firstElementChild);
 
-  list.prepend(li);
+  while (list.children.length > 15) list.removeChild(list.lastChild);
+}
 
-  // 최대 10개 유지
-  while (list.children.length > 10) list.removeChild(list.lastChild);
+/**
+ * 기존 로그 항목에 txHash / score 실시간 업데이트
+ * relay에서 TX_RECORDED 메시지 수신 시 호출
+ */
+function updateLogItemTx(requestId, txHash, score) {
+  if (!requestId || !txHash) return;
+
+  const list  = $('logList');
+  const items = list.querySelectorAll('.log-item');
+
+  for (const li of items) {
+    if (li.dataset.requestId !== requestId) continue;
+
+    // txHash 링크 아직 없으면 추가
+    if (!li.querySelector('.log-tx')) {
+      const txEl = document.createElement('a');
+      txEl.className = 'log-tx';
+      txEl.dataset.href = `https://sepolia.etherscan.io/tx/${txHash}`;
+      txEl.title = `Tx: ${txHash.slice(0, 10)}... — Etherscan에서 확인`;
+      txEl.innerHTML = `<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+      </svg>`;
+      const metaEl = li.querySelector('.log-meta');
+      if (metaEl) li.insertBefore(txEl, metaEl);
+    }
+
+    // score 배지 아직 없으면 추가
+    if (score != null && !li.querySelector('.log-score')) {
+      const scoreEl = document.createElement('span');
+      scoreEl.className = score < 50 ? 'log-score low' : 'log-score';
+      scoreEl.textContent = score;
+      const txEl = li.querySelector('.log-tx');
+      const metaEl = li.querySelector('.log-meta');
+      const insertBefore = txEl || metaEl;
+      if (insertBefore) li.insertBefore(scoreEl, insertBefore);
+    }
+
+    break;
+  }
 }
 
 // ─────────────── background 메시지 수신 ───────────────
@@ -337,7 +474,10 @@ function listenBackground() {
     switch (msg.type) {
       case 'RELAY_STATUS':
         setRelayStatus(msg.status);
-        if (msg.agentId) $('agentIdVal').textContent = msg.agentId;
+        if (msg.agentId) {
+          $('agentIdVal').textContent = msg.agentId;
+          updateAvatar(msg.agentId);
+        }
         break;
 
       case 'APPROVAL_REQUEST':
@@ -347,6 +487,11 @@ function listenBackground() {
       case 'ACTIVITY':
         if (msg.requestId === currentRequestId) hideApprovalPanel();
         appendLog(msg);
+        break;
+
+      case 'TX_RECORDED':
+        // on-chain 피드백 완료 — 로그 항목에 txHash 표시
+        updateLogItemTx(msg.requestId, msg.txHash, msg.score);
         break;
     }
   });
@@ -384,6 +529,16 @@ function bindButtons() {
   $('btnImportId').addEventListener('click', importIdentity);
   $('importFileInput').addEventListener('change', handleImportFile);
 
+  // Agent ID 복사 버튼
+  $('btnCopyId').addEventListener('click', async () => {
+    const id = $('agentIdVal').textContent;
+    if (!id || id === '—') return;
+    await navigator.clipboard.writeText(id);
+    const toast = $('copyToast');
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 1500);
+  });
+
   $('sServerUrl').addEventListener('input', () => {
     $('sTestResult').className = 's-result hidden';
   });
@@ -398,6 +553,15 @@ function bindButtons() {
         setRelayStatus('disabled');
       }
     });
+  });
+
+  // txHash 링크 — chrome.tabs.create로 새 탭 열기
+  document.addEventListener('click', (e) => {
+    const txEl = e.target.closest('.log-tx');
+    if (!txEl) return;
+    e.preventDefault();
+    const url = txEl.dataset.href || txEl.href;
+    if (url) chrome.tabs.create({ url });
   });
 }
 

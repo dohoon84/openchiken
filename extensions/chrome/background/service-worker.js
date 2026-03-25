@@ -39,15 +39,16 @@ const DEFAULTS = {
 
 // ─────────────── 휘발성 상태 ───────────────
 
-let ws             = null;
-let agentId        = null;
-let agentAddress   = null;
-let tokenId        = null;
-let agentEnabled   = false;
-let relayUrl       = DEFAULTS.relayUrl;
-let serverUrl      = DEFAULTS.serverUrl;
-let policy         = DEFAULTS.policy;
-let reconnectTimer = null;
+let ws                   = null;
+let agentId              = null;
+let agentAddress         = null;
+let tokenId              = null;
+let agentEnabled         = false;
+let relayUrl             = DEFAULTS.relayUrl;
+let serverUrl            = DEFAULTS.serverUrl;
+let policy               = DEFAULTS.policy;
+let reconnectTimer       = null;
+let cachedCapabilities   = null;
 
 // ─────────────── session storage 헬퍼 (승인 대기 영속화) ───────────────
 
@@ -79,7 +80,7 @@ async function sessionFirstPending() {
 // ─────────────── 초기화 ───────────────
 
 async function init() {
-  const cfg = await chrome.storage.local.get(['agentId', 'agentAddress', 'tokenId', 'relayUrl', 'serverUrl', 'policy', 'agentEnabled']);
+  const cfg = await chrome.storage.local.get(['agentId', 'agentAddress', 'tokenId', 'relayUrl', 'serverUrl', 'policy', 'agentEnabled', 'cachedCapabilities']);
 
   if (!cfg.agentId) {
     agentId = `oc_ext_${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
@@ -88,11 +89,12 @@ async function init() {
     agentId = cfg.agentId;
   }
 
-  if (cfg.agentAddress) agentAddress = cfg.agentAddress;
-  if (cfg.tokenId)      tokenId      = cfg.tokenId;
-  if (cfg.relayUrl)     relayUrl     = cfg.relayUrl;
-  if (cfg.serverUrl)    serverUrl    = cfg.serverUrl;
-  if (cfg.policy)       policy       = { ...DEFAULTS.policy, ...cfg.policy };
+  if (cfg.agentAddress)         agentAddress         = cfg.agentAddress;
+  if (cfg.tokenId)              tokenId              = cfg.tokenId;
+  if (cfg.relayUrl)             relayUrl             = cfg.relayUrl;
+  if (cfg.serverUrl)            serverUrl            = cfg.serverUrl;
+  if (cfg.policy)               policy               = { ...DEFAULTS.policy, ...cfg.policy };
+  if (cfg.cachedCapabilities)   cachedCapabilities   = cfg.cachedCapabilities;
   agentEnabled = cfg.agentEnabled === true;
 
   const firstPending = await sessionFirstPending();
@@ -121,10 +123,12 @@ function connectRelay() {
   ws.onopen = async () => {
     console.log('[Relay] 연결됨');
     clearTimeout(reconnectTimer);
-    const registerMsg = { type: 'REGISTER', agentId, capabilities: ['browser_context', 'local_agent'], version: '0.2.0' };
+    const capabilities = await fetchCapabilities();
+    const registerMsg = { type: 'REGISTER', agentId, capabilities, version: '0.2.0' };
     if (tokenId)      registerMsg.tokenId      = tokenId;
     if (agentAddress) registerMsg.agentAddress = agentAddress;
     send(registerMsg);
+    console.log(`[Relay] 등록 capabilities: ${capabilities.join(', ')}`);
     notifyPopup({ type: 'RELAY_STATUS', status: 'connected', agentId });
 
     const pending = await sessionFirstPending();
@@ -136,14 +140,58 @@ function connectRelay() {
     catch (e) { console.error('[Relay] 메시지 파싱 오류:', e); }
   };
 
-  ws.onclose = () => {
+  ws.onclose = (e) => {
     if (!agentEnabled) return;
-    console.warn('[Relay] 연결 끊김 — 5초 후 재연결');
+    const reason = e.reason ? ` (${e.reason})` : '';
+    console.warn(`[Relay] 연결 끊김 code=${e.code}${reason} — 5초 후 재연결`);
     notifyPopup({ type: 'RELAY_STATUS', status: 'disconnected' });
     reconnectTimer = setTimeout(connectRelay, 5_000);
   };
 
-  ws.onerror = (e) => console.error('[Relay] 오류:', e.message ?? e);
+  ws.onerror = (e) => {
+    // WebSocket ErrorEvent는 .message가 없으므로 type으로 표시
+    console.error('[Relay] WebSocket 오류 — 연결 실패 또는 끊김 (type:', e?.type ?? 'unknown', ')');
+  };
+}
+
+/**
+ * 로컬 서버의 /api/skills 에서 활성화된 스킬의 도메인 영역을 가져옵니다.
+ * 성공하면 chrome.storage.local에 캐시합니다.
+ * 실패 시 이전 캐시 → 기본값 순으로 폴백합니다.
+ */
+async function fetchCapabilities() {
+  try {
+    const res = await fetch(`${serverUrl}/api/skills`, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    const domains = [...new Set(
+      (data.skills || [])
+        .filter(s => s.enabled && (s.status === 'connected' || s.status === 'hub_installed' || s.status === 'ai_generated'))
+        .map(s => s.domain || s.name)
+        .filter(Boolean)
+    )];
+
+    const result = domains.length ? domains : ['browser_context', 'local_agent'];
+
+    // 성공 시 캐시 갱신
+    cachedCapabilities = result;
+    await chrome.storage.local.set({ cachedCapabilities: result });
+    console.log(`[Relay] capabilities 캐시 갱신: ${result.join(', ')}`);
+    return result;
+  } catch (e) {
+    console.warn('[Relay] capabilities 조회 실패:', e.message);
+
+    // 이전 캐시가 있으면 캐시 사용
+    if (cachedCapabilities && cachedCapabilities.length > 0) {
+      console.log(`[Relay] 캐시된 capabilities 사용: ${cachedCapabilities.join(', ')}`);
+      return cachedCapabilities;
+    }
+
+    // 캐시도 없으면 기본값
+    console.warn('[Relay] 캐시 없음 — 기본 capabilities 사용');
+    return ['browser_context', 'local_agent'];
+  }
 }
 
 function disconnectRelay() {
@@ -178,6 +226,15 @@ async function handleRelayMessage(msg) {
       notifyPopup({ type: 'ONCHAIN_REGISTERED', tokenId: msg.tokenId, txHash: msg.txHash });
       break;
 
+    case 'TX_RECORDED':
+      // Relay가 on-chain 평판 기록 완료 후 txHash 알림
+      if (msg.requestId) {
+        await upsertActivityLog(msg.requestId, { txHash: msg.txHash, score: msg.score });
+      }
+      notifyPopup({ type: 'TX_RECORDED', requestId: msg.requestId, txHash: msg.txHash, score: msg.score });
+      console.log(`[Relay] TX_RECORDED — requestId: ${msg.requestId} txHash: ${msg.txHash}`);
+      break;
+
     case 'INVOKE':
       await handleInvoke(msg);
       break;
@@ -204,6 +261,7 @@ async function handleInvoke({ requestId, payload, caller }) {
 
   } else if (decision === 'reject') {
     console.log(`[Policy] 자동 거절: ${requestId}`);
+    await upsertActivityLog(requestId, { decision: 'rejected' });
     send({ type: 'RESPONSE', requestId, decision: 'rejected', error: '정책에 의해 거절됨' });
     notifyPopup({ type: 'ACTIVITY', requestId, payload, caller, decision: 'rejected', auto: true });
 
@@ -254,11 +312,13 @@ async function executeAndRespond(requestId, payload, caller) {
     if (!res.ok) throw new Error(`OpenChiken 서버 오류: HTTP ${res.status}`);
     const data = await res.json();
 
+    await upsertActivityLog(requestId, { decision: 'approved' });
     send({ type: 'RESPONSE', requestId, decision: 'approved', result: { reply: data.reply } });
     notifyPopup({ type: 'ACTIVITY', requestId, payload, caller, decision: 'approved', auto: true });
     console.log(`[Invoke] 완료: ${requestId}`);
   } catch (err) {
     console.error(`[Invoke] 실행 오류: ${err.message}`);
+    await upsertActivityLog(requestId, { decision: 'error', error: err.message });
     send({ type: 'RESPONSE', requestId, decision: 'rejected', error: err.message });
     notifyPopup({ type: 'ACTIVITY', requestId, decision: 'error', error: err.message });
   }
@@ -292,6 +352,16 @@ async function logActivity(entry) {
   activityLog.unshift({ id: crypto.randomUUID(), ...entry });
   if (activityLog.length > 100) activityLog.length = 100;
   await chrome.storage.local.set({ activityLog });
+}
+
+/** requestId로 기존 로그 항목을 찾아 부분 업데이트 */
+async function upsertActivityLog(requestId, updates) {
+  const { activityLog = [] } = await chrome.storage.local.get('activityLog');
+  const idx = activityLog.findIndex(e => e.requestId === requestId);
+  if (idx !== -1) {
+    activityLog[idx] = { ...activityLog[idx], ...updates };
+    await chrome.storage.local.set({ activityLog });
+  }
 }
 
 // ─────────────── 팝업 → Background 메시지 핸들러 ───────────────
@@ -414,8 +484,13 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       chrome.storage.local.set(msg.settings).then(() => {
         if (msg.settings.tokenId)   tokenId   = msg.settings.tokenId;
         if (msg.settings.relayUrl)  relayUrl  = msg.settings.relayUrl;
-        if (msg.settings.serverUrl) serverUrl = msg.settings.serverUrl;
         if (msg.settings.policy)    policy    = { ...policy, ...msg.settings.policy };
+        if (msg.settings.serverUrl) {
+          // serverUrl 변경 시 capabilities 캐시 초기화 (새 서버에서 다시 조회)
+          serverUrl = msg.settings.serverUrl;
+          cachedCapabilities = null;
+          chrome.storage.local.remove('cachedCapabilities');
+        }
         if (msg.settings.relayUrl)  { ws?.close(); connectRelay(); }
         sendResponse({ ok: true });
       });
