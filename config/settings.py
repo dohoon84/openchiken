@@ -36,7 +36,13 @@ class Settings:
 
     @property
     def database_url(self) -> str:
-        return os.getenv("DATABASE_URL", "sqlite:///openchiken.db")
+        raw = os.getenv("DATABASE_URL", "sqlite:///openchiken.db")
+        path = raw.replace("sqlite:///", "")
+        if path.startswith("/"):
+            return raw
+        if (_OPENCHIKEN_HOME / ".env").exists():
+            return "sqlite:///" + str(_OPENCHIKEN_HOME / path)
+        return "sqlite:///" + str(BASE_DIR / path)
 
     @property
     def openchiken_home(self) -> Path:
