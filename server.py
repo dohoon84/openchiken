@@ -48,14 +48,9 @@ _main_proc: subprocess.Popen | None = None
 
 
 def _db_path() -> str:
-    """DB 파일 절대 경로. uv 설치 환경이면 ~/.openchiken/, 개발 환경이면 프로젝트 루트."""
+    """DB 파일 절대 경로. settings.database_url이 환경별 절대 경로를 반환."""
     from config.settings import settings
-    raw = settings.database_url.replace("sqlite:///", "")
-    if raw.startswith("/"):
-        return raw
-    if ENV_FILE.exists():
-        return str(OPENCHIKEN_HOME / raw)
-    return str(ROOT / raw)
+    return settings.database_url.replace("sqlite:///", "")
 
 
 def _init_db() -> None:
