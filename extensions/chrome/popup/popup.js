@@ -202,7 +202,7 @@ function _buildLogItem(e) {
   const label = DECISION_LABEL[e.status] ?? e.status ?? '?';
 
   const txHtml = e.txHash
-    ? `<a class="log-tx" data-href="https://sepolia.etherscan.io/tx/${e.txHash}" title="${e.txHash.slice(0, 14)}…">
+    ? `<a class="log-tx" data-href="https://sepolia-explorer.hpp.io/tx/${e.txHash}" title="${e.txHash.slice(0, 14)}…">
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
       </a>` : '';
 
@@ -251,7 +251,7 @@ function updateLogItemTx(requestId, txHash, score) {
     if (!li.querySelector('.log-tx')) {
       const a = document.createElement('a');
       a.className = 'log-tx';
-      a.dataset.href = `https://sepolia.etherscan.io/tx/${txHash}`;
+      a.dataset.href = `https://sepolia-explorer.hpp.io/tx/${txHash}`;
       a.title = txHash.slice(0, 14) + '…';
       a.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
       const ref = li.querySelector('.log-meta');
@@ -292,7 +292,7 @@ async function loadOnchainTab() {
       const scoreHtml = e.score != null ? `<span class="${scoreCls}">${e.score}</span>` : '';
       const skill = e.payload?.skill ?? '';
       return `<li class="tx-item">
-        <a class="tx-hash" data-href="https://sepolia.etherscan.io/tx/${hash}" title="${hash}">${shortHash}</a>
+        <a class="tx-hash" data-href="https://sepolia-explorer.hpp.io/tx/${hash}" title="${hash}">${shortHash}</a>
         ${scoreHtml}
         <span class="tx-skill">${skill}</span>
       </li>`;
@@ -510,7 +510,7 @@ function bindButtons() {
 
   $('btnEtherscan').addEventListener('click', () => {
     if (_agentAddress) {
-      chrome.tabs.create({ url: `https://sepolia.etherscan.io/address/${_agentAddress}` });
+      chrome.tabs.create({ url: `https://sepolia-explorer.hpp.io/address/${_agentAddress}` });
     }
   });
 
