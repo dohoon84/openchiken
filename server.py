@@ -197,11 +197,24 @@ class RelayActivityEntry(BaseModel):
 
 @app.post("/api/chat", response_model=ChatResponse)
 async def api_chat(req: ChatRequest):
-    """Chrome Extension 등 브라우저 채널에서 에이전트에게 메시지를 전송합니다."""
-    try:
-        from core.agent import chat as agent_chat
+    """Chrome Extension 등 브라우저 채널에서 에이전트에게 메시지를 전송합니다.
 
-        reply = await agent_chat(req.session_id, req.message)
+    Telegram과 동일하게 router.route_message()를 경유하여
+    오케스트레이터(스킬 플래닝 → 허브 설치 → Plan-and-Execute)를 사용합니다.
+    """
+    try:
+        from channels.router import route_message, parse_command, InboundEvent
+
+        command, args = parse_command(req.message)
+        event = InboundEvent(
+            channel="extension",
+            session_id=req.session_id,
+            user_id="extension",
+            text=req.message,
+            command=command,
+            args=args,
+        )
+        reply = await route_message(event)
         return ChatResponse(ok=True, reply=reply)
     except EnvironmentError as e:
         raise HTTPException(

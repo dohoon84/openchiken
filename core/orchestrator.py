@@ -4,11 +4,12 @@ Autonomous Skill Orchestrator — 완전 자율 스킬 오케스트레이션 엔
 사용자 쿼리를 받으면:
   1. skill_planner로 필요 스킬 식별
   2. 로컬에 존재하는지 확인
-  3. 없으면 Relay 에이전트 탐색 (capability + 평판 기반 자동 선택)
-  4. Relay에도 없으면 허브(GitHub)에서 다운로드
-  5. 허브에도 없으면 LLM이 자동 생성
-  6. 스킬 캐시 리로드
-  7. Plan-and-Execute 에이전트로 전체 플로우 실행
+  3. 없으면 허브(GitHub)에서 다운로드
+  4. 허브에도 없으면 LLM이 자동 생성
+  5. 스킬 캐시 리로드
+  6. Plan-and-Execute 에이전트로 전체 플로우 실행
+
+외부 에이전트 위임(Relay)은 사용자가 명시적으로 요청한 경우에만 동작합니다.
 """
 
 from __future__ import annotations
@@ -70,11 +71,10 @@ def _check_missing_env_vars(skill_name: str) -> list[str]:
 
 
 def _find_relay_agent_for_skill(skill_name: str) -> str | None:
-    """Relay에 연결된 에이전트 중 해당 스킬(capability)을 보유하고
-    평판이 가장 높은 에이전트의 agentId를 반환합니다.
+    """Relay에 연결된 에이전트 중 해당 capability를 보유한 최고 평판 에이전트를 반환합니다.
 
-    platform_verified 에이전트를 우선하며, 동급 신뢰도에서는 평판 점수가 높은 순으로 선택합니다.
-    적합한 에이전트가 없으면 None을 반환합니다.
+    현재 오케스트레이터의 자동 파이프라인에서는 호출되지 않습니다.
+    사용자가 명시적으로 외부 에이전트 위임을 요청한 경우에만 사용됩니다.
     """
     try:
         from skills.relay_discover.tool import _get_agents, _enrich_with_reputation
@@ -115,7 +115,10 @@ def _find_relay_agent_for_skill(skill_name: str) -> str | None:
 
 
 async def _ensure_skills(plan_result: SkillPlanResult) -> tuple[list[str], dict[str, list[str]]]:
-    """누락된 스킬을 relay 에이전트 탐색, 허브 다운로드, 자동 생성 순으로 확보합니다.
+    """누락된 스킬을 허브 다운로드 → 자동 생성 순으로 확보합니다.
+
+    스킬 확보 우선순위: ① 허브 다운로드 → ② LLM 자동 생성
+    (외부 에이전트 위임은 사용자 명시 요청 시에만, skill_planner가 처리)
 
     Returns:
         (설치된 스킬 이름 목록, {스킬명: 누락된 환경변수 목록} 딕셔너리)
@@ -126,31 +129,6 @@ async def _ensure_skills(plan_result: SkillPlanResult) -> tuple[list[str], dict[
 
     for skill_name in plan_result.missing_skills:
         purpose = purpose_map.get(skill_name, "")
-
-        # 0차: Relay에서 해당 capability를 가진 외부 에이전트 탐색
-        # relay_discover / relay_invoke 자체는 대상에서 제외 (인프라 스킬)
-        if skill_name not in ("relay_discover", "relay_invoke"):
-            relay_agent_id = _find_relay_agent_for_skill(skill_name)
-            if relay_agent_id:
-                # relay_invoke 스킬을 통해 위임하도록 플랜을 재작성
-                # → 해당 skill_name을 relay_invoke로 교체하고
-                #   플래너가 이를 invoke_agent 도구로 처리하게 함
-                loader = get_skill_loader()
-                if "relay_invoke" in loader.get_all_skill_names():
-                    # 쿼리에 에이전트 정보를 주입해 LLM이 올바른 에이전트를 호출하도록 안내
-                    # _relay_hints는 run_autonomous에서 enhanced_query에 합산됨
-                    if not hasattr(plan_result, "_relay_hints"):
-                        plan_result._relay_hints = {}
-                    plan_result._relay_hints[skill_name] = relay_agent_id
-                    logger.info(
-                        "[Relay Fallback] '%s' 스킬 → relay 위임 예약: agentId=%s",
-                        skill_name, relay_agent_id,
-                    )
-                    continue
-                else:
-                    logger.info(
-                        "[Relay Fallback] relay_invoke 스킬 미설치 — relay 위임 불가, 허브/AI 생성으로 전환",
-                    )
 
         # 1차: 허브에서 다운로드 시도
         if hub_skill_exists(skill_name):
@@ -320,34 +298,12 @@ async def run_autonomous(query: str, session_id: str) -> str:
 
     # Step 4: 필요한 스킬의 툴만 필터링하여 Plan-and-Execute 실행
     loader = get_skill_loader()
-
-    # relay fallback으로 위임된 스킬은 relay_invoke + relay_discover로 대체
-    relay_hints: dict[str, str] = getattr(plan_result, "_relay_hints", {})
-    if relay_hints:
-        # relay 위임 대상 스킬은 needed_skills 목록에서 제거하고 relay 스킬을 추가
-        needed_skills = [s for s in needed_skills if s not in relay_hints]
-        for relay_skill in ("relay_discover", "relay_invoke"):
-            if relay_skill in loader.get_all_skill_names() and relay_skill not in needed_skills:
-                needed_skills.append(relay_skill)
-
     filtered_tools = loader.get_tools_for_skills(needed_skills)
-
-    # relay hints가 있으면 쿼리에 위임 대상 에이전트 정보를 주입
-    relay_hint_lines = [
-        f"- '{skill}'은 외부 에이전트 '{agent_id}'에게 위임하세요 "
-        f"(invoke_agent 사용, capability=\"{skill}\")"
-        for skill, agent_id in relay_hints.items()
-    ]
-    relay_hint_block = (
-        "\n\n[외부 에이전트 위임 안내 (로컬 스킬 없음 — Relay 자동 선택)]\n"
-        + "\n".join(relay_hint_lines)
-        if relay_hint_lines else ""
-    )
 
     enhanced_query = (
         f"{query}\n\n"
-        f"[사용 가능한 스킬: {', '.join(needed_skills)}]"
-        f"{relay_hint_block}"
+        f"[사용 가능한 도구(스킬): {', '.join(needed_skills)}]\n"
+        f"위 도구들은 모두 로컬에서 직접 호출 가능합니다. 반드시 도구를 사용하여 작업을 수행하세요."
     )
 
     if filtered_tools:
